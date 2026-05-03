@@ -10,6 +10,7 @@ import { paintToFill, type FigmaPaint, paintToSolidCss } from "./color";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { resolveVariable } from "./variables";
+import { asArray, asNumber } from "./figma-mixed";
 import type { MappingContext, MappingResult } from "./types";
 
 export interface FrameMapInput {
@@ -52,24 +53,29 @@ export function mapFrame(
     ...extractUniversal(node),
   };
 
+  const w = asNumber(node.width) ?? 0;
+  const h = asNumber(node.height) ?? 0;
   if (opts.isRoot) {
-    prim.size = { w: roundTo3(node.width), h: roundTo3(node.height) };
+    prim.size = { w: roundTo3(w), h: roundTo3(h) };
   } else {
-    prim.size = { w: roundTo3(node.width), h: roundTo3(node.height) };
+    prim.size = { w: roundTo3(w), h: roundTo3(h) };
+    const nx = asNumber(node.x) ?? 0;
+    const ny = asNumber(node.y) ?? 0;
     const px = opts.parentX ?? 0;
     const py = opts.parentY ?? 0;
-    const x = (node.x ?? 0) - px;
-    const y = (node.y ?? 0) - py;
+    const x = nx - px;
+    const y = ny - py;
     if (x !== 0 || y !== 0) prim.position = { x: roundTo3(x), y: roundTo3(y) };
   }
 
   // Backgrounds : single solid → `background`, multi/gradient → `backgrounds[]`.
-  const fills = (node.fills ?? [])
+  const fillsArr = asArray<FigmaPaint>(node.fills) ?? [];
+  const fills = fillsArr
     .filter((p) => p.type !== "IMAGE")
     .map((p) => paintToFill(p))
     .filter((f): f is Fill => f !== null);
   if (fills.length === 1 && fills[0]?.kind === "solid" && fills[0].opacity === undefined) {
-    const single = (node.fills ?? []).find((p) => p.type === "SOLID");
+    const single = fillsArr.find((p) => p.type === "SOLID");
     if (single) {
       const css = paintToSolidCss(single);
       if (css) prim.background = css;

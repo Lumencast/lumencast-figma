@@ -74,16 +74,27 @@ export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundle
   };
 
   // 1. Map the tree.
+  console.warn("[lumencast] step 1/5 — mapTree");
   const mapped = mapTree(opts.root, ctx);
+  console.warn("[lumencast] step 1/5 done — root kind:", (mapped.node as { kind?: string }).kind);
 
   // 2. Scan for operator inputs across the whole subtree.
+  console.warn("[lumencast] step 2/5 — extractOperatorInputs");
   const opInputs = extractOperatorInputs(opts.root as never);
+  console.warn(
+    "[lumencast] step 2/5 done — found:",
+    opInputs.inputs.length,
+    "warnings:",
+    opInputs.warnings.length,
+  );
   for (const w of opInputs.warnings) {
     warnings.push({ code: w.code, message: w.message, nodeId: w.nodeId });
   }
 
   // 3. Resolve asset hashes → bytes + content-addressed names.
+  console.warn("[lumencast] step 3/5 — finalize asset registry");
   const assets = await registry.finalize();
+  console.warn("[lumencast] step 3/5 done — assets:", assets.length);
   const rewrites = registry.rewrites();
   applyAssetPathRewrites(mapped.node as unknown as object, rewrites);
   if (mapped.defaults) applyAssetPathRewrites(mapped.defaults, rewrites);
@@ -110,7 +121,9 @@ export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundle
   }
 
   // 5. Seal — compute scene_version via the §3.2 placeholder protocol.
+  console.warn("[lumencast] step 5/5 — sealBundle (canonicalize + sha256)");
   const sealed = await sealBundle(draft);
+  console.warn("[lumencast] step 5/5 done — scene_version:", sealed.sceneVersion);
   return {
     bundle: sealed.bundle,
     canonical: sealed.canonical,

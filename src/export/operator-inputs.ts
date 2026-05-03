@@ -98,7 +98,7 @@ export function extractOperatorInputs(root: AnyFigmaNode): ExtractResult {
         }
       }
     }
-    if (node.children) {
+    if (Array.isArray(node.children)) {
       // Push in reverse so we visit in document order.
       for (let i = node.children.length - 1; i >= 0; i--) {
         const c = node.children[i];

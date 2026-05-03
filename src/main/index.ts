@@ -80,18 +80,26 @@ async function handleExportRequest(sceneIdOverride?: string): Promise<void> {
 
   send({ kind: "export-progress", phase: "traversing" });
   try {
+    console.warn("[lumencast] export start — root:", root.type, root.id, root.name);
     const variables =
       "variables" in figma
         ? createFigmaVariableResolver(
             figma.variables as Parameters<typeof createFigmaVariableResolver>[0],
           )
         : undefined;
+    console.warn("[lumencast] variables resolver:", variables ? "attached" : "absent");
     const result = await runExport({
       api: figma,
       root: root as never,
       ...(sceneIdOverride ? { sceneId: sceneIdOverride } : {}),
       ...(variables ? { variables } : {}),
     });
+    console.warn(
+      "[lumencast] export ok — scene_version:",
+      result.hash,
+      "primitives_root_kind:",
+      (result.bundle.layout as { kind?: string }).kind,
+    );
     send({ kind: "export-progress", phase: "writing" });
     send({
       kind: "export-result",
@@ -104,6 +112,10 @@ async function handleExportRequest(sceneIdOverride?: string): Promise<void> {
       },
     });
   } catch (err) {
+    console.error("[lumencast] export FAILED:", err);
+    if (err instanceof Error) {
+      console.error("[lumencast] error stack:", err.stack);
+    }
     const e = err as RunExportError;
     if (e?.code === "BUNDLE_VALIDATION_FAILED") {
       send({

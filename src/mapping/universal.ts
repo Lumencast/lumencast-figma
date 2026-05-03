@@ -9,6 +9,7 @@
 // caller (see mapping/index.ts).
 
 import type { SizingMode, UniversalProps } from "~shared/lsml-types";
+import { asBoolean, asNumber, asString } from "./figma-mixed";
 
 interface FigmaNodeWithUniversal {
   visible?: boolean;
@@ -29,19 +30,35 @@ function modeFromFigma(m: "FIXED" | "HUG" | "FILL" | undefined): SizingMode | nu
 export function extractUniversal(node: FigmaNodeWithUniversal): UniversalProps {
   const out: UniversalProps = {};
 
-  if (node.visible === false) {
+  console.warn(
+    "[lumencast]     extractUniversal — visible:",
+    typeof node.visible,
+    "opacity:",
+    typeof node.opacity,
+    "rotation:",
+    typeof node.rotation,
+    "layoutSizingH:",
+    node.layoutSizingHorizontal,
+    "layoutSizingV:",
+    node.layoutSizingVertical,
+  );
+
+  if (asBoolean(node.visible) === false) {
     out.visible = false;
   }
-  if (node.opacity !== undefined && node.opacity !== 1) {
-    out.opacity = roundTo3(node.opacity);
+  const opacity = asNumber(node.opacity);
+  if (opacity !== undefined && opacity !== 1) {
+    out.opacity = roundTo3(opacity);
   }
-  if (node.rotation !== undefined && node.rotation !== 0) {
-    out.rotation = roundTo3(node.rotation);
+  const rotation = asNumber(node.rotation);
+  if (rotation !== undefined && rotation !== 0) {
+    out.rotation = roundTo3(rotation);
   }
 
-  const sx = modeFromFigma(node.layoutSizingHorizontal);
-  const sy = modeFromFigma(node.layoutSizingVertical);
-  // Only emit `sizing` when at least one axis is non-default ("fixed").
+  const lsH = asString(node.layoutSizingHorizontal) as "FIXED" | "HUG" | "FILL" | undefined;
+  const lsV = asString(node.layoutSizingVertical) as "FIXED" | "HUG" | "FILL" | undefined;
+  const sx = modeFromFigma(lsH);
+  const sy = modeFromFigma(lsV);
   if ((sx && sx !== "fixed") || (sy && sy !== "fixed")) {
     out.sizing = { x: sx ?? "fixed", y: sy ?? "fixed" };
   }

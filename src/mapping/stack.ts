@@ -4,6 +4,7 @@ import type { Fill, StackPrimitive } from "~shared/lsml-types";
 import { paintToFill, type FigmaPaint } from "./color";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
+import { asArray, asNumber, asString } from "./figma-mixed";
 import type { MappingResult } from "./types";
 
 export interface StackMapInput {
@@ -54,20 +55,24 @@ export function mapStack(node: StackMapInput, children: StackPrimitive["children
     ...extractUniversal(node),
   };
 
-  if (node.itemSpacing !== undefined && node.itemSpacing !== 0) {
-    prim.gap = roundTo3(node.itemSpacing);
+  const itemSpacing = asNumber(node.itemSpacing);
+  if (itemSpacing !== undefined && itemSpacing !== 0) {
+    prim.gap = roundTo3(itemSpacing);
   }
   if (node.layoutWrap === "WRAP") {
     prim.wrap = true;
-    if (node.counterAxisSpacing !== undefined && node.counterAxisSpacing !== 0) {
-      prim.crossGap = roundTo3(node.counterAxisSpacing);
+    const cas = asNumber(node.counterAxisSpacing);
+    if (cas !== undefined && cas !== 0) {
+      prim.crossGap = roundTo3(cas);
     }
   }
 
-  const justify = node.primaryAxisAlignItems && PRIMARY_JUSTIFY[node.primaryAxisAlignItems];
+  const primaryAxis = asString(node.primaryAxisAlignItems);
+  const justify = primaryAxis ? PRIMARY_JUSTIFY[primaryAxis] : undefined;
   if (justify && justify !== "start") prim.justify = justify;
 
-  const align = node.counterAxisAlignItems && COUNTER_ALIGN[node.counterAxisAlignItems];
+  const counterAxis = asString(node.counterAxisAlignItems);
+  const align = counterAxis ? COUNTER_ALIGN[counterAxis] : undefined;
   if (align && align !== "start") prim.align = align;
 
   const padding = computePadding(node);
@@ -76,7 +81,8 @@ export function mapStack(node: StackMapInput, children: StackPrimitive["children
   // Backgrounds map to `metadata` for stacks — LSML 1.1 stack has no
   // background. If a fill is present, lift it as a wrapping frame upstream
   // (out of scope for v0.1 — record a metadata hint instead).
-  const fills = (node.fills ?? [])
+  const fillsArr = asArray<FigmaPaint>(node.fills) ?? [];
+  const fills = fillsArr
     .filter(
       (p) => p.type === "SOLID" || p.type === "GRADIENT_LINEAR" || p.type === "GRADIENT_RADIAL",
     )
@@ -94,10 +100,10 @@ export function mapStack(node: StackMapInput, children: StackPrimitive["children
 }
 
 function computePadding(node: StackMapInput): StackPrimitive["padding"] {
-  const t = node.paddingTop ?? 0;
-  const r = node.paddingRight ?? 0;
-  const b = node.paddingBottom ?? 0;
-  const l = node.paddingLeft ?? 0;
+  const t = asNumber(node.paddingTop) ?? 0;
+  const r = asNumber(node.paddingRight) ?? 0;
+  const b = asNumber(node.paddingBottom) ?? 0;
+  const l = asNumber(node.paddingLeft) ?? 0;
   if (t === 0 && r === 0 && b === 0 && l === 0) return undefined;
   if (t === r && r === b && b === l) return roundTo3(t);
   return [roundTo3(t), roundTo3(r), roundTo3(b), roundTo3(l)];

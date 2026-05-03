@@ -10,6 +10,7 @@ import { paintToFill, type FigmaPaint, paintToSolidCss } from "./color";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { resolveVariable } from "./variables";
+import { asArray, asNumber } from "./figma-mixed";
 import type { MappingContext, MappingResult } from "./types";
 
 interface MockShapeNode {
@@ -35,7 +36,8 @@ interface MockShapeNode {
 
 export function mapShape(node: MockShapeNode, ctx?: MappingContext): MappingResult {
   const parsed = parseLayerName(node.name, { primitiveKind: "shape" });
-  const fills = (node.fills ?? [])
+  const fillsArr = asArray<FigmaPaint>(node.fills) ?? [];
+  const fills = fillsArr
     .filter((p) => p.type !== "IMAGE")
     .map((p) => paintToFill(p))
     .filter((f): f is Fill => f !== null);
@@ -46,10 +48,15 @@ export function mapShape(node: MockShapeNode, ctx?: MappingContext): MappingResu
     ...extractUniversal(node),
   };
 
+  const w = asNumber(node.width);
+  const h = asNumber(node.height);
   if (prim.geometry === "rect" || prim.geometry === "circle") {
-    prim.size = { w: roundTo3(node.width), h: roundTo3(node.height) };
+    if (w !== undefined && h !== undefined) {
+      prim.size = { w: roundTo3(w), h: roundTo3(h) };
+    }
   } else if (prim.geometry === "path") {
-    const path = (node.vectorPaths ?? [])[0]?.data;
+    const vp = asArray<{ data: string; windingRule: "NONZERO" | "EVENODD" }>(node.vectorPaths);
+    const path = vp?.[0]?.data;
     if (path) prim.pathData = path;
   }
 
@@ -66,8 +73,11 @@ export function mapShape(node: MockShapeNode, ctx?: MappingContext): MappingResu
     prim.strokes = strokes;
   }
 
-  if (prim.geometry === "rect" && node.cornerRadius !== undefined && node.cornerRadius !== 0) {
-    prim.cornerRadius = roundTo3(node.cornerRadius);
+  // node.cornerRadius is `figma.mixed` (a Symbol) on rectangles whose four
+  // corners differ — guard with asNumber.
+  const cornerRadius = asNumber(node.cornerRadius);
+  if (prim.geometry === "rect" && cornerRadius !== undefined && cornerRadius !== 0) {
+    prim.cornerRadius = roundTo3(cornerRadius);
   }
 
   if (parsed.displayName) prim.ariaLabel = parsed.displayName;
@@ -103,8 +113,15 @@ function geometryFor(node: MockShapeNode): ShapePrimitive["geometry"] {
 }
 
 function mapStrokes(node: MockShapeNode): Stroke[] {
+  const strokesArr = asArray<{
+    type: "SOLID";
+    color: { r: number; g: number; b: number };
+    opacity?: number;
+  }>(node.strokes);
+  if (!strokesArr) return [];
+  const strokeWeight = asNumber(node.strokeWeight) ?? 1;
   const out: Stroke[] = [];
-  for (const s of node.strokes ?? []) {
+  for (const s of strokesArr) {
     // Figma exposes strokes as host Paint objects with internal Symbol-keyed
     // metadata. Spreading them (`{ ...s, ... }`) trips QuickJS — esbuild's
     // ES2017 spread helper iterates `getOwnPropertySymbols(s)` and the host
@@ -113,7 +130,7 @@ function mapStrokes(node: MockShapeNode): Stroke[] {
     const paint: FigmaPaint = { type: "SOLID", color: s.color };
     if (s.opacity !== undefined) paint.opacity = s.opacity;
     const color = paintToSolidCss(paint);
-    if (color) out.push({ color, width: node.strokeWeight ?? 1 });
+    if (color) out.push({ color, width: strokeWeight });
   }
   return out;
 }

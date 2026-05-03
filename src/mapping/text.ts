@@ -18,6 +18,7 @@ import { paintToSolidCss, type FigmaPaint } from "./color";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
+import { asArray, asNumber, asObject, asString } from "./figma-mixed";
 import type { MappingResult } from "./types";
 
 interface MockTextNode {
@@ -95,34 +96,52 @@ export function synthLiteralPath(id: string): string {
 }
 
 function extractStyle(node: MockTextNode): TextStyle {
+  // Figma returns `figma.mixed` (a Symbol) for any of these props when the
+  // text node has multiple ranges with different values. asNumber / asString
+  // / asObject collapse the Symbol back to undefined for safe consumption.
   const style: TextStyle = {};
-  if (node.fontSize !== undefined) style.fontSize = node.fontSize;
-  if (node.fontWeight !== undefined) style.fontWeight = node.fontWeight;
-  if (node.fontName?.family) style.fontFamily = node.fontName.family;
-  if (node.fontName?.style && /italic/i.test(node.fontName.style)) style.fontStyle = "italic";
 
-  const fill = (node.fills ?? []).find((p) => p.type === "SOLID");
+  const fontSize = asNumber(node.fontSize);
+  if (fontSize !== undefined) style.fontSize = fontSize;
+
+  const fontWeight = asNumber(node.fontWeight);
+  if (fontWeight !== undefined) style.fontWeight = fontWeight;
+
+  const fontName = asObject<{ family: string; style: string }>(node.fontName);
+  if (fontName) {
+    const family = asString(fontName.family);
+    if (family) style.fontFamily = family;
+    const styleStr = asString(fontName.style);
+    if (styleStr && /italic/i.test(styleStr)) style.fontStyle = "italic";
+  }
+
+  const fillsArr = asArray<FigmaPaint>(node.fills);
+  const fill = fillsArr?.find((p) => p.type === "SOLID");
   if (fill) {
     const css = paintToSolidCss(fill);
     if (css) style.color = css;
   }
 
-  const align = node.textAlignHorizontal && ALIGN_MAP[node.textAlignHorizontal];
-  if (align && align !== "left") style.textAlign = align;
+  const align = asString(node.textAlignHorizontal);
+  if (align) {
+    const mapped = ALIGN_MAP[align];
+    if (mapped && mapped !== "left") style.textAlign = mapped;
+  }
 
-  const lh = node.lineHeight;
-  if (lh && lh.unit === "PERCENT" && typeof lh.value === "number") {
-    style.lineHeight = Math.round((lh.value / 100) * 1000) / 1000;
-  } else if (lh && lh.unit === "PIXELS" && typeof lh.value === "number") {
-    // PIXELS lineHeight is absolute ; LSML's lineHeight is unitless multiplier
-    // — fall back to font-size-relative when both are known.
-    if (node.fontSize) {
-      style.lineHeight = Math.round((lh.value / node.fontSize) * 1000) / 1000;
+  const lh = asObject<{ unit: "PIXELS" | "PERCENT" | "AUTO"; value?: number }>(node.lineHeight);
+  if (lh) {
+    const lhValue = asNumber(lh.value);
+    if (lh.unit === "PERCENT" && lhValue !== undefined) {
+      style.lineHeight = Math.round((lhValue / 100) * 1000) / 1000;
+    } else if (lh.unit === "PIXELS" && lhValue !== undefined && fontSize) {
+      style.lineHeight = Math.round((lhValue / fontSize) * 1000) / 1000;
     }
   }
 
-  if (node.letterSpacing && node.letterSpacing.unit === "PIXELS") {
-    style.letterSpacing = node.letterSpacing.value;
+  const ls = asObject<{ unit: "PIXELS" | "PERCENT"; value: number }>(node.letterSpacing);
+  if (ls && ls.unit === "PIXELS") {
+    const lsValue = asNumber(ls.value);
+    if (lsValue !== undefined) style.letterSpacing = lsValue;
   }
 
   return style;

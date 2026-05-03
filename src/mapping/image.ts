@@ -13,6 +13,7 @@ import type { ImagePrimitive } from "~shared/lsml-types";
 import { parseLayerName } from "../export/bindings";
 import { extractUniversal } from "./universal";
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
+import { asArray, asNumber } from "./figma-mixed";
 import type { FigmaPaint } from "./color";
 import type { MappingContext, MappingResult } from "./types";
 
@@ -32,7 +33,9 @@ interface MockImageNode {
 }
 
 export function mapImage(node: MockImageNode, ctx: MappingContext): MappingResult | null {
-  const imagePaint = (node.fills ?? []).find(
+  const fillsArr = asArray<FigmaPaint>(node.fills);
+  if (!fillsArr) return null;
+  const imagePaint = fillsArr.find(
     (p) => p.type === "IMAGE" && typeof p.imageHash === "string" && p.imageHash !== "",
   );
   if (!imagePaint) return null;
@@ -62,11 +65,13 @@ export function mapImage(node: MockImageNode, ctx: MappingContext): MappingResul
     }
   }
 
+  const w = asNumber(node.width) ?? 0;
+  const h = asNumber(node.height) ?? 0;
   const prim: ImagePrimitive = {
     kind: "image",
     bind,
     alt: parsed.displayName || "",
-    size: { w: roundTo3(node.width), h: roundTo3(node.height) },
+    size: { w: roundTo3(w), h: roundTo3(h) },
     ...extractUniversal(node),
   };
 

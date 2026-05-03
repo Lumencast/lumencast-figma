@@ -14,6 +14,7 @@ import { mapStack } from "./stack";
 import { mapInstance } from "./instance";
 import type { MappingContext, MappingResult } from "./types";
 import { OPERATOR_INPUT_COMPONENT_NAME } from "~shared/constants";
+import { asArray, asNumber } from "./figma-mixed";
 
 interface AnyFigmaNode {
   type: string;
@@ -39,8 +40,9 @@ function isOperatorInputComponent(node: AnyFigmaNode): boolean {
 }
 
 function hasImageFill(node: AnyFigmaNode): boolean {
-  if (!Array.isArray(node.fills)) return false;
-  return node.fills.some((f): f is { type: string; imageHash?: string; visible?: boolean } => {
+  const fills = asArray<unknown>(node.fills);
+  if (!fills) return false;
+  return fills.some((f): f is { type: string; imageHash?: string; visible?: boolean } => {
     return (
       typeof f === "object" &&
       f !== null &&
@@ -65,49 +67,63 @@ export function walk(
   ctx: MappingContext,
   opts: WalkOptions,
 ): MappingResult | null {
+  console.warn("[lumencast] walk:", node.type, node.id, node.name);
   if (node.visible === false) {
-    // We still want the node in the tree if explicit, but for a default Figma
-    // export we skip purely hidden nodes. Designers can opt them in via a
-    // future plugin setting.
     return null;
   }
-  if (isOperatorInputComponent(node)) return null;
+  if (isOperatorInputComponent(node)) {
+    console.warn("[lumencast]   → operator-input component, skipped from tree");
+    return null;
+  }
 
-  switch (node.type) {
-    case "TEXT":
-      return mapText(node as never);
-    case "RECTANGLE":
-      if (hasImageFill(node)) return mapImage(node as never, ctx);
-      return mapShape(node as never, ctx);
-    case "ELLIPSE":
-    case "VECTOR":
-      return mapShape(node as never, ctx);
-    case "INSTANCE":
-    case "FRAME": {
-      // Either designer-created INSTANCE OR re-imported FRAME with
-      // `lumencast.instance.*` plugin data → emit LSML §4.9 instance. The
-      // import pipeline materialises §4.9 instances as FRAMEs (real INSTANCE
-      // nodes can only be created by cloning a COMPONENT, which we don't
-      // have on import — see src/main/import-adapter.ts).
-      const instOpts: { isRoot: boolean; parentX?: number; parentY?: number } = {
-        isRoot: opts.isRoot,
-      };
-      if (opts.parentX !== undefined) instOpts.parentX = opts.parentX;
-      if (opts.parentY !== undefined) instOpts.parentY = opts.parentY;
-      const inst = mapInstance(node as never, instOpts, ctx);
-      if (inst) return inst;
-      return walkContainer(node, ctx, opts);
+  try {
+    switch (node.type) {
+      case "TEXT":
+        console.warn("[lumencast]   → mapText");
+        return mapText(node as never);
+      case "RECTANGLE":
+        if (hasImageFill(node)) {
+          console.warn("[lumencast]   → mapImage");
+          return mapImage(node as never, ctx);
+        }
+        console.warn("[lumencast]   → mapShape (rect)");
+        return mapShape(node as never, ctx);
+      case "ELLIPSE":
+      case "VECTOR":
+        console.warn("[lumencast]   → mapShape (", node.type, ")");
+        return mapShape(node as never, ctx);
+      case "INSTANCE":
+      case "FRAME": {
+        const instOpts: { isRoot: boolean; parentX?: number; parentY?: number } = {
+          isRoot: opts.isRoot,
+        };
+        if (opts.parentX !== undefined) instOpts.parentX = opts.parentX;
+        if (opts.parentY !== undefined) instOpts.parentY = opts.parentY;
+        console.warn("[lumencast]   → mapInstance (try)");
+        const inst = mapInstance(node as never, instOpts, ctx);
+        if (inst) {
+          console.warn("[lumencast]   → mapInstance (matched §4.9)");
+          return inst;
+        }
+        console.warn("[lumencast]   → walkContainer (frame/stack)");
+        return walkContainer(node, ctx, opts);
+      }
+      case "COMPONENT":
+      case "GROUP":
+        console.warn("[lumencast]   → walkContainer (", node.type, ")");
+        return walkContainer(node, ctx, opts);
+      default:
+        ctx.warn(
+          "UNSUPPORTED_NODE",
+          `Node type ${node.type} has no LSML 1.1 mapping ; skipped.`,
+          node.id,
+        );
+        return null;
     }
-    case "COMPONENT":
-    case "GROUP":
-      return walkContainer(node, ctx, opts);
-    default:
-      ctx.warn(
-        "UNSUPPORTED_NODE",
-        `Node type ${node.type} has no LSML 1.1 mapping ; skipped.`,
-        node.id,
-      );
-      return null;
+  } catch (err) {
+    console.error("[lumencast] FAIL inside walk for", node.type, node.id, node.name, "→", err);
+    if (err instanceof Error) console.error("[lumencast]   stack:", err.stack);
+    throw err;
   }
 }
 
@@ -118,9 +134,10 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
     node.layoutMode !== "NONE";
 
   const childResults: MappingResult[] = [];
-  const myX = node.x ?? 0;
-  const myY = node.y ?? 0;
-  for (const child of node.children ?? []) {
+  const myX = asNumber(node.x) ?? 0;
+  const myY = asNumber(node.y) ?? 0;
+  const childNodes = asArray<AnyFigmaNode>(node.children) ?? [];
+  for (const child of childNodes) {
     const r = walk(child, ctx, { isRoot: false, parentX: myX, parentY: myY });
     if (r) childResults.push(r);
   }
