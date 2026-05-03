@@ -148,7 +148,83 @@ export function sha256Hex(bytes: Uint8Array): string {
   return s;
 }
 
-/** UTF-8 encode + sha256 hex. */
+/** UTF-8 encode + sha256 hex. The Figma plugin sandbox does not expose
+ *  `TextEncoder` either, so we hand-roll the UTF-8 encoding. */
 export function sha256OfText(text: string): string {
-  return sha256Hex(new TextEncoder().encode(text));
+  return sha256Hex(utf8Encode(text));
+}
+
+/** Pure-JS UTF-8 encoder. Handles BMP and surrogate pairs ; falls back to
+ *  the replacement char `U+FFFD` for unpaired surrogates (matching
+ *  `TextEncoder` behaviour per WHATWG Encoding §4.2). */
+export function utf8Encode(text: string): Uint8Array {
+  // Two-pass : first compute the byte length, then write.
+  let len = 0;
+  for (let i = 0; i < text.length; i++) {
+    const c = text.charCodeAt(i);
+    if (c < 0x80) {
+      len += 1;
+    } else if (c < 0x800) {
+      len += 2;
+    } else if (c >= 0xd800 && c <= 0xdbff) {
+      // High surrogate ; expect a low surrogate to follow.
+      if (i + 1 < text.length) {
+        const next = text.charCodeAt(i + 1);
+        if (next >= 0xdc00 && next <= 0xdfff) {
+          len += 4;
+          i++;
+          continue;
+        }
+      }
+      // Unpaired high surrogate → U+FFFD (3 bytes).
+      len += 3;
+    } else if (c >= 0xdc00 && c <= 0xdfff) {
+      // Unpaired low surrogate → U+FFFD.
+      len += 3;
+    } else {
+      len += 3;
+    }
+  }
+
+  const out = new Uint8Array(len);
+  let p = 0;
+  for (let i = 0; i < text.length; i++) {
+    let c = text.charCodeAt(i);
+    if (c < 0x80) {
+      out[p++] = c;
+    } else if (c < 0x800) {
+      out[p++] = 0xc0 | (c >> 6);
+      out[p++] = 0x80 | (c & 0x3f);
+    } else if (c >= 0xd800 && c <= 0xdbff) {
+      let cp = 0xfffd;
+      if (i + 1 < text.length) {
+        const next = text.charCodeAt(i + 1);
+        if (next >= 0xdc00 && next <= 0xdfff) {
+          cp = 0x10000 + ((c - 0xd800) << 10) + (next - 0xdc00);
+          i++;
+        }
+      }
+      if (cp <= 0xffff) {
+        out[p++] = 0xe0 | (cp >> 12);
+        out[p++] = 0x80 | ((cp >> 6) & 0x3f);
+        out[p++] = 0x80 | (cp & 0x3f);
+      } else {
+        out[p++] = 0xf0 | (cp >> 18);
+        out[p++] = 0x80 | ((cp >> 12) & 0x3f);
+        out[p++] = 0x80 | ((cp >> 6) & 0x3f);
+        out[p++] = 0x80 | (cp & 0x3f);
+      }
+    } else if (c >= 0xdc00 && c <= 0xdfff) {
+      // Unpaired low surrogate.
+      c = 0xfffd;
+      out[p++] = 0xe0 | (c >> 12);
+      out[p++] = 0x80 | ((c >> 6) & 0x3f);
+      out[p++] = 0x80 | (c & 0x3f);
+    } else {
+      out[p++] = 0xe0 | (c >> 12);
+      out[p++] = 0x80 | ((c >> 6) & 0x3f);
+      out[p++] = 0x80 | (c & 0x3f);
+    }
+  }
+  return out;
 }

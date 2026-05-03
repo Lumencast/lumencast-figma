@@ -22,7 +22,7 @@ describe("createAssetRegistry", () => {
     expect(reg.registerImageHash("abc123")).toBe("assets/abc123");
   });
 
-  it("finalize hashes bytes, renames to assets/<sha256>.png, and emits one asset per hash", async () => {
+  it("finalize uses Figma's content-addressed imageHash + sniffed extension as the asset filename", async () => {
     const figma = createMockFigma();
     const bytes1 = pngBytes(10);
     const bytes2 = pngBytes(20);
@@ -35,12 +35,13 @@ describe("createAssetRegistry", () => {
 
     const assets = await reg.finalize();
     expect(assets).toHaveLength(2);
-    expect(assets[0]?.name).toMatch(/^assets\/[0-9a-f]{64}\.png$/);
+    // Filename is `assets/<figma-imageHash>.<ext>` — no per-byte rehashing.
+    expect(assets.map((a) => a.name).sort()).toEqual(["assets/h1.png", "assets/h2.png"]);
     expect(assets[0]?.mimeType).toBe("image/png");
 
     const rewrites = reg.rewrites();
-    expect(rewrites["assets/h1"]).toMatch(/^assets\/[0-9a-f]{64}\.png$/);
-    expect(rewrites["assets/h2"]).toMatch(/^assets\/[0-9a-f]{64}\.png$/);
+    expect(rewrites["assets/h1"]).toBe("assets/h1.png");
+    expect(rewrites["assets/h2"]).toBe("assets/h2.png");
   });
 
   it("dedupes registrations by figma hash", async () => {

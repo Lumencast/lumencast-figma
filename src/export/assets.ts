@@ -10,7 +10,6 @@
 // is set to ["*"] for the local sibling-directory case (see LSML §11.1) ;
 // downstream tooling (Prism) replaces it with the real CDN host.
 
-import { sha256Bytes } from "./hash";
 import type { ExportedAsset } from "../main/messages";
 
 interface FigmaImageHandle {
@@ -92,8 +91,16 @@ export function createAssetRegistry(opts: CreateOptions): CreatedRegistry {
         }
         const bytes = await handle.getBytesAsync();
         const ext = sniffImageExtension(bytes);
-        const hash = await hashBytesHex(bytes);
-        const finalName = `${ASSET_DIR}/${hash}.${ext}`;
+        // Figma's `imageHash` is itself a content-addressed hash of the
+        // image bytes (Figma uses SHA-1 internally). Reuse it as the
+        // asset filename instead of re-hashing with our own SHA-256 :
+        //   - The "same bytes → same path" property is preserved.
+        //   - Pure-JS SHA-256 over MBs of image data freezes the plugin
+        //     for tens of seconds in the QuickJS sandbox (no Web Crypto).
+        //   - Cross-checked through Figma's de-dup : the same image
+        //     dropped on two layers shares one `imageHash`, so the asset
+        //     directory is still correctly de-duplicated.
+        const finalName = `${ASSET_DIR}/${entry.figmaHash}.${ext}`;
         entry.resolvedPath = finalName;
         out.push({
           name: finalName,
@@ -132,15 +139,6 @@ function walk(value: unknown, rewrites: Record<string, string>): void {
       walk(v, rewrites);
     }
   }
-}
-
-async function hashBytesHex(bytes: Uint8Array): Promise<string> {
-  const hash = await sha256Bytes(bytes);
-  let s = "";
-  for (const b of hash) {
-    s += b.toString(16).padStart(2, "0");
-  }
-  return s;
 }
 
 /** Sniff PNG / JPEG / GIF / WebP magic bytes. Falls back to "bin" for the

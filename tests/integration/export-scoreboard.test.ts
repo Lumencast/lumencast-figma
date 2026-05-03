@@ -99,7 +99,7 @@ describe("E2E : scoreboard fixture → LSML 1.1 bundle", () => {
     expect(Object.values(defaults)).toContain("Friendly match");
   });
 
-  it("hashes both image assets and references them as assets/<sha256>.png", async () => {
+  it("references both image assets via Figma's content-addressed imageHash", async () => {
     const figma = createMockFigma();
     const fixture = buildScoreboardFixture();
     for (const img of fixture.images) figma.__registerImage(img);
@@ -111,9 +111,10 @@ describe("E2E : scoreboard fixture → LSML 1.1 bundle", () => {
     });
 
     expect(result.assets).toHaveLength(2);
-    for (const a of result.assets) {
-      expect(a.name).toMatch(/^assets\/[0-9a-f]{64}\.png$/);
-    }
+    expect(result.assets.map((a) => a.name).sort()).toEqual([
+      "assets/team-a.png",
+      "assets/team-b.png",
+    ]);
     const json = JSON.stringify(result.bundle);
     for (const a of result.assets) {
       expect(json).toContain(a.name);

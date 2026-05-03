@@ -17,6 +17,7 @@ import type {
   ImportStroke,
   ImportBaseNode,
 } from "../../../src/import/figma-api";
+import { sha256Hex } from "../../../src/export/sha256-pure";
 import { equipPluginData } from "./mock";
 
 interface NodeStore {
@@ -158,8 +159,14 @@ export function createImportMock(): ImportMock {
       };
       return wrapInstance(node);
     },
-    createImage: (_bytes): ImportImageHandle => {
-      const hash = `img-${store.nextImageHash++}`;
+    createImage: (bytes): ImportImageHandle => {
+      // Figma's real `createImage` returns a deterministic hash derived from
+      // the bytes (SHA-1, internally). Mirror that here so byte-stable
+      // round-trip on the same content always produces the same asset
+      // filename. We use SHA-256 (40-hex truncation = 20 bytes ≈ Figma SHA-1
+      // length) ; the algorithm differs but the determinism is the property
+      // the tests assert on.
+      const hash = sha256Hex(bytes).slice(0, 40);
       return { hash };
     },
     appendToPage: (node) => {
