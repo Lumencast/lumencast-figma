@@ -8,6 +8,16 @@ documented per release.
 
 ## [Unreleased]
 
+## [0.1.1] — 2026-05-03
+
+Hot fix — v0.1.0 failed to load in Figma desktop with `Syntax error on line 1: Unexpected token ?` because the bundled `dist/main.js` contained `??` / `?.` operators that Figma's plugin parser does not accept on the sandbox thread.
+
+### Fixed
+
+- **`vite.config.ts`** — main bundle target lowered from `es2022` to `es2017`. esbuild now down-levels nullish coalescing (`??`) and optional chaining (`?.`) into ES2017-compatible patterns. The UI bundle stays at `es2022` (it runs in a Chromium iframe with no parser restriction).
+
+No behavioural changes ; the bundle is ~3 KB larger after down-leveling (`dist/main.js` 37.4 KB → 39.5 KB, well within the 150 KB budget) and the export / import / roundtrip semantics are identical.
+
 ## [0.1.0] — 2026-05-03
 
 The first feature-complete release : Figma → LSML 1.1 export and back, with
@@ -56,5 +66,6 @@ Documented in `README.md` § _Things the plugin intentionally does not map in v0
 - Multi-frame batch export
 - Visual diff merge on import (currently overwrite-only)
 
-[Unreleased]: https://github.com/Lumencast/lumencast-figma/compare/v0.1.0...HEAD
+[Unreleased]: https://github.com/Lumencast/lumencast-figma/compare/v0.1.1...HEAD
+[0.1.1]: https://github.com/Lumencast/lumencast-figma/releases/tag/v0.1.1
 [0.1.0]: https://github.com/Lumencast/lumencast-figma/releases/tag/v0.1.0

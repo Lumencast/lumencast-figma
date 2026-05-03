@@ -6,7 +6,7 @@
 
 [![License: Apache 2.0](https://img.shields.io/badge/License-Apache_2.0-blue.svg)](LICENSE)
 [![Format: LSML 1.1](https://img.shields.io/badge/Format-LSML%201.1-purple.svg)](https://github.com/Lumencast/lumencast-protocol/blob/main/spec/LSML-1.md)
-[![Version: v0.1.0](https://img.shields.io/badge/Version-v0.1.0-green.svg)](CHANGELOG.md)
+[![Version: v0.1.1](https://img.shields.io/badge/Version-v0.1.1-green.svg)](CHANGELOG.md)
 [![CI](https://github.com/Lumencast/lumencast-figma/actions/workflows/ci.yml/badge.svg?branch=main)](https://github.com/Lumencast/lumencast-figma/actions/workflows/ci.yml)
 
 > Output bundles include `$schema: "https://lumencast.dev/schema/lsml/1.1/schema.json"` so any IDE with JSON Schema support (VS Code, JetBrains, Helix…) gives you autocomplete + validation out of the box.

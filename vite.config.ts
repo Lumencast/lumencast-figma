@@ -46,7 +46,12 @@ const sharedAlias = {
 const mainConfig = defineConfig({
   resolve: { alias: sharedAlias },
   build: {
-    target: "es2022",
+    // Figma's plugin sandbox runs on a JS engine that does NOT support
+    // `??`, `?.`, top-level await, or class fields out of the box —
+    // attempting to load a bundle with those tokens fails the manifest
+    // parser with "Unexpected token ?" before the plugin ever boots.
+    // ES2017 is the safe target ; esbuild down-levels modern syntax.
+    target: "es2017",
     lib: {
       entry: resolve(__dirname, "src/main/index.ts"),
       formats: ["iife"],

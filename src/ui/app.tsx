@@ -70,7 +70,7 @@ export function App() {
     <div class="lumencast-root">
       <header class="lumencast-header">
         <h1>Lumencast Export</h1>
-        <span class="lumencast-version">v0.1.0</span>
+        <span class="lumencast-version">v0.1.1</span>
       </header>
 
       <section class="lumencast-status">
