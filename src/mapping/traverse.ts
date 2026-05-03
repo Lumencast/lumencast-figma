@@ -164,8 +164,29 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
     node.layoutMode !== "NONE";
 
   const childResults: MappingResult[] = [];
-  const myX = asNumber(node.x) ?? 0;
-  const myY = asNumber(node.y) ?? 0;
+  // Figma coordinate semantics : a node's `x/y` is relative to the closest
+  // *coord-system* ancestor — FRAME/COMPONENT/INSTANCE/SECTION redefine the
+  // origin, GROUP/BOOLEAN_OPERATION do NOT (their children's x/y stay in
+  // the outer frame's coord system). When dispatching to per-primitive
+  // mappers, opts.parentX/Y is the offset they'll subtract from the
+  // child's x/y to compute its LSML position relative to its LSML parent.
+  //
+  //   - Coord-system parent (FRAME/etc.) : children's x is already local
+  //     to this frame → pass parentX = 0.
+  //   - Non-coord-system parent (GROUP/BOOLEAN_OPERATION) : children's x
+  //     is in the outer frame's coord → pass parentX = node.x so the
+  //     child's relX = child.x - group.x lands in the LSML group-frame's
+  //     local coord system.
+  const COORD_SYSTEM_TYPES = new Set([
+    "FRAME",
+    "COMPONENT",
+    "INSTANCE",
+    "SECTION",
+    "COMPONENT_SET",
+  ]);
+  const isCoordSystem = COORD_SYSTEM_TYPES.has(node.type);
+  const myX = isCoordSystem ? 0 : asNumber(node.x) ?? 0;
+  const myY = isCoordSystem ? 0 : asNumber(node.y) ?? 0;
   const childDepth = (opts.depth ?? 0) + 1;
   const childNodes = asArray<AnyFigmaNode>(node.children) ?? [];
   for (const child of childNodes) {
