@@ -1,22 +1,29 @@
 // Public API of the Figma → LSML mapping layer.
 //
-// Each per-primitive mapper takes a Figma SceneNode and produces an LSML
-// primitive (or null when the node should be skipped). The orchestrator
-// `mapNode` picks the right mapper based on the node type.
-//
-// Phase 1 implements text/image/shape/frame/stack mappers.
-// Phase 2 adds instance + variable resolution.
+// Entry : `mapTree(rootNode, ctx)` — walks the subtree, dispatches to the
+// per-primitive mappers (text / image / shape / frame / stack), and returns
+// the top-level LSML primitive plus the defaults / asset hashes the caller
+// needs to assemble the bundle.
 
-import type { BasePrimitive } from "~shared/lsml-types";
+import { walk } from "./traverse";
+import type { MappingContext, MappingResult } from "./types";
 
-export interface MappingContext {
-  /** Optional warning sink — surfaced to the UI. */
-  warn(code: string, message: string, nodeId?: string): void;
-  /** Asset extraction is delegated to src/export/assets.ts and threaded here. */
-  registerAsset?(bytes: Uint8Array, mimeType: string): string;
+export type { MappingContext, MappingResult };
+
+interface RootNode {
+  type: string;
+  id: string;
+  name: string;
+  width?: number;
+  height?: number;
 }
 
-export function mapNode(_node: SceneNode, _ctx: MappingContext): BasePrimitive | null {
-  // Implemented in Phase 1.
-  throw new Error("mapNode not implemented yet (Phase 1)");
+export function mapTree(node: RootNode, ctx: MappingContext): MappingResult {
+  const r = walk(node as never, ctx, { isRoot: true });
+  if (!r) {
+    throw new Error(
+      `Root node ${node.id} (${node.type}) has no LSML representation. The export root must be a FRAME / COMPONENT / INSTANCE.`,
+    );
+  }
+  return r;
 }

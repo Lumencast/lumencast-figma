@@ -1,0 +1,41 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lumencast.dev/schema/lsml/1.0/adapters/pg_listen.json",
+  "title": "LSML 1.0 — pg_listen adapter",
+  "description": "PostgreSQL LISTEN/NOTIFY channel. Each NOTIFY payload is parsed as JSON and merged into `writes_to`.",
+
+  "type": "object",
+  "required": ["kind", "channel", "writes_to", "from_secret"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "pg_listen"
+    },
+    "channel": {
+      "type": "string",
+      "description": "PostgreSQL channel name. Server-side `LISTEN <channel>`.",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+      "maxLength": 63
+    },
+    "writes_to": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)*$"
+    },
+    "from_secret": {
+      "type": "string",
+      "description": "Secret name resolved by the server-side secret store. Value is the connection string (libpq URI)."
+    },
+    "merge_strategy": {
+      "type": "string",
+      "enum": ["replace", "merge"],
+      "default": "merge"
+    },
+    "reconnect_max_ms": {
+      "type": "integer",
+      "minimum": 1000,
+      "default": 60000,
+      "description": "Maximum delay between reconnect attempts after a connection drop."
+    }
+  }
+}

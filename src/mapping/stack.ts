@@ -1,0 +1,108 @@
+// Figma FRAME with auto-layout → LSML `stack` (§4.1).
+
+import type { Fill, StackPrimitive } from "~shared/lsml-types";
+import { paintToFill, type FigmaPaint } from "./color";
+import { extractUniversal } from "./universal";
+import { parseLayerName } from "../export/bindings";
+import type { MappingResult } from "./types";
+
+export interface StackMapInput {
+  type: "FRAME" | "COMPONENT" | "INSTANCE";
+  id: string;
+  name: string;
+  width: number;
+  height: number;
+  fills?: FigmaPaint[];
+  layoutMode: "HORIZONTAL" | "VERTICAL";
+  itemSpacing?: number;
+  counterAxisSpacing?: number;
+  layoutWrap?: "NO_WRAP" | "WRAP";
+  primaryAxisAlignItems?: "MIN" | "CENTER" | "MAX" | "SPACE_BETWEEN";
+  counterAxisAlignItems?: "MIN" | "CENTER" | "MAX" | "BASELINE";
+  paddingLeft?: number;
+  paddingRight?: number;
+  paddingTop?: number;
+  paddingBottom?: number;
+  visible?: boolean;
+  opacity?: number;
+  rotation?: number;
+  layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
+  layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
+}
+
+const PRIMARY_JUSTIFY: Record<string, StackPrimitive["justify"]> = {
+  MIN: "start",
+  CENTER: "center",
+  MAX: "end",
+  SPACE_BETWEEN: "space-between",
+};
+
+const COUNTER_ALIGN: Record<string, StackPrimitive["align"]> = {
+  MIN: "start",
+  CENTER: "center",
+  MAX: "end",
+  BASELINE: "start", // Approximation — LSML 1.1 has no baseline.
+};
+
+export function mapStack(node: StackMapInput, children: StackPrimitive["children"]): MappingResult {
+  const parsed = parseLayerName(node.name, { primitiveKind: "stack" });
+
+  const prim: StackPrimitive = {
+    kind: "stack",
+    direction: node.layoutMode === "HORIZONTAL" ? "horizontal" : "vertical",
+    children,
+    ...extractUniversal(node),
+  };
+
+  if (node.itemSpacing !== undefined && node.itemSpacing !== 0) {
+    prim.gap = roundTo3(node.itemSpacing);
+  }
+  if (node.layoutWrap === "WRAP") {
+    prim.wrap = true;
+    if (node.counterAxisSpacing !== undefined && node.counterAxisSpacing !== 0) {
+      prim.crossGap = roundTo3(node.counterAxisSpacing);
+    }
+  }
+
+  const justify = node.primaryAxisAlignItems && PRIMARY_JUSTIFY[node.primaryAxisAlignItems];
+  if (justify && justify !== "start") prim.justify = justify;
+
+  const align = node.counterAxisAlignItems && COUNTER_ALIGN[node.counterAxisAlignItems];
+  if (align && align !== "start") prim.align = align;
+
+  const padding = computePadding(node);
+  if (padding !== undefined) prim.padding = padding;
+
+  // Backgrounds map to `metadata` for stacks — LSML 1.1 stack has no
+  // background. If a fill is present, lift it as a wrapping frame upstream
+  // (out of scope for v0.1 — record a metadata hint instead).
+  const fills = (node.fills ?? [])
+    .filter(
+      (p) => p.type === "SOLID" || p.type === "GRADIENT_LINEAR" || p.type === "GRADIENT_RADIAL",
+    )
+    .map((p) => paintToFill(p))
+    .filter((f): f is Fill => f !== null);
+  if (fills.length > 0) {
+    prim.metadata = { ...(prim.metadata ?? {}), figmaFills: fills };
+  }
+
+  if (parsed.bind) prim.bind = parsed.bind;
+  if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
+  if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
+
+  return { node: prim };
+}
+
+function computePadding(node: StackMapInput): StackPrimitive["padding"] {
+  const t = node.paddingTop ?? 0;
+  const r = node.paddingRight ?? 0;
+  const b = node.paddingBottom ?? 0;
+  const l = node.paddingLeft ?? 0;
+  if (t === 0 && r === 0 && b === 0 && l === 0) return undefined;
+  if (t === r && r === b && b === l) return roundTo3(t);
+  return [roundTo3(t), roundTo3(r), roundTo3(b), roundTo3(l)];
+}
+
+function roundTo3(n: number): number {
+  return Math.round(n * 1000) / 1000;
+}

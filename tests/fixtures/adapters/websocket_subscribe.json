@@ -1,0 +1,59 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lumencast.dev/schema/lsml/1.0/adapters/websocket_subscribe.json",
+  "title": "LSML 1.0 — websocket_subscribe adapter",
+  "description": "Long-lived WebSocket subscription. Each text frame received is parsed as JSON and merged into `writes_to`. Server-side execution.",
+
+  "type": "object",
+  "required": ["kind", "url", "writes_to"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "websocket_subscribe"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^wss?://",
+      "description": "Absolute WS or WSS URL."
+    },
+    "writes_to": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)*$"
+    },
+    "subprotocol": {
+      "type": "string",
+      "description": "Optional WebSocket subprotocol to advertise on upgrade."
+    },
+    "auth": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "header": { "type": "string" },
+        "from_secret": { "type": "string" }
+      },
+      "required": ["header", "from_secret"]
+    },
+    "subscribe_frame": {
+      "description": "Optional frame to send immediately after WebSocket open. Server-side templating: `{secret:NAME}` resolves to the value of secret NAME.",
+      "type": ["object", "string"]
+    },
+    "merge_strategy": {
+      "type": "string",
+      "enum": ["replace", "merge"],
+      "default": "merge"
+    },
+    "reconnect_initial_ms": {
+      "type": "integer",
+      "minimum": 100,
+      "default": 1000,
+      "description": "First reconnect delay; doubled per attempt up to `reconnect_max_ms`."
+    },
+    "reconnect_max_ms": {
+      "type": "integer",
+      "minimum": 1000,
+      "default": 60000
+    }
+  }
+}

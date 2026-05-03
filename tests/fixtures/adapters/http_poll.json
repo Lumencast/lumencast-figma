@@ -1,0 +1,60 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lumencast.dev/schema/lsml/1.0/adapters/http_poll.json",
+  "title": "LSML 1.0 — http_poll adapter",
+  "description": "Periodic HTTP/HTTPS GET against `url`; the JSON response is merged into the leaf-state under `writes_to`. Server-side execution.",
+
+  "type": "object",
+  "required": ["kind", "url", "writes_to", "interval_ms"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "http_poll"
+    },
+    "url": {
+      "type": "string",
+      "format": "uri",
+      "pattern": "^https?://",
+      "description": "Absolute HTTP or HTTPS URL. ws:// and other schemes are forbidden."
+    },
+    "writes_to": {
+      "type": "string",
+      "description": "LeafPath prefix the response merges into. The adapter MUST NOT write outside this prefix.",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)*$"
+    },
+    "interval_ms": {
+      "type": "integer",
+      "minimum": 100,
+      "description": "Poll period in milliseconds. Servers SHOULD enforce a floor (default 100 ms) to prevent abuse."
+    },
+    "auth": {
+      "type": "object",
+      "description": "Optional HTTP authentication.",
+      "additionalProperties": false,
+      "properties": {
+        "header": {
+          "type": "string",
+          "description": "Header name to set, e.g. \"Authorization\"."
+        },
+        "from_secret": {
+          "type": "string",
+          "description": "Secret name resolved by the server-side secret store (NOT the secret value)."
+        }
+      },
+      "required": ["header", "from_secret"]
+    },
+    "merge_strategy": {
+      "type": "string",
+      "enum": ["replace", "merge"],
+      "default": "replace",
+      "description": "`replace` overwrites every leaf under writes_to. `merge` only updates paths present in the response (preserves untouched leaves)."
+    },
+    "timeout_ms": {
+      "type": "integer",
+      "minimum": 100,
+      "default": 5000,
+      "description": "Request timeout in milliseconds."
+    }
+  }
+}

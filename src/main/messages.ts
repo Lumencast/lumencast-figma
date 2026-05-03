@@ -52,6 +52,10 @@ export type ExportPhase =
 
 export interface ExportResult {
   bundle: SceneBundle;
+  /** Canonical UTF-8 bytes of the sealed bundle (LSML §3.1 + §3.2). The UI
+   *  writes these unchanged to the .lsml file ; verifiers re-canonicalise to
+   *  check the hash. */
+  canonical: string;
   assets: ExportedAsset[];
   warnings: PluginWarning[];
   /** sha256 of the canonicalized bundle (== scene_version) */

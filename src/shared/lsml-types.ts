@@ -241,9 +241,11 @@ export interface TextPrimitive extends BasePrimitive {
 
 export interface ImagePrimitive extends BasePrimitive {
   kind: "image";
-  bind?: Bind & { src?: LeafPath };
-  /** Static src, alternative to bind.src. */
-  src?: string;
+  /** `bind.src` is required per LSML §4.5 + schema. The asset URL is
+   *  expressed via a LeafPath ; for content-addressed local assets the
+   *  plugin synthesises a leaf path under `__lit.image.<id>` and plants the
+   *  resolved asset path under `bundle.defaults`. */
+  bind: Bind & { src: LeafPath };
   /** Required for accessibility (LSML §13). Empty string allowed for decorative. */
   alt: string;
   size: { w: number; h: number };

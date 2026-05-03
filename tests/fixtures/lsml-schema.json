@@ -1,0 +1,941 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lumencast.dev/schema/lsml/1.1/schema.json",
+  "title": "LSML 1.1 — Lumencast Scene Markup Language",
+  "description": "Canonical machine-readable JSON Schema for LSML 1.x scene bundles (1.0, 1.0.1, 1.1). The normative spec lives in spec/LSML-1.md ; this file is its precise mechanical companion. 1.1 adds the `instance` primitive, universal props, multi-fill / gradients, stack wrap, animation extensions, and §17 extension mechanisms — all additive, all opt-in via `lsml: \"1.1\"`.",
+
+  "type": "object",
+  "required": ["lsml", "scene_id", "scene_version", "layout"],
+  "additionalProperties": true,
+  "properties": {
+    "$schema": {
+      "type": "string",
+      "format": "uri",
+      "description": "Recommended for on-disk bundles. URL of the JSON Schema this bundle conforms to. Enables auto-validation and autocomplete in JSON-Schema-aware editors. Ignored by runtimes (informational only). See LSML §18.4."
+    },
+    "lsml": {
+      "type": "string",
+      "enum": ["1.0", "1.1"],
+      "description": "Schema version. '1.0' (and the 1.0.1 errata-compat alias) or '1.1' (additive features)."
+    },
+    "scene_id": {
+      "type": "string",
+      "minLength": 1,
+      "maxLength": 256,
+      "pattern": "^[A-Za-z0-9._-]+$",
+      "description": "Stable identifier for the scene."
+    },
+    "scene_version": {
+      "type": "string",
+      "pattern": "^sha256:[0-9a-f]{64}$",
+      "description": "Content hash of the canonicalized bundle."
+    },
+    "layout": { "$ref": "#/$defs/PrimitiveNode" },
+    "operator_inputs": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/OperatorInput" },
+      "description": "Declarative metadata of operator-controllable fields."
+    },
+    "external_adapters": {
+      "type": "array",
+      "items": { "$ref": "#/$defs/AdapterDecl" },
+      "description": "Server-side adapters that write to specific paths."
+    },
+    "defaults": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Initial values for leaf paths before any delta. Keys are LeafPaths."
+    },
+    "assets": { "$ref": "#/$defs/Assets" },
+    "i18n": { "$ref": "#/$defs/I18n" },
+    "metadata": {
+      "type": "object",
+      "additionalProperties": true,
+      "description": "Authoring metadata (author, description, tags). Not consumed by runtime."
+    },
+    "profiles": {
+      "type": "array",
+      "description": "(1.1+) Capability profiles required for correct rendering. Each entry follows '<vendor>.<name>-<version>' (LSML §17.3). Runtimes MUST reject bundles whose profiles are not all supported.",
+      "items": {
+        "type": "string",
+        "minLength": 1,
+        "maxLength": 256
+      }
+    }
+  },
+
+  "$defs": {
+    "LeafPath": {
+      "type": "string",
+      "description": "Dot-separated path. Segments alphanumeric + underscore + numeric indices. Reserved namespaces start with '__'.",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(\\.[A-Za-z0-9_]+)*$|^\\{[A-Za-z_][A-Za-z0-9_]*\\}(\\.[A-Za-z0-9_]+)*$|^__[a-z]+(\\.[A-Za-z0-9_*-]+)*$",
+      "minLength": 1,
+      "maxLength": 512
+    },
+
+    "BindMap": {
+      "type": "object",
+      "description": "Maps prop names to LeafPaths.",
+      "patternProperties": {
+        "^[a-zA-Z_][a-zA-Z0-9_]*$": { "$ref": "#/$defs/LeafPath" }
+      },
+      "additionalProperties": false
+    },
+
+    "Color": {
+      "type": "string",
+      "description": "CSS color string (#hex, rgb(), rgba(), hsl(), hsla(), or a named color).",
+      "minLength": 1
+    },
+
+    "FillStop": {
+      "type": "object",
+      "required": ["offset", "color"],
+      "additionalProperties": false,
+      "properties": {
+        "offset": { "type": "number", "minimum": 0, "maximum": 1 },
+        "color": { "$ref": "#/$defs/Color" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+      }
+    },
+
+    "Fill": {
+      "description": "(1.1+) Discriminated fill spec. Used by shape.fills[] and frame.backgrounds[]. See LSML §4.12.",
+      "oneOf": [
+        {
+          "type": "object",
+          "required": ["kind", "color"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "solid" },
+            "color": { "$ref": "#/$defs/Color" },
+            "opacity": { "type": "number", "minimum": 0, "maximum": 1 }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "stops"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "linear-gradient" },
+            "angle_deg": { "type": "number" },
+            "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+            "stops": {
+              "type": "array",
+              "minItems": 2,
+              "items": { "$ref": "#/$defs/FillStop" }
+            }
+          }
+        },
+        {
+          "type": "object",
+          "required": ["kind", "stops"],
+          "additionalProperties": false,
+          "properties": {
+            "kind": { "const": "radial-gradient" },
+            "center": { "$ref": "#/$defs/Position" },
+            "radius": { "type": "number", "exclusiveMinimum": 0 },
+            "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+            "stops": {
+              "type": "array",
+              "minItems": 2,
+              "items": { "$ref": "#/$defs/FillStop" }
+            }
+          }
+        }
+      ]
+    },
+
+    "Stroke": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "color": { "$ref": "#/$defs/Color" },
+        "width": { "type": "number", "minimum": 0 }
+      }
+    },
+
+    "SizingMode": {
+      "type": "string",
+      "enum": ["fixed", "hug", "fill"],
+      "description": "(1.1+) Auto-layout sizing intent on a flex axis. See LSML §5.4.1."
+    },
+
+    "Sizing": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "x": { "$ref": "#/$defs/SizingMode" },
+        "y": { "$ref": "#/$defs/SizingMode" }
+      }
+    },
+
+    "BindUniversalMap": {
+      "type": "object",
+      "description": "(1.1+) Bindable universal props (visible, opacity, rotation). `sizing` is NOT bindable. See LSML §5.4.2.",
+      "additionalProperties": false,
+      "properties": {
+        "visible": { "$ref": "#/$defs/LeafPath" },
+        "opacity": { "$ref": "#/$defs/LeafPath" },
+        "rotation": { "$ref": "#/$defs/LeafPath" }
+      }
+    },
+
+    "Keyframes": {
+      "type": "object",
+      "description": "(1.1+) Multi-step animation sequence. See LSML §6.6.",
+      "required": ["steps", "duration_ms"],
+      "additionalProperties": false,
+      "properties": {
+        "key": { "$ref": "#/$defs/LeafPath" },
+        "steps": {
+          "type": "array",
+          "minItems": 2,
+          "items": {
+            "type": "object",
+            "required": ["at"],
+            "additionalProperties": false,
+            "properties": {
+              "at": { "type": "number", "minimum": 0, "maximum": 1 },
+              "transform": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "translate": {
+                    "type": "array",
+                    "items": { "type": "number" },
+                    "minItems": 2,
+                    "maxItems": 2
+                  },
+                  "scale": {
+                    "oneOf": [
+                      { "type": "number" },
+                      {
+                        "type": "array",
+                        "items": { "type": "number" },
+                        "minItems": 2,
+                        "maxItems": 2
+                      }
+                    ]
+                  },
+                  "rotate": { "type": "number" }
+                }
+              },
+              "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+              "filter": {
+                "type": "object",
+                "additionalProperties": false,
+                "properties": {
+                  "blur": { "type": "number", "minimum": 0 },
+                  "brightness": { "type": "number", "minimum": 0, "maximum": 2 }
+                }
+              }
+            }
+          }
+        },
+        "duration_ms": { "type": "number", "exclusiveMinimum": 0 },
+        "easing": {
+          "type": "string",
+          "enum": ["linear", "ease-in", "ease-out", "ease-in-out"]
+        }
+      }
+    },
+
+    "PaddingValue": {
+      "oneOf": [
+        { "type": "number", "minimum": 0 },
+        {
+          "type": "array",
+          "items": { "type": "number", "minimum": 0 },
+          "minItems": 4,
+          "maxItems": 4
+        }
+      ]
+    },
+
+    "Size": {
+      "type": "object",
+      "required": ["w", "h"],
+      "properties": {
+        "w": { "type": "number", "minimum": 0 },
+        "h": { "type": "number", "minimum": 0 }
+      },
+      "additionalProperties": false
+    },
+
+    "Position": {
+      "type": "object",
+      "required": ["x", "y"],
+      "properties": {
+        "x": { "type": "number" },
+        "y": { "type": "number" }
+      },
+      "additionalProperties": false
+    },
+
+    "AnimateDirective": {
+      "type": "object",
+      "description": "Encadrement animation. Only transform / opacity / filter are animatable.",
+      "additionalProperties": false,
+      "properties": {
+        "transition": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "duration": { "type": "number", "minimum": 0 },
+            "easing": {
+              "type": "string",
+              "enum": ["linear", "ease-in", "ease-out", "ease-in-out", "spring"]
+            },
+            "stiffness": { "type": "number", "minimum": 0 },
+            "damping": { "type": "number", "minimum": 0 }
+          }
+        },
+        "transform": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "translate": {
+              "type": "array",
+              "items": { "type": "number" },
+              "minItems": 2,
+              "maxItems": 2
+            },
+            "scale": {
+              "oneOf": [
+                { "type": "number" },
+                {
+                  "type": "array",
+                  "items": { "type": "number" },
+                  "minItems": 2,
+                  "maxItems": 2
+                }
+              ]
+            },
+            "rotate": { "type": "number" }
+          }
+        },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "filter": {
+          "type": "object",
+          "additionalProperties": false,
+          "properties": {
+            "blur": { "type": "number", "minimum": 0 },
+            "brightness": { "type": "number", "minimum": 0, "maximum": 2 }
+          }
+        },
+        "respectsReducedMotion": { "type": "boolean" }
+      }
+    },
+
+    "TextStyle": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "fontSize": { "type": "number", "minimum": 0 },
+        "fontWeight": {
+          "oneOf": [
+            { "type": "number", "minimum": 100, "maximum": 900, "multipleOf": 100 },
+            { "type": "string", "enum": ["normal", "bold", "lighter", "bolder"] }
+          ]
+        },
+        "fontFamily": { "type": "string" },
+        "fontStyle": { "type": "string", "enum": ["normal", "italic", "oblique"] },
+        "color": { "$ref": "#/$defs/Color" },
+        "lineHeight": { "type": "number", "minimum": 0 },
+        "letterSpacing": { "type": "number" },
+        "textAlign": { "type": "string", "enum": ["start", "center", "end", "justify"] },
+        "textTransform": {
+          "type": "string",
+          "enum": ["none", "uppercase", "lowercase", "capitalize"]
+        },
+        "textDecoration": { "type": "string", "enum": ["none", "underline", "line-through"] }
+      }
+    },
+
+    "FormatSpec": {
+      "type": "object",
+      "additionalProperties": false,
+      "required": ["kind"],
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": [
+            "string",
+            "number",
+            "currency",
+            "date",
+            "time",
+            "datetime",
+            "relative-time",
+            "percent"
+          ]
+        },
+        "locale": { "type": "string" },
+        "options": { "type": "object", "additionalProperties": true }
+      }
+    },
+
+    "PrimitiveNode": {
+      "oneOf": [
+        { "$ref": "#/$defs/StackNode" },
+        { "$ref": "#/$defs/GridNode" },
+        { "$ref": "#/$defs/FrameNode" },
+        { "$ref": "#/$defs/TextNode" },
+        { "$ref": "#/$defs/ImageNode" },
+        { "$ref": "#/$defs/ShapeNode" },
+        { "$ref": "#/$defs/MediaNode" },
+        { "$ref": "#/$defs/RepeatNode" },
+        { "$ref": "#/$defs/InstanceNode" },
+        { "$ref": "#/$defs/VendorPrimitiveNode" }
+      ]
+    },
+
+    "VendorPrimitiveNode": {
+      "description": "(1.1+ §17.1) Vendor-prefixed primitive. `kind` MUST match `x-<vendor>.<name>` per §17.1.1. Schema validation accepts the structure ; runtime support is the consumer's contract. Universal props (§5.4) are accepted unprefixed.",
+      "type": "object",
+      "required": ["kind"],
+      "additionalProperties": true,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "pattern": "^x-[a-z][a-z0-9_-]*\\.[a-z][a-z0-9_-]*$"
+        },
+        "visible": { "type": "boolean" },
+        "sizing": { "$ref": "#/$defs/Sizing" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rotation": { "type": "number" },
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" },
+        "animate": { "$ref": "#/$defs/AnimateDirective" },
+        "keyframes": { "$ref": "#/$defs/Keyframes" }
+      }
+    },
+
+    "StackNode": {
+      "type": "object",
+      "required": ["kind", "direction", "children"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "stack" },
+        "direction": { "type": "string", "enum": ["horizontal", "vertical"] },
+        "gap": { "type": "number", "minimum": 0 },
+        "wrap": { "type": "boolean", "description": "(1.1+) Enable cross-axis wrap." },
+        "crossGap": {
+          "type": "number",
+          "minimum": 0,
+          "description": "(1.1+) Spacing between rows/columns when wrap is true."
+        },
+        "align": { "type": "string", "enum": ["start", "center", "end", "stretch"] },
+        "justify": {
+          "type": "string",
+          "enum": ["start", "center", "end", "space-between", "space-around"]
+        },
+        "padding": { "$ref": "#/$defs/PaddingValue" },
+        "rtl": {
+          "oneOf": [{ "type": "boolean" }, { "type": "string", "const": "auto" }]
+        },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PrimitiveNode" }
+        },
+        "bind": { "$ref": "#/$defs/BindMap" },
+        "animate": { "$ref": "#/$defs/AnimateDirective" },
+        "keyframes": { "$ref": "#/$defs/Keyframes" },
+        "ariaLabel": { "type": "string" },
+        "visible": { "type": "boolean" },
+        "sizing": { "$ref": "#/$defs/Sizing" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rotation": { "type": "number" },
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+      }
+    },
+
+    "GridNode": {
+      "type": "object",
+      "required": ["kind", "columns", "children"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "grid" },
+        "columns": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1 },
+            { "type": "array", "items": { "type": "string" } }
+          ]
+        },
+        "rows": {
+          "oneOf": [
+            { "type": "integer", "minimum": 1 },
+            { "type": "array", "items": { "type": "string" } }
+          ]
+        },
+        "gap": {
+          "oneOf": [
+            { "type": "number", "minimum": 0 },
+            {
+              "type": "array",
+              "items": { "type": "number", "minimum": 0 },
+              "minItems": 2,
+              "maxItems": 2
+            }
+          ]
+        },
+        "padding": { "$ref": "#/$defs/PaddingValue" },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PrimitiveNode" }
+        },
+        "bind": { "$ref": "#/$defs/BindMap" },
+        "animate": { "$ref": "#/$defs/AnimateDirective" },
+        "keyframes": { "$ref": "#/$defs/Keyframes" },
+        "ariaLabel": { "type": "string" },
+        "visible": { "type": "boolean" },
+        "sizing": { "$ref": "#/$defs/Sizing" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rotation": { "type": "number" },
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+      }
+    },
+
+    "FrameNode": {
+      "type": "object",
+      "required": ["kind", "children"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "frame" },
+        "size": { "$ref": "#/$defs/Size" },
+        "position": { "$ref": "#/$defs/Position" },
+        "background": { "$ref": "#/$defs/Color" },
+        "backgrounds": {
+          "type": "array",
+          "description": "(1.1+) Stacked backgrounds (top-to-bottom). Mutually exclusive with `background`.",
+          "items": { "$ref": "#/$defs/Fill" }
+        },
+        "children": {
+          "type": "array",
+          "items": { "$ref": "#/$defs/PrimitiveNode" }
+        },
+        "bind": { "$ref": "#/$defs/BindMap" },
+        "animate": { "$ref": "#/$defs/AnimateDirective" },
+        "keyframes": { "$ref": "#/$defs/Keyframes" },
+        "ariaLabel": { "type": "string" },
+        "visible": { "type": "boolean" },
+        "sizing": { "$ref": "#/$defs/Sizing" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rotation": { "type": "number" },
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+      },
+      "not": {
+        "description": "background and backgrounds are mutually exclusive.",
+        "required": ["background", "backgrounds"]
+      }
+    },
+
+    "TextNode": {
+      "type": "object",
+      "required": ["kind", "bind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "text" },
+        "bind": {
+          "type": "object",
+          "required": ["value"],
+          "properties": { "value": { "$ref": "#/$defs/LeafPath" } },
+          "additionalProperties": false
+        },
+        "style": { "$ref": "#/$defs/TextStyle" },
+        "format": { "$ref": "#/$defs/FormatSpec" },
+        "maxLines": { "type": "integer", "minimum": 1 },
+        "animate": { "$ref": "#/$defs/AnimateDirective" },
+        "keyframes": { "$ref": "#/$defs/Keyframes" },
+        "ariaLabel": { "type": "string" },
+        "role": { "type": "string", "enum": ["heading", "paragraph", "label", "presentation"] },
+        "visible": { "type": "boolean" },
+        "sizing": { "$ref": "#/$defs/Sizing" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rotation": { "type": "number" },
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+      }
+    },
+
+    "ImageNode": {
+      "type": "object",
+      "required": ["kind", "bind", "alt", "size"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "image" },
+        "bind": {
+          "type": "object",
+          "required": ["src"],
+          "properties": { "src": { "$ref": "#/$defs/LeafPath" } },
+          "additionalProperties": false
+        },
+        "alt": {
+          "type": "string",
+          "description": "Accessibility text. MUST be present, even if empty for decorative images."
+        },
+        "size": { "$ref": "#/$defs/Size" },
+        "fit": { "type": "string", "enum": ["contain", "cover", "fill", "none"] },
+        "animate": { "$ref": "#/$defs/AnimateDirective" },
+        "keyframes": { "$ref": "#/$defs/Keyframes" },
+        "visible": { "type": "boolean" },
+        "sizing": { "$ref": "#/$defs/Sizing" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rotation": { "type": "number" },
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+      }
+    },
+
+    "ShapeNode": {
+      "type": "object",
+      "required": ["kind", "geometry"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "shape" },
+        "geometry": { "type": "string", "enum": ["rect", "circle", "path"] },
+        "size": { "$ref": "#/$defs/Size" },
+        "pathData": {
+          "type": "string",
+          "description": "SVG path 'd' attribute syntax. Required when geometry === 'path'."
+        },
+        "fill": { "$ref": "#/$defs/Color" },
+        "fills": {
+          "type": "array",
+          "description": "(1.1+) Stacked fills (top-to-bottom). Mutually exclusive with `fill`.",
+          "items": { "$ref": "#/$defs/Fill" }
+        },
+        "stroke": { "$ref": "#/$defs/Stroke" },
+        "strokes": {
+          "type": "array",
+          "description": "(1.1+) Stacked strokes (top-to-bottom). Mutually exclusive with `stroke`.",
+          "items": { "$ref": "#/$defs/Stroke" }
+        },
+        "cornerRadius": { "type": "number", "minimum": 0 },
+        "ariaLabel": { "type": "string" },
+        "bind": { "$ref": "#/$defs/BindMap" },
+        "animate": { "$ref": "#/$defs/AnimateDirective" },
+        "keyframes": { "$ref": "#/$defs/Keyframes" },
+        "visible": { "type": "boolean" },
+        "sizing": { "$ref": "#/$defs/Sizing" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rotation": { "type": "number" },
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+      },
+      "allOf": [
+        {
+          "if": { "properties": { "geometry": { "const": "path" } } },
+          "then": { "required": ["pathData"] }
+        },
+        {
+          "if": {
+            "properties": { "geometry": { "enum": ["rect", "circle"] } }
+          },
+          "then": { "required": ["size"] }
+        },
+        {
+          "description": "fill and fills are mutually exclusive.",
+          "not": { "required": ["fill", "fills"] }
+        },
+        {
+          "description": "stroke and strokes are mutually exclusive.",
+          "not": { "required": ["stroke", "strokes"] }
+        }
+      ]
+    },
+
+    "MediaNode": {
+      "type": "object",
+      "required": ["kind", "bind"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "media" },
+        "media_kind": {
+          "type": "string",
+          "enum": ["video", "audio"],
+          "description": "Canonical name as of LSML 1.0.1. Either media_kind or kind_hint MUST be present."
+        },
+        "kind_hint": {
+          "type": "string",
+          "enum": ["video", "audio"],
+          "description": "Deprecated synonym for media_kind. Accepted for backward compatibility ; new bundles SHOULD use media_kind."
+        },
+        "bind": {
+          "type": "object",
+          "required": ["src"],
+          "properties": { "src": { "$ref": "#/$defs/LeafPath" } },
+          "additionalProperties": false
+        },
+        "size": { "$ref": "#/$defs/Size" },
+        "controls": { "type": "boolean" },
+        "autoplay": { "type": "boolean" },
+        "muted": { "type": "boolean" },
+        "loop": { "type": "boolean" },
+        "ariaLabel": { "type": "string" },
+        "animate": { "$ref": "#/$defs/AnimateDirective" },
+        "keyframes": { "$ref": "#/$defs/Keyframes" },
+        "visible": { "type": "boolean" },
+        "sizing": { "$ref": "#/$defs/Sizing" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rotation": { "type": "number" },
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+      },
+      "anyOf": [{ "required": ["media_kind"] }, { "required": ["kind_hint"] }]
+    },
+
+    "RepeatNode": {
+      "type": "object",
+      "required": ["kind", "bind", "scope", "template"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "repeat" },
+        "bind": {
+          "type": "object",
+          "required": ["items"],
+          "properties": { "items": { "$ref": "#/$defs/LeafPath" } },
+          "additionalProperties": false
+        },
+        "scope": {
+          "type": "string",
+          "pattern": "^[A-Za-z_][A-Za-z0-9_]*$",
+          "description": "Identifier introduced into the path-context for the template."
+        },
+        "key": {
+          "type": "string",
+          "description": "LeafPath template for per-item identity ; defaults to array index."
+        },
+        "template": { "$ref": "#/$defs/PrimitiveNode" },
+        "limit": { "type": "integer", "minimum": 0 },
+        "stagger_ms": {
+          "type": "number",
+          "minimum": 0,
+          "description": "(1.1+) Per-iteration animation start offset, in ms."
+        }
+      }
+    },
+
+    "InstanceNode": {
+      "type": "object",
+      "description": "(1.1+) Mounts a sub-scene by id. See LSML §4.9.",
+      "required": ["kind", "scene_id", "scene_version"],
+      "additionalProperties": false,
+      "properties": {
+        "kind": { "const": "instance" },
+        "scene_id": {
+          "type": "string",
+          "minLength": 1,
+          "maxLength": 256,
+          "pattern": "^[A-Za-z0-9._-]+$"
+        },
+        "scene_version": {
+          "type": "string",
+          "pattern": "^sha256:[0-9a-f]{64}$"
+        },
+        "params": {
+          "type": "object",
+          "description": "Free-form params injected under the instance's __params.* namespace. Values follow LSDP §3.2.1 LeafValue rules.",
+          "additionalProperties": {
+            "oneOf": [
+              { "type": "string" },
+              { "type": "number" },
+              { "type": "boolean" },
+              { "type": "null" },
+              { "type": "array" }
+            ]
+          }
+        },
+        "bindParams": {
+          "type": "object",
+          "description": "Per-key bind to LeafPaths for reactive params.",
+          "patternProperties": {
+            "^[a-zA-Z_][a-zA-Z0-9_]*$": { "$ref": "#/$defs/LeafPath" }
+          },
+          "additionalProperties": false
+        },
+        "fit": { "type": "string", "enum": ["contain", "cover", "fill", "none"] },
+        "size": { "$ref": "#/$defs/Size" },
+        "position": { "$ref": "#/$defs/Position" },
+        "animate": { "$ref": "#/$defs/AnimateDirective" },
+        "keyframes": { "$ref": "#/$defs/Keyframes" },
+        "ariaLabel": { "type": "string" },
+        "visible": { "type": "boolean" },
+        "sizing": { "$ref": "#/$defs/Sizing" },
+        "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
+        "rotation": { "type": "number" },
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+      }
+    },
+
+    "OperatorInputType": {
+      "type": "string",
+      "enum": [
+        "string",
+        "number",
+        "boolean",
+        "enum",
+        "color",
+        "date",
+        "time",
+        "datetime",
+        "path-ref",
+        "image-ref"
+      ]
+    },
+
+    "OperatorInputRole": { "type": "string", "enum": ["operator", "service"] },
+
+    "OperatorInput": {
+      "type": "object",
+      "required": ["path", "label", "type", "writable_by"],
+      "additionalProperties": false,
+      "properties": {
+        "path": {
+          "type": "string",
+          "description": "LeafPath under the __inputs.* reserved namespace (LSML §8). Must declare the full prefix.",
+          "pattern": "^__inputs\\.[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)*$",
+          "minLength": 9,
+          "maxLength": 512
+        },
+        "label": { "type": "string", "minLength": 1 },
+        "type": { "$ref": "#/$defs/OperatorInputType" },
+        "constraints": {
+          "type": "object",
+          "description": "Closed constraint vocabulary per LSML 1.0.1 §8.1. Per-type subset of these keys.",
+          "additionalProperties": false,
+          "properties": {
+            "minLength": { "type": "integer", "minimum": 0, "description": "string only" },
+            "maxLength": { "type": "integer", "minimum": 0, "description": "string only" },
+            "pattern": { "type": "string", "description": "string only — RFC 5234 PCRE" },
+            "min": {
+              "oneOf": [
+                { "type": "number" },
+                { "type": "string", "format": "date" },
+                { "type": "string", "format": "time" }
+              ],
+              "description": "number / date / time"
+            },
+            "max": {
+              "oneOf": [
+                { "type": "number" },
+                { "type": "string", "format": "date" },
+                { "type": "string", "format": "time" }
+              ],
+              "description": "number / date / time"
+            },
+            "step": { "type": "number", "exclusiveMinimum": 0, "description": "number only" },
+            "values": {
+              "type": "array",
+              "minItems": 1,
+              "items": { "type": "string" },
+              "description": "enum only — closed set of allowed values"
+            }
+          }
+        },
+        "values": {
+          "type": "array",
+          "description": "Deprecated: prefer constraints.values. Accepted for backward compatibility with LSML 1.0 bundles.",
+          "items": { "type": ["string", "number"] }
+        },
+        "writable_by": {
+          "type": "array",
+          "minItems": 1,
+          "items": { "$ref": "#/$defs/OperatorInputRole" }
+        },
+        "group": { "type": "string", "description": "UI grouping label." },
+        "default": {
+          "description": "Initial value for the operator input. Equivalent to declaring the path in the bundle's `defaults` map (LSML §10) ; conflict resolution: `defaults` wins.",
+          "type": ["string", "number", "boolean", "null", "array"]
+        }
+      },
+      "allOf": [
+        {
+          "description": "When type is enum, either constraints.values or top-level values MUST be set.",
+          "if": { "properties": { "type": { "const": "enum" } } },
+          "then": {
+            "anyOf": [
+              { "required": ["values"] },
+              {
+                "properties": {
+                  "constraints": { "required": ["values"] }
+                },
+                "required": ["constraints"]
+              }
+            ]
+          }
+        }
+      ]
+    },
+
+    "AdapterDecl": {
+      "description": "Discriminated union over `kind`. Per-kind shape for the 5 standard kinds is enforced by spec/adapters/<kind>.json (LSML §9.1). Vendor-prefixed kinds (§17.2) are accepted with arbitrary additional properties — the vendor's own schema is the contract. Validators MUST resolve every $ref via a registry preloaded with the adapter schemas — see scripts/validate-bundle.py for the canonical wiring.",
+      "oneOf": [
+        { "$ref": "https://lumencast.dev/schema/lsml/1.0/adapters/http_poll.json" },
+        { "$ref": "https://lumencast.dev/schema/lsml/1.0/adapters/websocket_subscribe.json" },
+        { "$ref": "https://lumencast.dev/schema/lsml/1.0/adapters/pg_listen.json" },
+        { "$ref": "https://lumencast.dev/schema/lsml/1.0/adapters/webhook_receive.json" },
+        { "$ref": "https://lumencast.dev/schema/lsml/1.0/adapters/cron.json" },
+        { "$ref": "#/$defs/VendorAdapterDecl" }
+      ]
+    },
+
+    "VendorAdapterDecl": {
+      "description": "(1.1+ §17.2) Vendor-prefixed adapter. `kind` MUST match `x-<vendor>.<name>`. `writes_to` is required (same constraint as standard adapters).",
+      "type": "object",
+      "required": ["kind", "writes_to"],
+      "additionalProperties": true,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "pattern": "^x-[a-z][a-z0-9_-]*\\.[a-z][a-z0-9_-]*$"
+        },
+        "writes_to": { "$ref": "#/$defs/LeafPath" }
+      }
+    },
+
+    "Assets": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "allowedHosts": {
+          "type": "array",
+          "items": { "type": "string", "format": "hostname" }
+        },
+        "fonts": {
+          "type": "array",
+          "items": {
+            "type": "object",
+            "required": ["family", "url"],
+            "additionalProperties": false,
+            "properties": {
+              "family": { "type": "string" },
+              "url": { "type": "string", "format": "uri" },
+              "sha256": { "type": "string", "pattern": "^[0-9a-f]{64}$" },
+              "weight": { "type": "integer" },
+              "style": { "type": "string", "enum": ["normal", "italic"] }
+            }
+          }
+        },
+        "preload": {
+          "type": "array",
+          "items": { "type": "string" }
+        }
+      }
+    },
+
+    "I18n": {
+      "type": "object",
+      "additionalProperties": false,
+      "properties": {
+        "default_locale": { "type": "string", "pattern": "^[a-z]{2}(-[A-Z]{2})?$" },
+        "locales": {
+          "type": "object",
+          "patternProperties": {
+            "^[a-z]{2}(-[A-Z]{2})?$": {
+              "type": "object",
+              "additionalProperties": { "type": "string" }
+            }
+          },
+          "additionalProperties": false
+        }
+      }
+    }
+  }
+}

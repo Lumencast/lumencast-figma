@@ -1,8 +1,10 @@
 import { useEffect } from "preact/hooks";
 import { useSignal, useComputed } from "@preact/signals";
-import type { MainToUi, SelectionSummary, UiToMain } from "../main/messages";
+import type { ExportPhase, MainToUi, SelectionSummary, UiToMain } from "../main/messages";
 import type { SceneBundle } from "~shared/lsml-types";
 import { DEFAULT_SCHEMA_URL } from "~shared/lsml-schema";
+import { LSML_FILE_EXTENSION } from "~shared/constants";
+import { downloadExport } from "./download";
 
 function send(msg: UiToMain): void {
   parent.postMessage({ pluginMessage: msg }, "*");
@@ -11,6 +13,8 @@ function send(msg: UiToMain): void {
 export function App() {
   const summary = useSignal<SelectionSummary | null>(null);
   const lastError = useSignal<string | null>(null);
+  const exportPhase = useSignal<ExportPhase | null>(null);
+  const lastHash = useSignal<string | null>(null);
 
   useEffect(() => {
     const handler = (event: MessageEvent<{ pluginMessage?: MainToUi }>) => {
@@ -21,10 +25,28 @@ export function App() {
           summary.value = msg.payload;
           lastError.value = null;
           break;
+        case "export-progress":
+          exportPhase.value = msg.phase;
+          break;
+        case "export-result": {
+          exportPhase.value = null;
+          lastHash.value = msg.payload.hash;
+          const filename = `${msg.payload.bundle.scene_id}${LSML_FILE_EXTENSION}`;
+          downloadExport({
+            filename,
+            bundleBytes: msg.payload.canonical,
+            assets: msg.payload.assets,
+          });
+          break;
+        }
         case "error":
           lastError.value = msg.message;
+          exportPhase.value = null;
           break;
-        // export/import progress + result handled in Phase 1 / 3
+        case "import-progress":
+        case "import-result":
+          // Phase 3.
+          break;
       }
     };
     window.addEventListener("message", handler);
@@ -64,6 +86,16 @@ export function App() {
           Import .lsml
         </button>
       </section>
+
+      {exportPhase.value !== null && (
+        <div class="lumencast-status-line">Export : {exportPhase.value}…</div>
+      )}
+
+      {lastHash.value !== null && exportPhase.value === null && (
+        <div class="lumencast-status-line lumencast-status-line--ok">
+          Exported. scene_version : <code>{lastHash.value.slice(0, 19)}…</code>
+        </div>
+      )}
 
       {lastError.value !== null && (
         <div class="lumencast-error" role="alert">
@@ -112,5 +144,5 @@ const PLACEHOLDER_BUNDLE: SceneBundle = {
   lsml: "1.1",
   scene_id: "placeholder",
   scene_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-  layout: { kind: "frame", children: [] },
+  layout: { kind: "frame", size: { w: 1, h: 1 }, children: [] },
 };

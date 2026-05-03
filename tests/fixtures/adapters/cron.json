@@ -1,0 +1,40 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lumencast.dev/schema/lsml/1.0/adapters/cron.json",
+  "title": "LSML 1.0 — cron adapter",
+  "description": "Scheduled trigger. At each cron firing, emits a fixed payload merged into `writes_to`. Useful for periodic state nudges (clear ephemeral flags, reset counters, etc.).",
+
+  "type": "object",
+  "required": ["kind", "schedule", "writes_to", "payload"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "cron"
+    },
+    "schedule": {
+      "type": "string",
+      "description": "Cron expression (5 fields, POSIX). E.g. `*/15 * * * *` for every 15 minutes.",
+      "pattern": "^(?:\\S+\\s+){4}\\S+$"
+    },
+    "writes_to": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)*$"
+    },
+    "payload": {
+      "type": "object",
+      "description": "Patch object emitted at each firing. Keys are LeafPaths under `writes_to`, values are the leaf values. Static — same payload every time.",
+      "additionalProperties": true
+    },
+    "timezone": {
+      "type": "string",
+      "default": "UTC",
+      "description": "IANA timezone name. The cron schedule is interpreted in this timezone."
+    },
+    "merge_strategy": {
+      "type": "string",
+      "enum": ["replace", "merge"],
+      "default": "merge"
+    }
+  }
+}

@@ -1,0 +1,58 @@
+{
+  "$schema": "https://json-schema.org/draft/2020-12/schema",
+  "$id": "https://lumencast.dev/schema/lsml/1.0/adapters/webhook_receive.json",
+  "title": "LSML 1.0 — webhook_receive adapter",
+  "description": "Inbound HTTP endpoint hosted by the server. POST bodies (JSON) are merged into `writes_to`. Useful for third-party webhooks (Stripe, Twitch EventSub, etc.).",
+
+  "type": "object",
+  "required": ["kind", "path", "writes_to"],
+  "additionalProperties": false,
+  "properties": {
+    "kind": {
+      "type": "string",
+      "const": "webhook_receive"
+    },
+    "path": {
+      "type": "string",
+      "description": "URL path the server hosts the endpoint at, e.g. \"/hooks/stripe-payments\". MUST start with `/`.",
+      "pattern": "^/[A-Za-z0-9._/-]+$",
+      "maxLength": 256
+    },
+    "writes_to": {
+      "type": "string",
+      "pattern": "^[A-Za-z_][A-Za-z0-9_]*(?:\\.[A-Za-z0-9_]+)*$"
+    },
+    "auth": {
+      "type": "object",
+      "description": "Optional inbound authentication (the server validates incoming requests).",
+      "additionalProperties": false,
+      "properties": {
+        "kind": {
+          "type": "string",
+          "enum": ["hmac-sha256", "bearer"]
+        },
+        "header": {
+          "type": "string",
+          "description": "Header to read the credential from."
+        },
+        "from_secret": {
+          "type": "string",
+          "description": "Secret name resolved by the server-side secret store. The shared secret used to verify HMAC or compare bearer."
+        }
+      },
+      "required": ["kind", "header", "from_secret"]
+    },
+    "merge_strategy": {
+      "type": "string",
+      "enum": ["replace", "merge", "append"],
+      "default": "merge",
+      "description": "`append` is useful for event-log-style adapters: each POST appends to an array under `writes_to`."
+    },
+    "max_body_bytes": {
+      "type": "integer",
+      "minimum": 1024,
+      "default": 65536,
+      "description": "Maximum POST body size. Larger requests get HTTP 413."
+    }
+  }
+}
