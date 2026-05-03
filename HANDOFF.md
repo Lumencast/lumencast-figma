@@ -1,6 +1,6 @@
 # lumencast-figma — handoff
 
-> **Status** : Phase 3 done (export + import roundtrip — 2026-05-03, CI green on `main`)
+> **Status** : v0.1.0 released (2026-05-03) — Figma Community submission pending master review of cover art / metadata
 > **Maintainer** : `@ClodoCapeo`
 > **Brief** : `../briefs/chantier-lumencast-figma.md`
 > **Repo** : https://github.com/Lumencast/lumencast-figma
@@ -57,16 +57,33 @@ LSML bundle → Figma node tree, with byte-stable round-trip on the scoreboard f
   - 10 unit tests on per-primitive builders
   - 3 integration tests in `tests/integration/roundtrip.test.ts` proving `export(import(export(fig))) == export(fig)` on the scoreboard fixture (layout + defaults + assets byte-identical) and that LSML §4.9 instance primitives roundtrip via plugin data.
 
-## What is next (in order)
+### Phase 4 — OSS polish + v0.1.0 release
 
-### Phase 4 — OSS polish + Figma Community
+- **CHANGELOG.md** — keep-a-changelog format, full v0.1.0 inventory.
+- **README.md** polished : version + CI badges, status table flipped to "done" through Phase 3, accurate token-binding row, blocked-on-spec items surfaced.
+- **`docs/from-figma-to-broadcast.md`** — end-to-end cookbook (design Figma → export .lsml → enrich Prism → broadcast Orion).
+- **`docs/publishing.md`** — Figma Community submission checklist + ready-to-paste metadata (name / tagline / long description / categories / tags / cover-art spec / support contact / privacy answers / post-submission steps).
+- **`examples/scoreboard/` + `examples/trading-dashboard/`** — committed `.lsml` bundles + content-hashed assets, generated from the in-tree fixtures via `tests/_generate-examples.test.ts` (gated behind `GENERATE_EXAMPLES=1`).
+- **Tag v0.1.0** + GitHub Release with the CI-built `lumencast-figma-v0.1.0.zip` attached.
+- **`lumencast-org-profile/README.md`** — added `lumencast-figma` to the wave matrix, bumped LSML refs from 1.0 → 1.1.
 
-- README GIF demo
-- `docs/from-figma-to-broadcast.md` cookbook
-- 3 example pairs (`.fig` + `.lsml`) — scoreboard, conference-board, trading-dashboard (master provides `.fig` files)
-- Figma Community submission (screenshots, description, support email)
-- Tag `v0.1.0`, GitHub Release with `.zip` artefact
-- Update `lumencast-org-profile/README.md`
+Release : https://github.com/Lumencast/lumencast-figma/releases/tag/v0.1.0
+
+## What is next
+
+### Phase 4 wrap-up — Figma Community submission
+
+Pending master inputs before submitting the plugin :
+
+- **`.fig` source files** — examples currently ship the `.lsml` bundle and `assets/` ; the matching `.fig` source files (scoreboard, trading-dashboard, plus optional conference-board) come from master and get committed to `examples/<name>/source.fig` (or linked to a Figma Community file URL).
+- **Cover art** — see `docs/publishing.md` for spec :
+  - 1920×960 px cover image
+  - 3× 1280×768 px screenshots (Export, Import, Bind UI)
+  - optional ≤ 30s demo GIF
+- **Support email confirmation** — `support@lumencast.dev` is the placeholder ; confirm before submission.
+- **Manual submission via Figma desktop** : _Plugins → Manage plugins → Lumencast Export → Publish new..._ — only the maintainer with publish rights on the Lumencast org can run this flow.
+
+Once submitted and approved, the post-submission checklist in `docs/publishing.md` covers the manifest-id patch, README quick-start update, and announcements.
 
 ## Open questions for master
 
