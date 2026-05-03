@@ -40,13 +40,21 @@ export function buildShape(
     // LSML 1.1 §4.6 : `paths[]` is the multi-subpath form, `pathData` the
     // single-path shorthand. The two are mutually exclusive at the schema
     // level, so we accept whichever is present.
+    //
+    // Figma's `vectorPaths` setter is stricter than its getter : it rejects
+    // SVG path data where a command letter sits adjacent to its first
+    // coordinate (`M13.16` → `Failed to convert path. Invalid command at
+    // M13.16`). The standard SVG grammar permits this elision, the getter
+    // emits it, but the setter wants whitespace. We normalise on the way in.
     if (prim.paths && prim.paths.length > 0) {
       node.vectorPaths = prim.paths.map((p) => ({
-        data: p.data,
+        data: normalizeSvgPath(p.data),
         windingRule: p.windingRule ?? "NONZERO",
       }));
     } else if (prim.pathData) {
-      node.vectorPaths = [{ data: prim.pathData, windingRule: "NONZERO" }];
+      node.vectorPaths = [
+        { data: normalizeSvgPath(prim.pathData), windingRule: "NONZERO" },
+      ];
     }
   }
 
@@ -154,4 +162,36 @@ function gradientTransformFromAngle(deg: number): number[][] {
     [c, s, 0],
     [-s, c, 0],
   ];
+}
+
+/** Normalise an SVG path string for Figma's strict `vectorPaths` setter.
+ *  Figma rejects command-coordinate elisions like `M13.16` and `L7.18-3.5`
+ *  even though both are valid SVG path syntax (the grammar permits the
+ *  whitespace to be omitted when the next token is unambiguous). We :
+ *
+ *    1. Insert a space between any command letter (MmLlHhVvCcSsQqTtAaZz)
+ *       and the following character.
+ *    2. Insert a space before a `-` that follows a digit or dot
+ *       (`L7.18-3.5` → `L7.18 -3.5`). Scientific-notation exponents like
+ *       `1.5e-3` are preserved : the regex requires a digit/dot directly
+ *       before `-`, but in `e-3` the char before `-` is `e`, so it
+ *       doesn't match — exponents stay untouched.
+ *    3. Collapse runs of whitespace to a single space.
+ *
+ *  No-op for already-spaced inputs (round-trip stable). */
+function normalizeSvgPath(raw: string): string {
+  return raw
+    // 1. Space BEFORE a command letter that sticks to a digit/dot
+    //    (`0L1` → `0 L1`). Run before pass 2 so the inserted space
+    //    becomes visible to it.
+    .replace(/([0-9.])([MmLlHhVvCcSsQqTtAaZz])/g, "$1 $2")
+    // 2. Space AFTER a command letter that sticks to its first coord
+    //    (`M13.16` → `M 13.16`).
+    .replace(/([MmLlHhVvCcSsQqTtAaZz])(?=[^\s,])/g, "$1 ")
+    // 3. Space before `-` that follows a digit or dot (`7.18-3.5` →
+    //    `7.18 -3.5`). Exponents stay intact because the char before
+    //    `-` in `e-3` is `e`, not `[0-9.]`.
+    .replace(/([0-9.])(?=-)/g, "$1 ")
+    .replace(/\s+/g, " ")
+    .trim();
 }
