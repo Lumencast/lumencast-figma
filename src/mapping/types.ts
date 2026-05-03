@@ -1,6 +1,7 @@
 // Internal mapping types shared across per-primitive mappers.
 
 import type { OperatorInputSpec, PrimitiveNode } from "~shared/lsml-types";
+import type { VariableResolverApi } from "./variables";
 
 export interface MappingResult {
   /** The LSML primitive that replaces the Figma node. */
@@ -22,4 +23,8 @@ export interface MappingContext {
    *  `assets/9f3e...png`). The bundle assembler uses this map to populate the
    *  `assets` directory. */
   registerImageHash?(hash: string): string;
+  /** Optional Figma variable resolver. When present, mappers consult it for
+   *  paint / size / color binds and emit token-LeafPath bindings instead of
+   *  static values (LSML §17.0 composition). */
+  variables?: VariableResolverApi;
 }

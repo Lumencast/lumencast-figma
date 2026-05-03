@@ -5,11 +5,12 @@
 // relative to the parent frame ; the root frame ignores `position` (LSML
 // runtime treats the root as the document origin).
 
-import type { Fill, FramePrimitive } from "~shared/lsml-types";
+import type { Bind, Fill, FramePrimitive } from "~shared/lsml-types";
 import { paintToFill, type FigmaPaint, paintToSolidCss } from "./color";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
-import type { MappingResult } from "./types";
+import { resolveVariable } from "./variables";
+import type { MappingContext, MappingResult } from "./types";
 
 export interface FrameMapInput {
   type: "FRAME" | "COMPONENT" | "INSTANCE" | "GROUP";
@@ -20,6 +21,8 @@ export interface FrameMapInput {
   x?: number;
   y?: number;
   fills?: FigmaPaint[];
+  /** Per-fill bound variable references — same shape as on shape nodes. */
+  fillBoundVariables?: ({ color?: { id: string } } | undefined)[];
   visible?: boolean;
   opacity?: number;
   rotation?: number;
@@ -39,6 +42,7 @@ export function mapFrame(
   node: FrameMapInput,
   opts: FrameMapOptions,
   children: FramePrimitive["children"],
+  ctx?: MappingContext,
 ): MappingResult {
   const parsed = parseLayerName(node.name, { primitiveKind: "frame" });
 
@@ -74,10 +78,27 @@ export function mapFrame(
     prim.backgrounds = fills;
   }
 
-  if (parsed.bind) prim.bind = parsed.bind;
   if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
   if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
 
+  // Variable bindings : when fills[0] has a bound color variable AND the
+  // frame rendered a single solid `background`, replace the static
+  // background with `bind: { background: "tokens.<group>.<name>" }` and
+  // seed defaults.
+  let defaults: Record<string, unknown> | undefined;
+  const bind: Bind = parsed.bind ?? {};
+  if (ctx?.variables && prim.background !== undefined && node.fillBoundVariables?.[0]?.color?.id) {
+    const id = node.fillBoundVariables[0].color.id;
+    const resolved = resolveVariable(id, ctx.variables);
+    if (resolved) {
+      bind["background"] = resolved.path;
+      delete prim.background;
+      defaults = { [resolved.path]: resolved.value };
+    }
+  }
+  if (Object.keys(bind).length > 0) prim.bind = bind;
+
+  if (defaults) return { node: prim, defaults };
   return { node: prim };
 }
 

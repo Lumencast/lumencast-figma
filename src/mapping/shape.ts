@@ -5,11 +5,12 @@
 // Multi-fill (1.1+) maps Figma's `fills[]` directly to LSML `fills[]` ; single
 // solid fills collapse to the legacy `fill` field for canonical compactness.
 
-import type { Fill, ShapePrimitive, Stroke } from "~shared/lsml-types";
+import type { Bind, Fill, ShapePrimitive, Stroke } from "~shared/lsml-types";
 import { paintToFill, type FigmaPaint, paintToSolidCss } from "./color";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
-import type { MappingResult } from "./types";
+import { resolveVariable } from "./variables";
+import type { MappingContext, MappingResult } from "./types";
 
 interface MockShapeNode {
   type: "RECTANGLE" | "ELLIPSE" | "VECTOR";
@@ -22,6 +23,9 @@ interface MockShapeNode {
   strokeWeight?: number;
   cornerRadius?: number;
   vectorPaths?: { data: string; windingRule: "NONZERO" | "EVENODD" }[];
+  /** Per-fill bound variables keyed by paint index. Figma exposes the variable
+   *  refs on each `Paint` ; we surface them as a parallel array. */
+  fillBoundVariables?: ({ color?: { id: string } } | undefined)[];
   visible?: boolean;
   opacity?: number;
   rotation?: number;
@@ -29,7 +33,7 @@ interface MockShapeNode {
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
 }
 
-export function mapShape(node: MockShapeNode): MappingResult {
+export function mapShape(node: MockShapeNode, ctx?: MappingContext): MappingResult {
   const parsed = parseLayerName(node.name, { primitiveKind: "shape" });
   const fills = (node.fills ?? [])
     .filter((p) => p.type !== "IMAGE")
@@ -67,10 +71,28 @@ export function mapShape(node: MockShapeNode): MappingResult {
   }
 
   if (parsed.displayName) prim.ariaLabel = parsed.displayName;
-  if (parsed.bind) prim.bind = parsed.bind;
   if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
   if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
 
+  // Variable bindings : when fills[0] has a bound color variable AND the
+  // shape rendered a single solid `fill`, replace the static fill with a
+  // `bind: { fill: "tokens.<group>.<name>" }` and seed defaults. (Multi-fill
+  // / non-solid bindings are deferred — they need bindStyle, which is not
+  // yet in the schema. See lumencast-protocol issue.)
+  let defaults: Record<string, unknown> | undefined;
+  const bind: Bind = parsed.bind ?? {};
+  if (ctx?.variables && prim.fill !== undefined && node.fillBoundVariables?.[0]?.color?.id) {
+    const id = node.fillBoundVariables[0].color.id;
+    const resolved = resolveVariable(id, ctx.variables);
+    if (resolved) {
+      bind["fill"] = resolved.path;
+      delete prim.fill;
+      defaults = { [resolved.path]: resolved.value };
+    }
+  }
+  if (Object.keys(bind).length > 0) prim.bind = bind;
+
+  if (defaults) return { node: prim, defaults };
   return { node: prim };
 }
 

@@ -17,6 +17,7 @@ import type { OperatorInputSpec, SceneBundle } from "~shared/lsml-types";
 import { LSML_VERSION } from "~shared/constants";
 import { DEFAULT_SCHEMA_URL } from "~shared/lsml-schema";
 import { mapTree, type MappingContext } from "../mapping";
+import type { VariableResolverApi } from "../mapping/variables";
 import { extractOperatorInputs } from "./operator-inputs";
 import { applyAssetPathRewrites, createAssetRegistry } from "./assets";
 import { sealBundle } from "./canonicalize";
@@ -42,6 +43,10 @@ export interface BuildBundleOptions {
   root: RootNode;
   /** Stable scene id — derived from the root frame's name + id by default. */
   sceneId?: string;
+  /** Optional Figma variable resolver. Production wires `figma.variables.*` ;
+   *  tests pass an in-memory mock. When omitted, variable bindings are NOT
+   *  emitted (existing behaviour is preserved). */
+  variables?: VariableResolverApi;
 }
 
 export interface BuildBundleResult {
@@ -65,6 +70,7 @@ export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundle
       warnings.push(w);
     },
     registerImageHash: (hash) => registry.registerImageHash(hash),
+    ...(opts.variables ? { variables: opts.variables } : {}),
   };
 
   // 1. Map the tree.

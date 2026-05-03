@@ -1,6 +1,6 @@
 # lumencast-figma — handoff
 
-> **Status** : Phase 1 done (export MVP — 2026-05-03, CI green on `main`)
+> **Status** : Phase 2 partial (instance + variables — 2026-05-03, CI green on `main`)
 > **Maintainer** : `@ClodoCapeo`
 > **Brief** : `../briefs/chantier-lumencast-figma.md`
 > **Repo** : https://github.com/Lumencast/lumencast-figma
@@ -23,7 +23,7 @@ Official Figma plugin for Lumencast. Exports a Figma frame to an LSML 1.1 scene 
 
 ### Phase 1 — Export MVP (commit `0bb1185`)
 
-LSML 1.1 strict export end-to-end. Selecting a FRAME / COMPONENT / INSTANCE in Figma and clicking *Export to LSML* writes a sealed `.lsml` plus a sibling content-addressed `assets/` directory.
+LSML 1.1 strict export end-to-end. Selecting a FRAME / COMPONENT / INSTANCE in Figma and clicking _Export to LSML_ writes a sealed `.lsml` plus a sibling content-addressed `assets/` directory.
 
 - **Mapping layer** : per-primitive mappers (text / image / shape / frame / stack) + universal props (§5.4) + color/gradient extraction
 - **Bindings parser** : `[bind:path]` / `[bindStyle:k=p]` / `[bindUniversal:k=p]` directives on layer names
@@ -34,19 +34,21 @@ LSML 1.1 strict export end-to-end. Selecting a FRAME / COMPONENT / INSTANCE in F
 - **Wire-up** : `src/main/index.ts` runs the pipeline, sends typed messages ; `src/ui/` Preact iframe surfaces phase + final scene_version, triggers Blob downloads via `src/ui/download.ts`
 - **Tests** : 65 passing, including 6 e2e against `lumencast-protocol/spec/schema.json` (ajv draft 2020-12). Scoreboard fixture validates ; scene_version verifies via the §3.2 protocol ; re-export is byte-stable.
 
+### Phase 2 partial — instance primitive + Figma variables
+
+- **`src/mapping/instance.ts`** — Figma INSTANCE marked with `lumencast.instance.scene_id` + `instance.scene_version` plugin data emits LSML §4.9 `instance` with `params` / `bindParams` / `fit`. Without those markers, the instance falls back to FRAME-like recursion (existing behaviour).
+- **`src/mapping/variables.ts`** + `src/main/variables-adapter.ts` — Figma variables (Color / Number / String) resolve to `tokens.<group>.<name>` LeafPaths (slugified collection + variable name). When a shape `fill` or frame `background` has a bound color variable, the static value is replaced with `bind: { fill | background: "tokens.<g>.<n>" }` and the resolved value is seeded under `bundle.defaults`.
+- Already shipped in Phase 1 : multi-fill `fills[]` (§4.6 + §4.12), stacked `backgrounds[]` (§4.3), universal props (§5.4), stack `wrap` + `crossGap` (§4.1).
+- **Tests** : 87 passing (12 net new), including a Phase 2 e2e proving variable-bound bundles validate against `schema.json`.
+
 ## What is next (in order)
 
-### Phase 2 — LSML 1.1 advanced features (UNBLOCKED — spec published)
+### Phase 2 wrap-up
 
-LSML 1.1 spec is published in `lumencast-protocol/spec/LSML-1.md`. No external blocker.
+Pending items before Phase 2 is fully closed :
 
-- `src/mapping/instance.ts` — `COMPONENT` / `INSTANCE` → LSML `instance` (§4.9 — `scene_id`, `scene_version`, `params` / `bindParams`)
-- `src/mapping/variables.ts` — Figma variables (Color / Number / String) → leaf bindings under `tokens.*` path (composition per §17.0 — emit matching `defaults` block seeded from variable-resolved values)
-- Multi-fill / gradients on shapes — `fills[]` discriminated union (§4.6 + §4.12)
-- Stacked frame `backgrounds[]` (§4.3, 1.1+)
-- Auto-layout `sizing: { x, y }` (`fixed | hug | fill`) — universal prop (§5.4)
-- Stack `wrap` + `crossGap` (§4.1, 1.1+)
-- Universal `visible`, `opacity`, `rotation` props + `bindUniversal` for the bindable subset
+- Text style variables (color, fontSize, fontWeight) — currently dropped because the schema's `text.bind` is restricted to `{value}` only and `bindStyle` isn't in the schema. Tracked in lumencast-protocol#23. Action depends on spec resolution.
+- Boolean variables + variable modes (Light/Dark) — deferred to v0.2 per ADR 001 decision #6.
 
 ### Phase 3 — Roundtrip (import)
 
@@ -68,12 +70,15 @@ LSML 1.1 spec is published in `lumencast-protocol/spec/LSML-1.md`. No external b
 ## Open questions for master
 
 - Figma plugin ID — assigned by Figma at first publish. Will be patched into `manifest.json` post-submission.
-- `@lumencast/compiler` consumption — workspace dep (requires monorepo setup) or npm published package ? Phase 1 can stub the canonicalization locally and switch over once decided. Note : LSML §3.1 (JCS RFC 8785) + §3.2 (placeholder protocol) are well-specified, so re-implementing canonicalization in this repo is a safe interim option.
-- Token convention details (decision #6) — the plugin emits `bindStyle: { color: "tokens.<group>.<name>" }` derived from Figma variable group names. Confirm naming convention with Prism team before Phase 2 implementation, or accept that designers can rename the path prefix via a plugin setting.
+- `@lumencast/compiler` consumption — tracked in [lumencast-figma#1](https://github.com/Lumencast/lumencast-figma/issues/1). Local JCS impl is byte-stable and well-tested ; switch when the npm artefact ships.
+- LSML 1.1 spec — two open issues raised during Phase 1-2 implementation :
+  - [lumencast-protocol#23](https://github.com/Lumencast/lumencast-protocol/issues/23) — image / text static-literal authoring (allow static `src` ? formalise the synthesised-leaf pattern ?)
+  - [lumencast-protocol#25](https://github.com/Lumencast/lumencast-protocol/issues/25) — reserve `__lit.*` LeafPath namespace for tooling-synthesised literals.
+- Token convention — the plugin emits `tokens.<slugified-collection>.<slugified-variable>`. Prism team should confirm naming compatibility ; alternative is a plugin setting for the prefix.
 
 ## Coordination touch points
 
-- **`lumencast-protocol`** — file LSML 1.1 ambiguities discovered during Phase 1-2 implementation as issues there
-- **`lumencast-js`** — coordinate `@lumencast/compiler` consumption pattern
-- **Prism `lsml-import` chantier** (yet to open) — bundles produced by this plugin become inputs to Prism
+- **`lumencast-protocol`** — file LSML 1.1 ambiguities discovered during Phase 1-2 implementation as issues there (currently #23, #25 open)
+- **`lumencast-js`** — coordinate `@lumencast/compiler` consumption pattern (lumencast-figma#1 tracks the switch)
+- **Prism `lsml-import` chantier** (yet to open) — bundles produced by this plugin become inputs to Prism ; coordinate the `tokens.*` naming convention before Phase 2 closes
 - **Orion → LSDP/1.1** (roadmap-tracked) — needed to validate the end-to-end demo of Phase 1

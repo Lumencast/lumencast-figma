@@ -155,6 +155,46 @@ describe("E2E : scoreboard fixture → LSML 1.1 bundle", () => {
     expect(a).toBe(b);
   });
 
+  it("e2e with Figma variables : tokens.* bindings + defaults validate against schema", async () => {
+    const figma = createMockFigma();
+    const fixture = buildScoreboardFixture();
+    for (const img of fixture.images) figma.__registerImage(img);
+
+    // Mark the root frame as bound to a Figma color variable.
+    const rootAsFrame = fixture.root as { fillBoundVariables?: unknown };
+    rootAsFrame.fillBoundVariables = [{ color: { id: "var:bg" } }];
+
+    const variables = {
+      getVariableById: (id: string) =>
+        id === "var:bg"
+          ? {
+              id,
+              name: "Background",
+              variableCollectionId: "col:theme",
+              resolvedType: "COLOR" as const,
+            }
+          : null,
+      getVariableCollectionById: (id: string) =>
+        id === "col:theme" ? { id, name: "Theme" } : null,
+      resolveValue: () => "#0d0d1a",
+    };
+
+    const result = await runExport({
+      api: figma,
+      root: fixture.root as never,
+      sceneId: "scoreboard",
+      variables,
+    });
+
+    const ok = validateAgainstLsmlSchema(result.bundle);
+    if (!ok) throw new Error(`Schema validation failed : ${ajvErrors()}`);
+
+    expect(result.bundle.layout.kind).toBe("frame");
+    const layoutBind = (result.bundle.layout as { bind?: { background?: string } }).bind;
+    expect(layoutBind?.background).toBe("tokens.theme.background");
+    expect(result.bundle.defaults?.["tokens.theme.background"]).toBe("#0d0d1a");
+  });
+
   // Prevents a regression : the local sealBundle round-trips via canonicalize
   // without altering the bundle other than scene_version.
   it("sealBundle is stable (placeholder → hash → re-canonicalise)", async () => {

@@ -67,6 +67,7 @@ export interface MockRectangleNode extends BaseMockNode {
   width: number;
   height: number;
   fills?: MockPaint[];
+  fillBoundVariables?: ({ color?: { id: string } } | undefined)[];
   strokes?: MockStroke[];
   strokeWeight?: number;
   cornerRadius?: number;
@@ -96,6 +97,7 @@ export interface MockFrameNode extends BaseMockNode {
   width: number;
   height: number;
   fills?: MockPaint[];
+  fillBoundVariables?: ({ color?: { id: string } } | undefined)[];
   layoutMode?: "NONE" | "HORIZONTAL" | "VERTICAL";
   itemSpacing?: number;
   counterAxisSpacing?: number;

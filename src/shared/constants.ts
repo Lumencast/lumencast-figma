@@ -12,6 +12,16 @@ export const PLUGIN_DATA_KEYS = {
   operatorInputConstraints: "operator_input.constraints",
   /** Marker on root frames already exported once (for incremental round-trip) */
   exportSourceHash: "export.source_hash",
+  /** When set on a Figma INSTANCE, the node maps to LSML §4.9 `instance`
+   *  instead of recursing through the component tree. */
+  instanceSceneId: "instance.scene_id",
+  instanceSceneVersion: "instance.scene_version",
+  /** Optional JSON-encoded {string: any} for static `params`. */
+  instanceParams: "instance.params",
+  /** Optional JSON-encoded {string: LeafPath} for reactive `bindParams`. */
+  instanceBindParams: "instance.bind_params",
+  /** Optional fit override (`contain | cover | fill | none`). */
+  instanceFit: "instance.fit",
 } as const;
 
 /** Layer name pattern : `[bind:path.to.leaf] Optional Display Name` */

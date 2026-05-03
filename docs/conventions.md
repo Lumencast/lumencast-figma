@@ -124,6 +124,115 @@ Image fills are :
 The user is responsible for hosting `assets/` on a CDN of their choice.
 The plugin makes no network calls.
 
+### `assets.allowedHosts` policy for plugin-emitted bundles
+
+Bundles produced by this plugin reference assets exclusively as relative
+paths under `assets/<sha256>.<ext>`. There is no remote URL hostname to
+allow at export time, so the bundle is emitted with :
+
+```json
+{
+  "assets": {
+    "allowedHosts": []
+  }
+}
+```
+
+Empty `allowedHosts` is the right policy for content-addressed local
+bundles : it tells the consumer _"no remote hosts are authorised — the
+asset paths are relative to the bundle directory"_. Once the user uploads
+the `assets/` directory to a CDN, they (or a downstream tool like Prism)
+rewrite the paths to absolute URLs and add the matching hostname pattern
+to `allowedHosts` (LSML §11.1).
+
+The plugin never fills in CDN-specific values — that's the user's
+infrastructure decision.
+
+## Synthesised LeafPaths : `__lit.*`
+
+LSML §4.4 / §4.5 require text and image primitives to declare their value
+via `bind.<prop>: <LeafPath>`. Static authoring content (a literal string,
+a content-addressed asset path) doesn't naturally have a leaf path, so the
+plugin **synthesises** one and seeds the resolved value under
+`bundle.defaults` :
+
+| Source                              | Synthesised LeafPath               | `defaults` value                        |
+| ----------------------------------- | ---------------------------------- | --------------------------------------- |
+| Static text (no `[bind:value=...]`) | `__lit.text.<sanitised-figma-id>`  | the node's `characters` string          |
+| Image fill (no `[bind:src=...]`)    | `__lit.image.<sanitised-figma-id>` | `assets/<sha256>.<ext>` (relative path) |
+
+**Why a reserved prefix.** `__lit.*` is namespaced like LSML's reserved
+`__inputs.*` (§8) and `__params.*` (§4.9.1) — leading double underscore
+signals "managed by tooling, do not bind operator inputs here, do not
+adapter-write here." Servers and operators MUST treat `__lit.*` as
+read-only authoring metadata.
+
+**Sanitisation.** The Figma id (`1:23`, `42:0`) is normalised by replacing
+any character outside `[A-Za-z0-9_]` with `_`. So Figma id `3:1` becomes
+LeafPath segment `3_1`, yielding `__lit.text.3_1`.
+
+**Round-trip.** Re-importing the bundle restores the literal text via the
+defaults entry ; an authoring tool can detect the `__lit.*` prefix and
+reconcile the literal directly to the node's `characters` (or recreate
+the image fill from the asset reference).
+
+This convention is currently plugin-local. Two upstream issues track its
+formalisation in the LSML spec :
+
+- [Lumencast/lumencast-protocol#23](https://github.com/Lumencast/lumencast-protocol/issues/23) —
+  clarify image / text static-literal authoring story (allow static
+  `src` ? formalise the synthesised-leaf pattern ?)
+- [Lumencast/lumencast-protocol#25](https://github.com/Lumencast/lumencast-protocol/issues/25) —
+  reserve `__lit.*` leaf-path namespace for tooling-synthesised literals,
+  alongside the existing `__inputs.*` and `__params.*` reservations.
+
+Until those issues land, the plugin's behaviour stays as documented
+above — bundles validate against the canonical schema and round-trip
+cleanly via the §3.2 placeholder protocol.
+
+## Figma variables → `tokens.*` LeafPaths
+
+Phase 2 — **Color / Number / String** Figma variables become LeafPath
+bindings under the `tokens.*` namespace, following the LSML §17.0
+composition pattern (no spec extension required).
+
+When a Figma paint has a bound color variable :
+
+1. The variable's collection name and variable name are slugified into
+   LeafPath segments — `tokens.<group>.<name>`. Example : a variable
+   `Primary` in collection `Brand` → `tokens.brand.primary`.
+2. The resolved value (CSS color string for COLOR, number for FLOAT,
+   string for STRING) is seeded under `bundle.defaults["tokens.brand.primary"]`
+   so the bundle paints correctly at first frame.
+3. The static value is removed from the LSML primitive and replaced with
+   `bind: { fill: "tokens.brand.primary" }` (on shape) or
+   `bind: { background: "tokens.theme.surface" }` (on frame).
+
+| Figma source           | LSML emission                              |
+| ---------------------- | ------------------------------------------ |
+| Shape fill — color var | `bind.fill` + `defaults["tokens.<g>.<n>"]` |
+| Frame fill — color var | `bind.background` + matching `defaults`    |
+
+### Slugification rules
+
+| Input                     | LeafPath segment |
+| ------------------------- | ---------------- |
+| `"Primary"`               | `primary`        |
+| `"Brand / Primary"`       | `brand_primary`  |
+| `"Show—Title"` (em-dash)  | `show_title`     |
+| `"  spaced  "`            | `spaced`         |
+| `"---"` (only separators) | `unnamed`        |
+
+### Deferred (v0.2)
+
+- **Boolean variables** — need a runtime convention for boolean LeafPath
+  binding semantics (truthy / falsy display behaviour).
+- **Variable modes (Light/Dark/...)** — bundle would need to carry the
+  mode lookup map ; deferred until LSML's `i18n`-style resolution settles.
+- **Text style variables** (fontSize, color on text) — schema currently
+  restricts `text.bind` to `{value}` only ; needs the §5.2 `bindStyle`
+  story to land in the schema. Tracked in lumencast-protocol#23.
+
 ## Things the plugin intentionally does NOT do
 
 - **Animations** — these belong in LSML `animate` blocks, declared in

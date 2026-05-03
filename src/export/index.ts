@@ -7,6 +7,7 @@
 import type { ExportResult, PluginWarning } from "../main/messages";
 import { buildBundle } from "./bundle";
 import { validateBundle } from "./validate";
+import type { VariableResolverApi } from "../mapping/variables";
 
 interface FigmaApiSurface {
   getImageByHash(hash: string): { hash: string; getBytesAsync(): Promise<Uint8Array> } | null;
@@ -25,6 +26,7 @@ export interface RunExportOptions {
   api: FigmaApiSurface;
   root: RootNode;
   sceneId?: string;
+  variables?: VariableResolverApi;
 }
 
 export interface RunExportError extends Error {

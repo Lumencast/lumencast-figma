@@ -11,6 +11,7 @@ import { mapImage } from "./image";
 import { mapShape } from "./shape";
 import { mapFrame } from "./frame";
 import { mapStack } from "./stack";
+import { mapInstance } from "./instance";
 import type { MappingContext, MappingResult } from "./types";
 import { OPERATOR_INPUT_COMPONENT_NAME } from "~shared/constants";
 
@@ -77,13 +78,24 @@ export function walk(
       return mapText(node as never);
     case "RECTANGLE":
       if (hasImageFill(node)) return mapImage(node as never, ctx);
-      return mapShape(node as never);
+      return mapShape(node as never, ctx);
     case "ELLIPSE":
     case "VECTOR":
-      return mapShape(node as never);
+      return mapShape(node as never, ctx);
+    case "INSTANCE": {
+      // Designer marked it as a separate scene → emit LSML §4.9 instance.
+      // Otherwise fall through to the FRAME-like recursion.
+      const instOpts: { isRoot: boolean; parentX?: number; parentY?: number } = {
+        isRoot: opts.isRoot,
+      };
+      if (opts.parentX !== undefined) instOpts.parentX = opts.parentX;
+      if (opts.parentY !== undefined) instOpts.parentY = opts.parentY;
+      const inst = mapInstance(node as never, instOpts, ctx);
+      if (inst) return inst;
+      return walkContainer(node, ctx, opts);
+    }
     case "FRAME":
     case "COMPONENT":
-    case "INSTANCE":
     case "GROUP":
       return walkContainer(node, ctx, opts);
     default:
@@ -120,7 +132,7 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
     };
     if (opts.parentX !== undefined) frameOpts.parentX = opts.parentX;
     if (opts.parentY !== undefined) frameOpts.parentY = opts.parentY;
-    result = mapFrame(node as never, frameOpts, children as FramePrimitive["children"]);
+    result = mapFrame(node as never, frameOpts, children as FramePrimitive["children"], ctx);
   }
 
   // Merge defaults / assetRefs / operatorInputs from descendants.

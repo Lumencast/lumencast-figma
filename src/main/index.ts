@@ -11,6 +11,7 @@
 import type { UiToMain, MainToUi } from "./messages";
 import { summarizeSelection } from "./selection";
 import { runExport, type RunExportError } from "../export";
+import { createFigmaVariableResolver } from "./variables-adapter";
 
 const UI_WIDTH = 360;
 const UI_HEIGHT = 480;
@@ -82,10 +83,17 @@ async function handleExportRequest(sceneIdOverride?: string): Promise<void> {
 
   send({ kind: "export-progress", phase: "traversing" });
   try {
+    const variables =
+      "variables" in figma
+        ? createFigmaVariableResolver(
+            figma.variables as Parameters<typeof createFigmaVariableResolver>[0],
+          )
+        : undefined;
     const result = await runExport({
       api: figma,
       root: root as never,
       ...(sceneIdOverride ? { sceneId: sceneIdOverride } : {}),
+      ...(variables ? { variables } : {}),
     });
     send({ kind: "export-progress", phase: "writing" });
     send({
