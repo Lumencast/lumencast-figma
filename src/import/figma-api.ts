@@ -101,6 +101,11 @@ export interface ImportImageHandle {
   hash: string;
 }
 
+export interface FontReference {
+  family: string;
+  style: string;
+}
+
 export interface ImportFigmaApi {
   createText(): ImportTextNode;
   createRectangle(): ImportShapeNode;
@@ -115,6 +120,10 @@ export interface ImportFigmaApi {
   /** Wraps figma.createImage(bytes). Returns a handle whose `.hash` is the
    *  Figma-side image hash, NOT the LSML sha256. */
   createImage(bytes: Uint8Array): ImportImageHandle;
+  /** Wraps `figma.loadFontAsync`. MUST be awaited before setting
+   *  `text.characters` on any TextNode that uses this font ; otherwise
+   *  Figma throws `Cannot write to node with unloaded font "<family> <style>"`. */
+  loadFontAsync(font: FontReference): Promise<void>;
   /** The current page's append entry-point (figma.currentPage.appendChild). */
   appendToPage(node: ImportBaseNode): void;
 }

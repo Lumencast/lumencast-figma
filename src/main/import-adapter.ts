@@ -52,6 +52,7 @@ export function createFigmaImportAdapter(): ImportFigmaApi {
       const img = figma.createImage(bytes);
       return { hash: img.hash };
     },
+    loadFontAsync: (font) => figma.loadFontAsync(font),
     appendToPage: (node: ImportBaseNode) => {
       figma.currentPage.appendChild(node as unknown as SceneNode);
     },

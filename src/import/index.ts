@@ -13,6 +13,7 @@ import { parseBundle } from "./parse";
 import { embedAssets, type AssetByteSource } from "./assets";
 import { buildPrimitive } from "./walk";
 import { reconcileAppend } from "./reconcile";
+import { collectFonts, preloadFonts } from "./fonts";
 import type { ImportFigmaApi } from "./figma-api";
 
 export interface ImportBundleOptions {
@@ -26,12 +27,26 @@ export interface ImportBundleOptions {
 export async function importBundle(opts: ImportBundleOptions): Promise<ImportResult> {
   const warnings: PluginWarning[] = [];
 
+  console.warn("[lumencast] import step 1/4 — parseBundle");
   const bundle = await parseBundle(opts.lsmlBytes);
+  console.warn("[lumencast] import step 1/4 done — scene_id:", bundle.scene_id);
 
-  // Embed assets first so their Figma-side hashes are available to image
-  // builders.
+  console.warn("[lumencast] import step 2/4 — preload fonts");
+  const fonts = collectFonts(bundle.layout);
+  console.warn(
+    "[lumencast] import step 2/4 — fonts to load:",
+    fonts.map((f) => `${f.family}/${f.style}`).join(", "),
+  );
+  await preloadFonts(opts.api, fonts, (code, message) => {
+    warnings.push({ code, message });
+  });
+  console.warn("[lumencast] import step 2/4 done");
+
+  console.warn("[lumencast] import step 3/4 — embed assets:", opts.assets?.length ?? 0);
   const { assetMap } = embedAssets(opts.api, opts.assets ?? []);
+  console.warn("[lumencast] import step 3/4 done");
 
+  console.warn("[lumencast] import step 4/4 — build primitive tree");
   const ctx = {
     defaults: bundle.defaults ?? {},
     assetMap,
@@ -39,9 +54,9 @@ export async function importBundle(opts: ImportBundleOptions): Promise<ImportRes
       warnings.push({ code, message });
     },
   };
-
   const rootNode = buildPrimitive(bundle.layout, opts.api, ctx);
   reconcileAppend(opts.api, rootNode);
+  console.warn("[lumencast] import step 4/4 done — root id:", rootNode.id);
 
   return {
     rootNodeId: rootNode.id,

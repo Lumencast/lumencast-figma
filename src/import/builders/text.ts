@@ -20,6 +20,21 @@ export function buildText(
   const node = api.createText();
   node.name = deriveName(prim);
 
+  // CRITICAL : set the font BEFORE assigning `characters`. Figma rejects
+  // any write to `text.characters` if the font isn't loaded, AND the font
+  // applied to `characters` is the one currently set on `fontName`. The
+  // import pipeline pre-loads every font via api.loadFontAsync up-front
+  // (see src/import/fonts.ts), so by the time we land here, the font is
+  // ready ; we just need to assign it before writing characters.
+  if (prim.style?.fontFamily !== undefined) {
+    (node as unknown as { fontName: { family: string; style: string } }).fontName = {
+      family: prim.style.fontFamily,
+      style: prim.style.fontStyle === "italic" ? "Italic" : "Regular",
+    };
+  }
+  // (If no fontFamily declared the node keeps Figma's default Inter Regular,
+  // which the import pipeline pre-loads unconditionally.)
+
   // Resolve characters : prefer the literal under defaults, fall back to a
   // placeholder showing the LeafPath itself.
   const path = prim.bind?.value;
@@ -41,14 +56,6 @@ export function buildText(
 
   if (prim.style?.fontSize !== undefined) node.fontSize = prim.style.fontSize;
   if (typeof prim.style?.fontWeight === "number") node.fontWeight = prim.style.fontWeight;
-  if (prim.style?.fontFamily !== undefined) {
-    // The export-side mapper reads `fontName.family` ; populate it so the
-    // canonical bytes match.
-    (node as unknown as { fontName: { family: string; style: string } }).fontName = {
-      family: prim.style.fontFamily,
-      style: prim.style.fontStyle === "italic" ? "Italic" : "Regular",
-    };
-  }
   if (prim.style?.color !== undefined) {
     const rgb = cssToRgb(prim.style.color);
     if (rgb) {

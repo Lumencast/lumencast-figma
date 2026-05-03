@@ -159,6 +159,7 @@ export function createImportMock(): ImportMock {
       };
       return wrapInstance(node);
     },
+    loadFontAsync: () => Promise.resolve(),
     createImage: (bytes): ImportImageHandle => {
       // Figma's real `createImage` returns a deterministic hash derived from
       // the bytes (SHA-1, internally). Mirror that here so byte-stable
