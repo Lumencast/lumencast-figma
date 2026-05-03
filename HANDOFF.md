@@ -1,41 +1,40 @@
 # lumencast-figma — handoff
 
-> **Status** : Phase 0 in progress (scaffolding 2026-05-03 — repo skeleton + governance + ADR + brief)
+> **Status** : Phase 1 done (export MVP — 2026-05-03, CI green on `main`)
 > **Maintainer** : `@ClodoCapeo`
 > **Brief** : `../briefs/chantier-lumencast-figma.md`
+> **Repo** : https://github.com/Lumencast/lumencast-figma
 
 ## What this repo is
 
 Official Figma plugin for Lumencast. Exports a Figma frame to an LSML 1.1 scene bundle (`.lsml`) and re-imports any `.lsml` back into Figma. First Layer 5 (authoring tools) deliverable of the Lumencast ecosystem.
 
-## What is done (Phase 0)
+## What is done
 
-- Repo scaffolded under `D:\Document\Lumencast\lumencast-figma\`
+### Phase 0 — Foundations (commit `87167ff` + `1f3b165`)
+
+- Repo scaffolded under `D:\Document\Lumencast\lumencast-figma\` and pushed to GitHub
 - OSS governance : LICENSE (Apache 2.0), NOTICE, README, CONTRIBUTING, CODE_OF_CONDUCT, SECURITY, CLAUDE.md, .gitignore
 - `manifest.json` (Figma plugin v2) declares `networkAccess: none`
 - Build setup : `package.json`, `tsconfig.json`, `vite.config.ts`, ESLint flat config
-- `src/` skeleton : `main/`, `ui/`, `mapping/`, `export/`, `import/`, `shared/` with stubs
-- Tests scaffold : `tests/unit/`, `tests/integration/`, `tests/fixtures/`
 - ADR 001 documents the 11 product decisions
-- CI workflow : lockfile, lint, typecheck, test, build, bundle-budget, secret-scan, codeowners-check
+- CI workflow (9 jobs, all green) : lockfile, lint, typecheck, test, build, bundle-budget, secret-scan, codeowners-check, package (.zip)
 - `.github/CODEOWNERS` routes everything to `@ClodoCapeo`
 
+### Phase 1 — Export MVP (commit `0bb1185`)
+
+LSML 1.1 strict export end-to-end. Selecting a FRAME / COMPONENT / INSTANCE in Figma and clicking *Export to LSML* writes a sealed `.lsml` plus a sibling content-addressed `assets/` directory.
+
+- **Mapping layer** : per-primitive mappers (text / image / shape / frame / stack) + universal props (§5.4) + color/gradient extraction
+- **Bindings parser** : `[bind:path]` / `[bindStyle:k=p]` / `[bindUniversal:k=p]` directives on layer names
+- **OperatorInput extraction** : Figma component named `OperatorInput` with `lumencast.operator_input.*` plugin data → `bundle.operator_inputs[]`, all 9 LSML 1.1 types per §8.1, per-type constraint validation
+- **Asset registry** : Figma `imageHash` → bytes → sha256 → `assets/<sha256>.<ext>` ; rewrites layout + defaults trees ; image bytes returned to UI for download
+- **JCS canonicalization** : RFC 8785 + `scene_version` placeholder protocol §3.2, zero-dep local impl in `src/export/canonicalize.ts` (re-export when `@lumencast/compiler` ships to npm)
+- **Lite validator** : runtime structural checks in the plugin sandbox (required fields, scene_id charset, primitive kinds, operator-input paths, assets/allowedHosts coupling)
+- **Wire-up** : `src/main/index.ts` runs the pipeline, sends typed messages ; `src/ui/` Preact iframe surfaces phase + final scene_version, triggers Blob downloads via `src/ui/download.ts`
+- **Tests** : 65 passing, including 6 e2e against `lumencast-protocol/spec/schema.json` (ajv draft 2020-12). Scoreboard fixture validates ; scene_version verifies via the §3.2 protocol ; re-export is byte-stable.
+
 ## What is next (in order)
-
-### Phase 1 — Export MVP (LSML 1.1 strict)
-
-Implement, in order :
-
-1. `src/main/messages.ts` — typed message bus contract (DONE — Phase 0)
-2. `src/main/index.ts` — Figma plugin entry, opens UI, handles selection (DONE skeleton — Phase 0)
-3. `src/ui/` — Preact UI (DONE skeleton — Phase 0)
-4. `src/mapping/{text,image,shape,frame,stack}.ts` — per-primitive mappers
-5. `src/export/bindings.ts` — `[bind:path]` parsing
-6. `src/export/operator-inputs.ts` — `OperatorInput` component extraction (9 LSML 1.1 types per §8.1)
-7. `src/export/assets.ts` — image extraction → `assets/<sha256>.<ext>`, `assets.allowedHosts` declared in bundle
-8. `src/export/bundle.ts` — assemble + JCS canonicalize via `@lumencast/compiler` (LSML §3.1, §3.2)
-9. `src/export/validate.ts` — schema validation against `lumencast-protocol/spec/schema.json`
-10. End-to-end test : export a fixture `.fig` (provided by master) → produced `.lsml` loads in `@lumencast/runtime` and `lumencast validate` exits 0
 
 ### Phase 2 — LSML 1.1 advanced features (UNBLOCKED — spec published)
 
