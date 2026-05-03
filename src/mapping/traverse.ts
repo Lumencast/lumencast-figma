@@ -197,7 +197,10 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
 
   let result: MappingResult;
   if (isStack) {
-    result = mapStack(node as never, children as StackPrimitive["children"]);
+    const stackOpts: { parentX?: number; parentY?: number } = {};
+    if (opts.parentX !== undefined) stackOpts.parentX = opts.parentX;
+    if (opts.parentY !== undefined) stackOpts.parentY = opts.parentY;
+    result = mapStack(node as never, children as StackPrimitive["children"], stackOpts);
   } else {
     const frameOpts: { isRoot: boolean; parentX?: number; parentY?: number } = {
       isRoot: opts.isRoot,
