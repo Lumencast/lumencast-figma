@@ -22,6 +22,10 @@ export const PLUGIN_DATA_KEYS = {
   instanceBindParams: "instance.bind_params",
   /** Optional fit override (`contain | cover | fill | none`). */
   instanceFit: "instance.fit",
+  /** On a re-imported node, preserves the original synthesised `__lit.*`
+   *  bind path so the next export reproduces it byte-stable. */
+  litBindValue: "lit.bind.value",
+  litBindSrc: "lit.bind.src",
 } as const;
 
 /** Layer name pattern : `[bind:path.to.leaf] Optional Display Name` */

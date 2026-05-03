@@ -24,7 +24,9 @@ import type { MappingContext, MappingResult } from "./types";
 import { PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 
 interface InstanceFigmaNode {
-  type: "INSTANCE";
+  /** Either a real Figma INSTANCE (designer-created, with mainComponent) or
+   *  a FRAME that re-imported `lumencast.instance.*` plugin data carries. */
+  type: "INSTANCE" | "FRAME";
   id: string;
   name: string;
   width: number;

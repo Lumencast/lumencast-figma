@@ -17,6 +17,7 @@ import type { TextPrimitive, TextStyle } from "~shared/lsml-types";
 import { paintToSolidCss, type FigmaPaint } from "./color";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
+import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import type { MappingResult } from "./types";
 
 interface MockTextNode {
@@ -38,6 +39,8 @@ interface MockTextNode {
   rotation?: number;
   layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
+  /** Plugin data accessor (Figma SceneNode / mock surface). */
+  getSharedPluginData?(namespace: string, key: string): string;
 }
 
 const ALIGN_MAP: Record<string, TextStyle["textAlign"]> = {
@@ -51,9 +54,15 @@ export function mapText(node: MockTextNode): MappingResult {
   const parsed = parseLayerName(node.name, { primitiveKind: "text" });
   const style = extractStyle(node);
 
+  // Roundtrip stability : when the node was just re-imported, plugin data
+  // carries the original synthesised __lit.* path. Use it instead of the
+  // node-id-derived synthesis (which would otherwise drift across imports).
+  const preserved = readPluginData(node, PLUGIN_DATA_KEYS.litBindValue);
+  const litPath = preserved ?? synthLiteralPath(node.id);
+
   const prim: TextPrimitive = {
     kind: "text",
-    bind: parsed.bind ?? { value: synthLiteralPath(node.id) },
+    bind: parsed.bind ?? { value: litPath },
     ...extractUniversal(node),
   };
   if (Object.keys(style).length > 0) prim.style = style;
@@ -66,10 +75,16 @@ export function mapText(node: MockTextNode): MappingResult {
   if (!parsed.bind) {
     return {
       node: prim,
-      defaults: { [synthLiteralPath(node.id)]: node.characters },
+      defaults: { [litPath]: node.characters },
     };
   }
   return { node: prim };
+}
+
+function readPluginData(node: MockTextNode, key: string): string | null {
+  if (typeof node.getSharedPluginData !== "function") return null;
+  const v = node.getSharedPluginData(PLUGIN_DATA_NAMESPACE, key);
+  return v === "" ? null : v;
 }
 
 export function synthLiteralPath(id: string): string {

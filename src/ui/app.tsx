@@ -1,10 +1,15 @@
 import { useEffect } from "preact/hooks";
 import { useSignal, useComputed } from "@preact/signals";
-import type { ExportPhase, MainToUi, SelectionSummary, UiToMain } from "../main/messages";
-import type { SceneBundle } from "~shared/lsml-types";
-import { DEFAULT_SCHEMA_URL } from "~shared/lsml-schema";
+import type {
+  ExportPhase,
+  ImportPhase,
+  MainToUi,
+  SelectionSummary,
+  UiToMain,
+} from "../main/messages";
 import { LSML_FILE_EXTENSION } from "~shared/constants";
 import { downloadExport } from "./download";
+import { pickImport } from "./import-picker";
 
 function send(msg: UiToMain): void {
   parent.postMessage({ pluginMessage: msg }, "*");
@@ -14,7 +19,9 @@ export function App() {
   const summary = useSignal<SelectionSummary | null>(null);
   const lastError = useSignal<string | null>(null);
   const exportPhase = useSignal<ExportPhase | null>(null);
+  const importPhase = useSignal<ImportPhase | null>(null);
   const lastHash = useSignal<string | null>(null);
+  const lastImportSummary = useSignal<string | null>(null);
 
   useEffect(() => {
     const handler = (event: MessageEvent<{ pluginMessage?: MainToUi }>) => {
@@ -44,8 +51,11 @@ export function App() {
           exportPhase.value = null;
           break;
         case "import-progress":
+          importPhase.value = msg.phase;
+          break;
         case "import-result":
-          // Phase 3.
+          importPhase.value = null;
+          lastImportSummary.value = `Imported. ${msg.payload.primitivesCreated} primitive(s).`;
           break;
       }
     };
@@ -79,9 +89,17 @@ export function App() {
         <button
           type="button"
           class="lumencast-button"
-          onClick={() => send({ kind: "request-import", bundle: PLACEHOLDER_BUNDLE })}
-          disabled
-          title="Import lands in Phase 3"
+          onClick={async () => {
+            const picked = await pickImport();
+            if (!picked) return;
+            lastImportSummary.value = null;
+            send({
+              kind: "request-import",
+              lsmlBytes: picked.lsmlBytes,
+              assets: picked.assets,
+            });
+          }}
+          title="Pick a .lsml file plus the sibling assets/ images"
         >
           Import .lsml
         </button>
@@ -95,6 +113,14 @@ export function App() {
         <div class="lumencast-status-line lumencast-status-line--ok">
           Exported. scene_version : <code>{lastHash.value.slice(0, 19)}…</code>
         </div>
+      )}
+
+      {importPhase.value !== null && (
+        <div class="lumencast-status-line">Import : {importPhase.value}…</div>
+      )}
+
+      {lastImportSummary.value !== null && importPhase.value === null && (
+        <div class="lumencast-status-line lumencast-status-line--ok">{lastImportSummary.value}</div>
       )}
 
       {lastError.value !== null && (
@@ -136,13 +162,3 @@ function SelectionPanel({ summary }: { summary: SelectionSummary | null }) {
     </dl>
   );
 }
-
-// Placeholder so the import button compiles ; replaced in Phase 3 by a
-// File-API picker that loads the .lsml bytes into a real bundle.
-const PLACEHOLDER_BUNDLE: SceneBundle = {
-  $schema: DEFAULT_SCHEMA_URL,
-  lsml: "1.1",
-  scene_id: "placeholder",
-  scene_version: "sha256:0000000000000000000000000000000000000000000000000000000000000000",
-  layout: { kind: "frame", size: { w: 1, h: 1 }, children: [] },
-};

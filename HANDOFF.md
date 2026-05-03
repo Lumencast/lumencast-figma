@@ -1,6 +1,6 @@
 # lumencast-figma — handoff
 
-> **Status** : Phase 2 partial (instance + variables — 2026-05-03, CI green on `main`)
+> **Status** : Phase 3 done (export + import roundtrip — 2026-05-03, CI green on `main`)
 > **Maintainer** : `@ClodoCapeo`
 > **Brief** : `../briefs/chantier-lumencast-figma.md`
 > **Repo** : https://github.com/Lumencast/lumencast-figma
@@ -34,29 +34,30 @@ LSML 1.1 strict export end-to-end. Selecting a FRAME / COMPONENT / INSTANCE in F
 - **Wire-up** : `src/main/index.ts` runs the pipeline, sends typed messages ; `src/ui/` Preact iframe surfaces phase + final scene_version, triggers Blob downloads via `src/ui/download.ts`
 - **Tests** : 65 passing, including 6 e2e against `lumencast-protocol/spec/schema.json` (ajv draft 2020-12). Scoreboard fixture validates ; scene_version verifies via the §3.2 protocol ; re-export is byte-stable.
 
-### Phase 2 partial — instance primitive + Figma variables
+### Phase 2 — instance primitive + Figma variables + comprehensive e2e
 
-- **`src/mapping/instance.ts`** — Figma INSTANCE marked with `lumencast.instance.scene_id` + `instance.scene_version` plugin data emits LSML §4.9 `instance` with `params` / `bindParams` / `fit`. Without those markers, the instance falls back to FRAME-like recursion (existing behaviour).
-- **`src/mapping/variables.ts`** + `src/main/variables-adapter.ts` — Figma variables (Color / Number / String) resolve to `tokens.<group>.<name>` LeafPaths (slugified collection + variable name). When a shape `fill` or frame `background` has a bound color variable, the static value is replaced with `bind: { fill | background: "tokens.<g>.<n>" }` and the resolved value is seeded under `bundle.defaults`.
+- **`src/mapping/instance.ts`** — Figma INSTANCE (or FRAME with re-imported plugin data) marked with `lumencast.instance.scene_id` + `instance.scene_version` emits LSML §4.9 `instance` with `params` / `bindParams` / `fit`. Without those markers, the node falls back to FRAME-like recursion.
+- **`src/mapping/variables.ts`** + `src/main/variables-adapter.ts` — Figma variables (Color / Number / String) resolve to `tokens.<group>.<name>` LeafPaths (slugified collection + variable name). Shape `fill` and frame `background` with a bound color variable swap the static value for `bind: { fill | background: "tokens.<g>.<n>" }`, with the resolved value seeded under `bundle.defaults`.
 - Already shipped in Phase 1 : multi-fill `fills[]` (§4.6 + §4.12), stacked `backgrounds[]` (§4.3), universal props (§5.4), stack `wrap` + `crossGap` (§4.1).
-- **Tests** : 87 passing (12 net new), including a Phase 2 e2e proving variable-bound bundles validate against `schema.json`.
+- **Phase 2 wrap-up e2e** : `tests/integration/export-dashboard.test.ts` exercises instance + variables + gradients + wrap + universal props on a single fixture and validates against `schema.json`.
+
+### Phase 3 — Roundtrip import (commit eec18d6+)
+
+LSML bundle → Figma node tree, with byte-stable round-trip on the scoreboard fixture.
+
+- **`src/import/parse.ts`** — read `.lsml` (string or Uint8Array), JSON-parse, run `validateBundle`, verify `scene_version` via the §3.2 placeholder protocol. Surfaces typed `ParseError` with `code` for each failure mode (INVALID_JSON, INVALID_LSML, UNSUPPORTED_LSML_VERSION, BUNDLE_VALIDATION_FAILED, SCENE_VERSION_MISMATCH).
+- **`src/import/builders/{text,image,shape,frame,stack,instance}.ts`** — per-primitive Figma-node builders. CSS color round-trip via `src/import/color.ts` (#hex / rgba). Universal props applied uniformly. Synthesised `__lit.*` paths are preserved through plugin data so re-export reproduces them byte-stable.
+- **`src/import/assets.ts`** — wraps `figma.createImage(bytes)` to embed local `assets/<sha256>.<ext>` byte sources. Builders consume the returned Figma image hash for IMAGE paint refs.
+- **`src/import/walk.ts`** — orchestrator that dispatches per-primitive and recurses into containers. Unsupported `kind` (grid / media / repeat / vendor) surfaces a warning + empty placeholder frame.
+- **`src/import/reconcile.ts`** — v0.1 strategy : `figma.currentPage.appendChild(root)`. Visual diff merge deferred to v0.3.
+- **`src/main/import-adapter.ts`** — production adapter exposing `figma.createText/Rectangle/Frame/createImage`. INSTANCE primitives materialise as FRAMEs with `lumencast.instance.*` plugin data (real Figma INSTANCE requires a local COMPONENT to clone — not available cross-bundle).
+- **UI** : `src/ui/import-picker.ts` — File-API picker for the `.lsml` + sibling assets. The Import button on the Preact iframe is now wired live.
+- **Tests** : 113 passing (26 net new), including :
+  - 7 unit tests on `parseBundle` (every error path + valid case)
+  - 10 unit tests on per-primitive builders
+  - 3 integration tests in `tests/integration/roundtrip.test.ts` proving `export(import(export(fig))) == export(fig)` on the scoreboard fixture (layout + defaults + assets byte-identical) and that LSML §4.9 instance primitives roundtrip via plugin data.
 
 ## What is next (in order)
-
-### Phase 2 wrap-up
-
-Pending items before Phase 2 is fully closed :
-
-- Text style variables (color, fontSize, fontWeight) — currently dropped because the schema's `text.bind` is restricted to `{value}` only and `bindStyle` isn't in the schema. Tracked in lumencast-protocol#23. Action depends on spec resolution.
-- Boolean variables + variable modes (Light/Dark) — deferred to v0.2 per ADR 001 decision #6.
-
-### Phase 3 — Roundtrip (import)
-
-- `src/import/parse.ts` — read `.lsml` JSON, validate
-- `src/import/builders/{text,image,shape,frame,stack,instance}.ts` — per-primitive Figma node creators
-- `src/import/assets.ts` — fetch / embed images (from local `assets/` dir for v0.1)
-- `src/import/reconcile.ts` — overwrite strategy for v0.1
-- `tests/integration/roundtrip.test.ts` — assert byte-stable round-trip
 
 ### Phase 4 — OSS polish + Figma Community
 

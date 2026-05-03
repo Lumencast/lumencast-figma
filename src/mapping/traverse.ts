@@ -82,9 +82,13 @@ export function walk(
     case "ELLIPSE":
     case "VECTOR":
       return mapShape(node as never, ctx);
-    case "INSTANCE": {
-      // Designer marked it as a separate scene → emit LSML §4.9 instance.
-      // Otherwise fall through to the FRAME-like recursion.
+    case "INSTANCE":
+    case "FRAME": {
+      // Either designer-created INSTANCE OR re-imported FRAME with
+      // `lumencast.instance.*` plugin data → emit LSML §4.9 instance. The
+      // import pipeline materialises §4.9 instances as FRAMEs (real INSTANCE
+      // nodes can only be created by cloning a COMPONENT, which we don't
+      // have on import — see src/main/import-adapter.ts).
       const instOpts: { isRoot: boolean; parentX?: number; parentY?: number } = {
         isRoot: opts.isRoot,
       };
@@ -94,7 +98,6 @@ export function walk(
       if (inst) return inst;
       return walkContainer(node, ctx, opts);
     }
-    case "FRAME":
     case "COMPONENT":
     case "GROUP":
       return walkContainer(node, ctx, opts);

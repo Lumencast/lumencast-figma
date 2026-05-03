@@ -11,7 +11,9 @@
 import type { UiToMain, MainToUi } from "./messages";
 import { summarizeSelection } from "./selection";
 import { runExport, type RunExportError } from "../export";
+import { importBundle } from "../import";
 import { createFigmaVariableResolver } from "./variables-adapter";
+import { createFigmaImportAdapter } from "./import-adapter";
 
 const UI_WIDTH = 360;
 const UI_HEIGHT = 480;
@@ -35,12 +37,7 @@ async function handleMessage(msg: UiToMain): Promise<void> {
       return;
 
     case "request-import":
-      // Wired up in Phase 3 — see src/import/.
-      send({
-        kind: "error",
-        code: "INTERNAL",
-        message: "Import not implemented yet (Phase 3).",
-      });
+      await handleImportRequest(msg.lsmlBytes, msg.assets ?? []);
       return;
 
     case "open-external":
@@ -114,6 +111,42 @@ async function handleExportRequest(sceneIdOverride?: string): Promise<void> {
         code: "BUNDLE_VALIDATION_FAILED",
         message: `Validation failed : ${e.errors.length} issue(s).`,
         detail: e.errors,
+      });
+      return;
+    }
+    send({
+      kind: "error",
+      code: "INTERNAL",
+      message: err instanceof Error ? err.message : String(err),
+    });
+  }
+}
+
+async function handleImportRequest(
+  lsmlBytes: string,
+  assets: { path: string; bytes: Uint8Array }[],
+): Promise<void> {
+  send({ kind: "import-progress", phase: "parsing" });
+  try {
+    const api = createFigmaImportAdapter();
+    const result = await importBundle({ api, lsmlBytes, assets });
+    send({ kind: "import-progress", phase: "embedding-assets" });
+    send({ kind: "import-progress", phase: "building-nodes" });
+    send({ kind: "import-result", payload: result });
+  } catch (err) {
+    const code = (err as { code?: string }).code;
+    if (
+      code === "SCENE_VERSION_MISMATCH" ||
+      code === "BUNDLE_VALIDATION_FAILED" ||
+      code === "INVALID_LSML" ||
+      code === "INVALID_JSON" ||
+      code === "UNSUPPORTED_LSML_VERSION"
+    ) {
+      send({
+        kind: "error",
+        code: code === "UNSUPPORTED_LSML_VERSION" ? "UNSUPPORTED_LSML_VERSION" : "INVALID_LSML",
+        message: err instanceof Error ? err.message : String(err),
+        detail: (err as { errors?: unknown }).errors,
       });
       return;
     }

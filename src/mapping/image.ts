@@ -12,6 +12,7 @@
 import type { ImagePrimitive } from "~shared/lsml-types";
 import { parseLayerName } from "../export/bindings";
 import { extractUniversal } from "./universal";
+import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import type { FigmaPaint } from "./color";
 import type { MappingContext, MappingResult } from "./types";
 
@@ -27,6 +28,7 @@ interface MockImageNode {
   rotation?: number;
   layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
+  getSharedPluginData?(namespace: string, key: string): string;
 }
 
 export function mapImage(node: MockImageNode, ctx: MappingContext): MappingResult | null {
@@ -47,8 +49,10 @@ export function mapImage(node: MockImageNode, ctx: MappingContext): MappingResul
   if (typeof declaredSrc === "string") {
     bind = { src: declaredSrc };
   } else {
+    // Roundtrip stability — re-imported nodes carry the original __lit path.
+    const preserved = readPluginData(node, PLUGIN_DATA_KEYS.litBindSrc);
+    const litPath = preserved ?? synthLiteralPath(node.id);
     const assetPath = ctx.registerImageHash?.(hash);
-    const litPath = synthLiteralPath(node.id);
     bind = { src: litPath };
     if (assetPath) {
       defaults = { [litPath]: assetPath };
@@ -83,6 +87,12 @@ export function mapImage(node: MockImageNode, ctx: MappingContext): MappingResul
 
 function synthLiteralPath(id: string): string {
   return `__lit.image.${id.replace(/[^A-Za-z0-9_]/g, "_")}`;
+}
+
+function readPluginData(node: MockImageNode, key: string): string | null {
+  if (typeof node.getSharedPluginData !== "function") return null;
+  const v = node.getSharedPluginData(PLUGIN_DATA_NAMESPACE, key);
+  return v === "" ? null : v;
 }
 
 function scaleModeToFit(mode: FigmaPaint["scaleMode"] | undefined): ImagePrimitive["fit"] | null {

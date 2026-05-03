@@ -10,7 +10,13 @@ export type UiToMain =
   | { kind: "ui-ready" }
   | { kind: "request-selection-summary" }
   | { kind: "request-export"; sceneId?: string }
-  | { kind: "request-import"; bundle: SceneBundle }
+  | {
+      kind: "request-import";
+      /** Raw .lsml bytes the user picked via File-API. */
+      lsmlBytes: string;
+      /** Per-asset bytes loaded from the sibling `assets/` directory. */
+      assets?: { path: string; bytes: Uint8Array }[];
+    }
   | { kind: "open-external"; url: string }
   | { kind: "close" };
 
