@@ -1,0 +1,42 @@
+{
+  "compilerOptions": {
+    "target": "ES2022",
+    "module": "ESNext",
+    "moduleResolution": "bundler",
+    "lib": ["ES2022", "DOM", "DOM.Iterable"],
+    "jsx": "react-jsx",
+    "jsxImportSource": "preact",
+
+    "strict": true,
+    "noUncheckedIndexedAccess": true,
+    "noImplicitOverride": true,
+    "noFallthroughCasesInSwitch": true,
+    "noPropertyAccessFromIndexSignature": false,
+    "exactOptionalPropertyTypes": true,
+
+    "esModuleInterop": true,
+    "allowSyntheticDefaultImports": true,
+    "resolveJsonModule": true,
+    "isolatedModules": true,
+    "verbatimModuleSyntax": false,
+
+    "skipLibCheck": true,
+    "forceConsistentCasingInFileNames": true,
+
+    "noEmit": true,
+
+    "types": ["@figma/plugin-typings", "vite/client", "vitest/globals"],
+
+    "paths": {
+      "~main/*": ["./src/main/*"],
+      "~ui/*": ["./src/ui/*"],
+      "~mapping/*": ["./src/mapping/*"],
+      "~export/*": ["./src/export/*"],
+      "~import/*": ["./src/import/*"],
+      "~shared/*": ["./src/shared/*"]
+    },
+    "baseUrl": "."
+  },
+  "include": ["src/**/*", "tests/**/*", "scripts/**/*", "vite.config.ts"],
+  "exclude": ["node_modules", "dist", "coverage"]
+}

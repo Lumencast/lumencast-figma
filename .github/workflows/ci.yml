@@ -1,0 +1,160 @@
+name: CI
+
+on:
+  push:
+    branches: [main]
+  pull_request:
+    branches: [main]
+
+# Cancel in-flight runs on PRs but never on main.
+concurrency:
+  group: ${{ github.workflow }}-${{ github.ref }}
+  cancel-in-progress: ${{ github.event_name == 'pull_request' }}
+
+env:
+  NODE_VERSION: "22"
+  PNPM_VERSION: "10"
+
+jobs:
+  lockfile:
+    name: lockfile-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - name: Verify pnpm-lock.yaml is up to date
+        run: pnpm install --frozen-lockfile
+
+  lint:
+    name: lint
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm format:check
+      - run: pnpm lint
+
+  typecheck:
+    name: typecheck
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm typecheck
+
+  test:
+    name: test
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm test
+
+  build:
+    name: build
+    runs-on: ubuntu-latest
+    needs: [lint, typecheck, test]
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Upload plugin dist
+        uses: actions/upload-artifact@v4
+        with:
+          name: plugin-dist
+          path: |
+            manifest.json
+            dist/
+
+  bundle-budget:
+    name: check:bundle
+    runs-on: ubuntu-latest
+    needs: build
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - run: pnpm check:bundle
+
+  package:
+    name: package (.zip)
+    runs-on: ubuntu-latest
+    needs: bundle-budget
+    if: github.event_name == 'push' && github.ref == 'refs/heads/main'
+    steps:
+      - uses: actions/checkout@v4
+      - uses: pnpm/action-setup@v4
+      - uses: actions/setup-node@v4
+        with:
+          node-version: ${{ env.NODE_VERSION }}
+          cache: "pnpm"
+      - run: pnpm install --frozen-lockfile
+      - run: pnpm build
+      - name: Read version
+        id: version
+        run: echo "version=$(node -p "require('./package.json').version")" >> "$GITHUB_OUTPUT"
+      - name: Build .zip
+        run: zip -r "lumencast-figma-v${{ steps.version.outputs.version }}.zip" manifest.json dist/
+      - name: Upload .zip artefact
+        uses: actions/upload-artifact@v4
+        with:
+          name: lumencast-figma-zip
+          path: lumencast-figma-v${{ steps.version.outputs.version }}.zip
+
+  secret-scan:
+    name: secret-scan
+    runs-on: ubuntu-latest
+    needs: lockfile
+    steps:
+      - uses: actions/checkout@v4
+        with:
+          fetch-depth: 0
+      - name: Trufflehog scan
+        uses: trufflesecurity/trufflehog@main
+        with:
+          path: ./
+          base: ${{ github.event.repository.default_branch }}
+          head: HEAD
+          extra_args: --only-verified
+
+  codeowners:
+    name: codeowners-check
+    runs-on: ubuntu-latest
+    steps:
+      - uses: actions/checkout@v4
+      - name: Verify CODEOWNERS exists and parses
+        run: |
+          test -f .github/CODEOWNERS || (echo "CODEOWNERS missing"; exit 1)
+          awk 'NF && $1 !~ /^#/' .github/CODEOWNERS > /dev/null

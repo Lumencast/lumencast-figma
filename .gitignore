@@ -1,0 +1,42 @@
+# Dependencies
+node_modules/
+.pnpm-store/
+
+# Build outputs
+dist/
+build/
+*.tsbuildinfo
+
+# Packaged plugin artefact
+lumencast-figma-*.zip
+
+# Test outputs
+coverage/
+.nyc_output/
+test-results/
+.vitest/
+
+# Editor / OS
+.DS_Store
+Thumbs.db
+.vscode/
+!.vscode/extensions.json
+!.vscode/settings.json.example
+.idea/
+*.swp
+
+# Logs
+*.log
+npm-debug.log*
+pnpm-debug.log*
+
+# Environment
+.env
+.env.*
+!.env.example
+
+# Local scratch / experiments
+.scratch/
+
+# Figma local exports for ad-hoc testing
+.local-exports/

@@ -1,0 +1,22 @@
+{
+  "name": "Lumencast Export",
+  "id": "PLACEHOLDER_ASSIGNED_BY_FIGMA_ON_PUBLISH",
+  "api": "1.0.0",
+  "main": "dist/main.js",
+  "ui": "dist/ui.html",
+  "editorType": ["figma"],
+  "capabilities": [],
+  "enableProposedApi": false,
+  "documentAccess": "dynamic-page",
+  "permissions": ["currentuser"],
+  "networkAccess": {
+    "allowedDomains": ["none"],
+    "reasoning": "Plugin operates entirely on the local Figma document and writes .lsml files to the user's local file system. No network access required."
+  },
+  "menu": [
+    { "name": "Export selected frame to LSML", "command": "export" },
+    { "name": "Import .lsml file", "command": "import" },
+    { "separator": true },
+    { "name": "About Lumencast", "command": "about" }
+  ]
+}

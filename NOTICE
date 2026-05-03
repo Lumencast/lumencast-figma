@@ -1,0 +1,14 @@
+Lumencast Figma — Figma plugin for LSML 1.1 export and import
+Copyright 2026 The Lumencast Authors
+
+This product includes software developed by The Lumencast Authors
+(https://github.com/Lumencast).
+
+Licensed under the Apache License, Version 2.0. See LICENSE for terms.
+
+This plugin uses the Figma Plugin API and is intended to run inside the
+Figma desktop and web applications. Figma is a trademark of Figma, Inc.
+This project is not affiliated with or endorsed by Figma, Inc.
+
+Type definitions for the Figma Plugin API are sourced from
+@figma/plugin-typings (MIT licensed, copyright Figma, Inc.).

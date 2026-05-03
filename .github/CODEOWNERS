@@ -1,0 +1,13 @@
+# Default owner for everything in this repo.
+# Update when a core team is recruited (post-Phase 4).
+* @ClodoCapeo
+
+# Governance + brand-sensitive paths require maintainer review on every change.
+/manifest.json @ClodoCapeo
+/LICENSE @ClodoCapeo
+/NOTICE @ClodoCapeo
+/SECURITY.md @ClodoCapeo
+/CODE_OF_CONDUCT.md @ClodoCapeo
+/CLAUDE.md @ClodoCapeo
+/docs/adr/ @ClodoCapeo
+/.github/ @ClodoCapeo
