@@ -7,7 +7,6 @@ import type {
   SelectionSummary,
   UiToMain,
 } from "../main/messages";
-import { LSML_FILE_EXTENSION } from "~shared/constants";
 import { downloadExport } from "./download";
 import { pickImport } from "./import-picker";
 
@@ -38,9 +37,8 @@ export function App() {
         case "export-result": {
           exportPhase.value = null;
           lastHash.value = msg.payload.hash;
-          const filename = `${msg.payload.bundle.scene_id}${LSML_FILE_EXTENSION}`;
           downloadExport({
-            filename,
+            sceneId: msg.payload.bundle.scene_id,
             bundleBytes: msg.payload.canonical,
             assets: msg.payload.assets,
           });

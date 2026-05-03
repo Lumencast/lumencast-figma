@@ -1,38 +1,37 @@
-// Trigger browser-side downloads of the produced bundle + assets.
+// Trigger browser-side downloads of the produced bundle.
 //
 // The plugin sandbox can't write files. The iframe UI does it instead via
-// anchor + Blob. For the .lsml bundle and each asset, we synthesise a
-// download click sequentially. Modern browsers throttle multiple downloads
-// from a single user gesture ; we preserve the gesture by chaining requests
-// from the click handler directly.
+// anchor + Blob. v0.1.0 emitted the `.lsml` and each asset as separate
+// downloads ; v0.1.2 packs everything into a single self-contained
+// `.lsmlz` ZIP archive (LSML scene + sibling `assets/` directory).
+// One file = one drag, one re-import, one signed artefact.
 
+import { packArchive } from "./archive";
+import { LSML_ARCHIVE_EXTENSION } from "~shared/constants";
 import type { ExportResult } from "../main/messages";
 
 export interface DownloadOptions {
-  /** Filename for the .lsml bundle, e.g. `scoreboard.lsml`. */
-  filename: string;
-  /** UTF-8 canonical bytes of the bundle. */
+  /** Stable scene id — used to derive both the archive filename and the
+   *  internal `<scene_id>.lsml` entry. */
+  sceneId: string;
+  /** UTF-8 canonical bytes of the sealed bundle. */
   bundleBytes: string;
   assets: ExportResult["assets"];
 }
 
 export function downloadExport(opts: DownloadOptions): void {
-  // Bundle first.
-  triggerBlobDownload(
-    new Blob([opts.bundleBytes], { type: "application/lsml+json" }),
-    opts.filename,
-  );
-  // Each asset under assets/<sha256>.<ext>. The browser saves to the user's
-  // default download dir ; the user moves them next to the .lsml manually for
-  // v0.1. v0.2 will switch to a single .zip download.
-  for (const asset of opts.assets) {
-    triggerBlobDownload(
-      // The asset.bytes comes via postMessage as Uint8Array — wrap it in a
-      // fresh ArrayBuffer copy to avoid potential transfer issues.
-      new Blob([new Uint8Array(asset.bytes)], { type: asset.mimeType }),
-      asset.name.replace(/^assets\//, ""),
-    );
-  }
+  const archive = packArchive({
+    sceneId: opts.sceneId,
+    canonical: opts.bundleBytes,
+    assets: opts.assets.map((a) => ({
+      name: a.name,
+      mimeType: a.mimeType,
+      // `a.bytes` arrives via postMessage as Uint8Array — wrap in a fresh
+      // copy so fflate sees a plain ArrayBuffer-backed view.
+      bytes: new Uint8Array(a.bytes),
+    })),
+  });
+  triggerBlobDownload(archive, `${opts.sceneId}${LSML_ARCHIVE_EXTENSION}`);
 }
 
 function triggerBlobDownload(blob: Blob, filename: string): void {

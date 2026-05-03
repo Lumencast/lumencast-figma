@@ -86,13 +86,67 @@ Bundles are written with the `.lsml` extension per LSML §18.1.
 Contents remain JSON content-addressed (canonicalised via JCS RFC 8785
 with the `scene_version` placeholder protocol per LSML §3.2).
 
-| Extension    | On export | On import |
-| ------------ | --------- | --------- |
-| `.lsml`      | written   | accepted  |
-| `.lsml.json` | not used  | accepted  |
-| `.json`      | not used  | accepted  |
+| Extension    | On export                                     | On import |
+| ------------ | --------------------------------------------- | --------- |
+| `.lsmlz`     | **written** (preferred — single-file archive) | accepted  |
+| `.lsml`      | not written by v0.1.2+ (legacy form)          | accepted  |
+| `.lsml.json` | not used                                      | accepted  |
+| `.json`      | not used                                      | accepted  |
 
-Media type when serving over HTTP : `application/lsml+json` (LSML §18.2).
+Media type when serving over HTTP : `application/lsml+json` (LSML §18.2)
+for the bare bundle, `application/lsml+zip` (proposed) for the archive.
+
+## `.lsmlz` archive format (single-file distribution)
+
+A `.lsmlz` is a standard ZIP archive carrying a `.lsml` bundle plus its
+sibling `assets/` directory in one file. The plugin emits this format on
+export from v0.1.2 onwards ; the import picker accepts it natively.
+
+### Structure
+
+```
+<scene_id>.lsmlz                ← ZIP container, top-level
+├── <scene_id>.lsml             ← canonical bundle JSON (UTF-8, no BOM)
+└── assets/                     ← optional ; one entry per referenced image
+    ├── <figma-imageHash>.png
+    ├── <figma-imageHash>.jpg
+    └── …
+```
+
+- The `.lsml` filename inside the archive matches `bundle.scene_id`.
+  The picker is permissive : any `*.lsml` / `*.lsml.json` / `*.json`
+  entry **outside** of `assets/` is treated as the bundle.
+- Asset paths inside the archive match the bundle's relative
+  `bind.src` references (`assets/<hash>.<ext>`) bit-for-bit, so a
+  runtime that reads from the archive resolves images directly without
+  any path rewriting.
+- No manifest is added — the bundle is fully self-describing
+  (`scene_id`, `scene_version`, `assets.allowedHosts`, the layout tree
+  with bindings).
+
+### Compression
+
+DEFLATE at level 6 (fflate default). JSON compresses 3–5×, PNGs are
+already compressed but pay a small DEFLATE overhead — the typical
+`.lsmlz` is smaller than the `.lsml + assets/` total even on
+asset-heavy scenes.
+
+### Detection
+
+The picker sniffs the magic-byte header (`50 4B 03 04`, the standard ZIP
+signature) and routes between the archive flow and the loose-file
+flow ; the file extension is hint-only. `.lsmlz` files mis-renamed to
+`.lsml` are still recognised as archives.
+
+### Why a custom extension
+
+`.zip` would lose semantic meaning ; the OS preview / file manager
+would treat it as a generic archive instead of a Lumencast scene.
+`.lsmlz` is short, unambiguous, and natural to associate with editors
+or pickers that already register `.lsml`. The format is a proposed
+addition to LSML — see
+[Lumencast/lumencast-protocol#26](https://github.com/Lumencast/lumencast-protocol/issues/26)
+for the standardisation discussion.
 
 ## `$schema` field
 

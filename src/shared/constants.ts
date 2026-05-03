@@ -40,5 +40,11 @@ export const LSML_VERSION = "1.1" as const;
 /** File extension of the bundle on disk (renamed .lsml.json) */
 export const LSML_FILE_EXTENSION = ".lsml" as const;
 
+/** File extension of a self-contained Lumencast archive — a ZIP file with
+ *  `<scene_id>.lsml` at the root and an `assets/` directory of content-
+ *  addressed images. Single-file alternative to the bare `.lsml + assets/`
+ *  layout for distribution. */
+export const LSML_ARCHIVE_EXTENSION = ".lsmlz" as const;
+
 /** Sibling directory holding content-hashed assets referenced by the bundle */
 export const ASSETS_DIR = "assets" as const;

@@ -8,6 +8,7 @@ import { describe, it } from "vitest";
 import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
+import { zipSync, strToU8 } from "fflate";
 import { runExport } from "../src/export";
 import { createMockFigma } from "./fixtures/figma/mock";
 import { buildScoreboardFixture } from "./fixtures/figma/scoreboard";
@@ -20,6 +21,20 @@ function prep(dir: string): void {
   if (existsSync(dir)) rmSync(dir, { recursive: true, force: true });
   mkdirSync(dir, { recursive: true });
   mkdirSync(resolve(dir, "assets"), { recursive: true });
+}
+
+function writeArchive(
+  dir: string,
+  sceneId: string,
+  canonical: string,
+  assets: { name: string; bytes: Uint8Array }[],
+): number {
+  const entries: Record<string, Uint8Array> = {};
+  entries[`${sceneId}.lsml`] = strToU8(canonical);
+  for (const a of assets) entries[a.name] = a.bytes;
+  const zipped = zipSync(entries, { level: 6 });
+  writeFileSync(resolve(dir, `${sceneId}.lsmlz`), zipped);
+  return zipped.length;
 }
 
 describe.skipIf(process.env["GENERATE_EXAMPLES"] !== "1")("examples generator", () => {
@@ -36,8 +51,9 @@ describe.skipIf(process.env["GENERATE_EXAMPLES"] !== "1")("examples generator", 
     prep(dir);
     writeFileSync(resolve(dir, "scoreboard.lsml"), r.canonical, "utf-8");
     for (const a of r.assets) writeFileSync(resolve(dir, a.name), a.bytes);
+    const zipBytes = writeArchive(dir, "scoreboard", r.canonical, r.assets);
     console.log(
-      `✓ scoreboard : ${r.canonical.length} B, ${r.assets.length} asset(s), ${r.bundle.scene_version}`,
+      `✓ scoreboard : ${r.canonical.length} B canonical, ${r.assets.length} asset(s), ${zipBytes} B .lsmlz, ${r.bundle.scene_version}`,
     );
   });
 
@@ -54,8 +70,9 @@ describe.skipIf(process.env["GENERATE_EXAMPLES"] !== "1")("examples generator", 
     prep(dir);
     writeFileSync(resolve(dir, "trading-dashboard.lsml"), r.canonical, "utf-8");
     for (const a of r.assets) writeFileSync(resolve(dir, a.name), a.bytes);
+    const zipBytes = writeArchive(dir, "trading-dashboard", r.canonical, r.assets);
     console.log(
-      `✓ trading-dashboard : ${r.canonical.length} B, ${r.assets.length} asset(s), ${r.bundle.scene_version}`,
+      `✓ trading-dashboard : ${r.canonical.length} B canonical, ${r.assets.length} asset(s), ${zipBytes} B .lsmlz, ${r.bundle.scene_version}`,
     );
   });
 });
