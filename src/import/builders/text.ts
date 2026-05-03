@@ -66,13 +66,20 @@ export function buildText(
   }
 
   if (prim.style?.fontSize !== undefined) node.fontSize = prim.style.fontSize;
-  // Real Figma derives `fontWeight` (read-only getter) from `fontName.style`,
-  // so assigning to it is a no-op there. We still write it for mock parity
-  // — the export-side mappers read `node.fontWeight` to populate
-  // `style.fontWeight`, and a fresh mock node has no fontName→fontWeight
-  // resolver. The cast keeps the production code path unaware of the field.
+  // `fontWeight` on a real Figma TextNode is a read-only getter derived
+  // from `fontName.style` ; assigning to it throws `no setter for property
+  // fontWeight`. The mock-side test API DOES accept the assignment (and
+  // relies on it for byte-stable roundtrip — there's no fontName→weight
+  // resolver in the mock). We try the assignment defensively : in
+  // production it harmlessly throws and we ignore ; in the mock it
+  // takes effect as before.
   if (typeof prim.style?.fontWeight === "number") {
-    (node as unknown as { fontWeight?: number }).fontWeight = prim.style.fontWeight;
+    try {
+      (node as unknown as { fontWeight?: number }).fontWeight = prim.style.fontWeight;
+    } catch {
+      // Real Figma — read-only setter. Visual weight is already controlled
+      // by `fontName.style` set above.
+    }
   }
   if (prim.style?.color !== undefined) {
     const rgb = cssToRgb(prim.style.color);
