@@ -105,7 +105,14 @@ function geometryFor(node: MockShapeNode): ShapePrimitive["geometry"] {
 function mapStrokes(node: MockShapeNode): Stroke[] {
   const out: Stroke[] = [];
   for (const s of node.strokes ?? []) {
-    const color = paintToSolidCss({ ...s, type: "SOLID" });
+    // Figma exposes strokes as host Paint objects with internal Symbol-keyed
+    // metadata. Spreading them (`{ ...s, ... }`) trips QuickJS — esbuild's
+    // ES2017 spread helper iterates `getOwnPropertySymbols(s)` and the host
+    // wrapper coerces Symbols to numeric indices, throwing "cannot convert
+    // symbol to number". Construct the FigmaPaint shape explicitly instead.
+    const paint: FigmaPaint = { type: "SOLID", color: s.color };
+    if (s.opacity !== undefined) paint.opacity = s.opacity;
+    const color = paintToSolidCss(paint);
     if (color) out.push({ color, width: node.strokeWeight ?? 1 });
   }
   return out;

@@ -10,13 +10,14 @@ documented per release.
 
 ## [0.1.1] — 2026-05-03
 
-Hot fix — v0.1.0 failed to load in Figma desktop with `Syntax error on line 1: Unexpected token ?` because the bundled `dist/main.js` contained `??` / `?.` operators that Figma's plugin parser does not accept on the sandbox thread.
+Two production-blocker fixes uncovered when v0.1.0 was loaded into Figma desktop for the first time.
 
 ### Fixed
 
-- **`vite.config.ts`** — main bundle target lowered from `es2022` to `es2017`. esbuild now down-levels nullish coalescing (`??`) and optional chaining (`?.`) into ES2017-compatible patterns. The UI bundle stays at `es2022` (it runs in a Chromium iframe with no parser restriction).
+- **Bundle parsing** — v0.1.0 emitted `??` and `?.` in `dist/main.js` because Vite's `target` was `es2022`. Figma's plugin parser refused them with `Syntax error on line 1: Unexpected token ?`. Lowered the main bundle target to `es2017` ; esbuild now down-levels both operators. The UI bundle stays at `es2022` (it runs in a Chromium iframe with no parser restriction).
+- **Figma host-object spread** — `src/mapping/shape.ts` constructed stroke paints via `{ ...s, type: "SOLID" }` where `s` is a Figma `Stroke` host object. esbuild's ES2017 spread helper iterates `Object.getOwnPropertySymbols(s)` and the host wrapper coerces Symbol keys to numeric indices, throwing `cannot convert symbol to number` when the user clicked _Export to LSML_. Replaced the spread with explicit field copying.
 
-No behavioural changes ; the bundle is ~3 KB larger after down-leveling (`dist/main.js` 37.4 KB → 39.5 KB, well within the 150 KB budget) and the export / import / roundtrip semantics are identical.
+No behavioural changes — 113 tests still pass, bundle size is `dist/main.js` 39.5 KB / 150 KB and `dist/ui.html` 10.3 KB gzipped / 50 KB.
 
 ## [0.1.0] — 2026-05-03
 
