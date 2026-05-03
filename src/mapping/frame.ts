@@ -10,7 +10,8 @@ import { paintToFill, type FigmaPaint, paintToSolidCss } from "./color";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { resolveVariable } from "./variables";
-import { asArray, asNumber } from "./figma-mixed";
+import { asArray, asBoolean, asNumber } from "./figma-mixed";
+import { withFigmaMetadata } from "./figma-metadata";
 import type { MappingContext, MappingResult } from "./types";
 
 export interface FrameMapInput {
@@ -27,6 +28,9 @@ export interface FrameMapInput {
   visible?: boolean;
   opacity?: number;
   rotation?: number;
+  /** Defaults to true on FrameNode ; we capture it explicitly so re-import
+   *  doesn't trigger Figma's auto-grow behaviour for off-frame children. */
+  clipsContent?: boolean;
   layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
 }
@@ -103,6 +107,16 @@ export function mapFrame(
     }
   }
   if (Object.keys(bind).length > 0) prim.bind = bind;
+
+  // metadata.figma.clipsContent — only emit when the value diverges from
+  // the Figma default (true). Importing a frame without explicit metadata
+  // applies `clipsContent: true` already, so capturing `true` here would
+  // pollute every roundtrip with redundant metadata. We only need to
+  // round-trip the non-default `false` case.
+  const clips = asBoolean(node.clipsContent);
+  if (clips === false) {
+    withFigmaMetadata(prim, { clipsContent: false });
+  }
 
   if (defaults) return { node: prim, defaults };
   return { node: prim };

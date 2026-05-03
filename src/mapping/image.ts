@@ -14,6 +14,7 @@ import { parseLayerName } from "../export/bindings";
 import { extractUniversal } from "./universal";
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import { asArray, asNumber } from "./figma-mixed";
+import { withFigmaMetadata } from "./figma-metadata";
 import type { FigmaPaint } from "./color";
 import type { MappingContext, MappingResult } from "./types";
 
@@ -23,6 +24,8 @@ interface MockImageNode {
   name: string;
   width: number;
   height: number;
+  x?: number;
+  y?: number;
   fills?: FigmaPaint[];
   visible?: boolean;
   opacity?: number;
@@ -32,7 +35,16 @@ interface MockImageNode {
   getSharedPluginData?(namespace: string, key: string): string;
 }
 
-export function mapImage(node: MockImageNode, ctx: MappingContext): MappingResult | null {
+export interface ImageMapOptions {
+  parentX?: number;
+  parentY?: number;
+}
+
+export function mapImage(
+  node: MockImageNode,
+  ctx: MappingContext,
+  opts?: ImageMapOptions,
+): MappingResult | null {
   const fillsArr = asArray<FigmaPaint>(node.fills);
   if (!fillsArr) return null;
   const imagePaint = fillsArr.find(
@@ -81,6 +93,17 @@ export function mapImage(node: MockImageNode, ctx: MappingContext): MappingResul
 
   if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
   if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
+
+  // metadata.figma.position — same rationale as in shape.ts. LSML `image`
+  // has no native position field but Figma layouts depend on absolute x/y
+  // for non-auto-layout parents.
+  const px = asNumber(node.x) ?? 0;
+  const py = asNumber(node.y) ?? 0;
+  const parentX = opts?.parentX ?? 0;
+  const parentY = opts?.parentY ?? 0;
+  const relX = roundTo3(px - parentX);
+  const relY = roundTo3(py - parentY);
+  withFigmaMetadata(prim, { position: { x: relX, y: relY } });
 
   const out: { node: ImagePrimitive; defaults?: Record<string, unknown>; assetRefs: string[] } = {
     node: prim,

@@ -6,6 +6,7 @@ import type { Fill, FramePrimitive } from "~shared/lsml-types";
 import type { ImportFigmaApi, ImportFrameNode, ImportPaint } from "../figma-api";
 import { cssToRgb, cssToRgba } from "../color";
 import { applyUniversal } from "../universal";
+import { readFigmaMetadata } from "../figma-metadata";
 import type { BuildContext } from "./types";
 
 export function buildFrame(
@@ -15,12 +16,26 @@ export function buildFrame(
 ): ImportFrameNode {
   const node = api.createFrame();
   node.name = "Frame";
+  const figmaMeta = readFigmaMetadata(prim);
   if (prim.size) node.resize(prim.size.w, prim.size.h);
   node.layoutMode = "NONE";
 
-  if (prim.position) {
-    node.x = prim.position.x;
-    node.y = prim.position.y;
+  // `clipsContent: true` keeps the frame at its declared size even when
+  // children's bounds extend outside (e.g. Figma masked compositions
+  // where the inner content is intentionally larger). Without this,
+  // certain child layouts trigger Figma's auto-grow and the frame ends
+  // up bigger than the bundle's `size`. Default to true unless metadata
+  // says otherwise.
+  (node as unknown as { clipsContent?: boolean }).clipsContent =
+    figmaMeta.clipsContent ?? true;
+
+  // Position : LSML's native `frame.position` is the canonical source.
+  // Fall back to `metadata.figma.position` when the bundle was authored
+  // by a tool that doesn't carry it natively.
+  const pos = prim.position ?? figmaMeta.position;
+  if (pos) {
+    node.x = pos.x;
+    node.y = pos.y;
   }
 
   if (prim.backgrounds && prim.backgrounds.length > 0) {

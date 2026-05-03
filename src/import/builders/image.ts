@@ -4,6 +4,7 @@ import type { ImagePrimitive } from "~shared/lsml-types";
 import type { ImportFigmaApi, ImportPaint, ImportShapeNode } from "../figma-api";
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import { applyUniversal } from "../universal";
+import { readFigmaMetadata } from "../figma-metadata";
 import type { BuildContext } from "./types";
 
 export function buildImage(
@@ -46,6 +47,13 @@ export function buildImage(
   }
 
   applyUniversal(node, prim);
+
+  const figmaMeta = readFigmaMetadata(prim);
+  if (figmaMeta.position) {
+    (node as unknown as { x?: number; y?: number }).x = figmaMeta.position.x;
+    (node as unknown as { x?: number; y?: number }).y = figmaMeta.position.y;
+  }
+
   return node;
 }
 

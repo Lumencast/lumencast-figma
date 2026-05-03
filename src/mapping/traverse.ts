@@ -76,22 +76,29 @@ export function walk(
     return null;
   }
 
+  // Build the parent-coords option block once — every leaf-primitive
+  // mapper uses it to compute its `metadata.figma.position` relative to
+  // the parent, so non-frame children of absolute layouts roundtrip.
+  const parentOpts: { parentX?: number; parentY?: number } = {};
+  if (opts.parentX !== undefined) parentOpts.parentX = opts.parentX;
+  if (opts.parentY !== undefined) parentOpts.parentY = opts.parentY;
+
   try {
     switch (node.type) {
       case "TEXT":
         console.warn("[lumencast]   → mapText");
-        return mapText(node as never);
+        return mapText(node as never, parentOpts);
       case "RECTANGLE":
         if (hasImageFill(node)) {
           console.warn("[lumencast]   → mapImage");
-          return mapImage(node as never, ctx);
+          return mapImage(node as never, ctx, parentOpts);
         }
         console.warn("[lumencast]   → mapShape (rect)");
-        return mapShape(node as never, ctx);
+        return mapShape(node as never, ctx, parentOpts);
       case "ELLIPSE":
       case "VECTOR":
         console.warn("[lumencast]   → mapShape (", node.type, ")");
-        return mapShape(node as never, ctx);
+        return mapShape(node as never, ctx, parentOpts);
       case "INSTANCE":
       case "FRAME": {
         const instOpts: { isRoot: boolean; parentX?: number; parentY?: number } = {

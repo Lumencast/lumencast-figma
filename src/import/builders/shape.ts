@@ -4,6 +4,7 @@ import type { ShapePrimitive, Fill, Stroke } from "~shared/lsml-types";
 import type { ImportFigmaApi, ImportPaint, ImportShapeNode, ImportStroke } from "../figma-api";
 import { cssToRgb, cssToRgba } from "../color";
 import { applyUniversal } from "../universal";
+import { readFigmaMetadata } from "../figma-metadata";
 import type { BuildContext } from "./types";
 
 export function buildShape(
@@ -25,7 +26,15 @@ export function buildShape(
   }
 
   node.name = prim.ariaLabel ?? "Shape";
-  if (prim.size) node.resize(prim.size.w, prim.size.h);
+  const figmaMeta = readFigmaMetadata(prim);
+
+  if (prim.size) {
+    node.resize(prim.size.w, prim.size.h);
+  } else if (figmaMeta.size) {
+    // Vector geometry has no native LSML size ; we stashed it in
+    // metadata.figma.size on export so paths render at the right scale.
+    node.resize(figmaMeta.size.w, figmaMeta.size.h);
+  }
 
   if (prim.geometry === "path" && prim.pathData) {
     node.vectorPaths = [{ data: prim.pathData, windingRule: "NONZERO" }];
@@ -60,6 +69,15 @@ export function buildShape(
   }
 
   applyUniversal(node, prim);
+
+  // Apply absolute position from metadata.figma.position. Frame builders
+  // append children after they're constructed, so we set x/y on the node
+  // before the parent appends — Figma keeps the assignment.
+  if (figmaMeta.position) {
+    (node as unknown as { x?: number; y?: number }).x = figmaMeta.position.x;
+    (node as unknown as { x?: number; y?: number }).y = figmaMeta.position.y;
+  }
+
   return node;
 }
 

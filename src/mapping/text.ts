@@ -19,6 +19,7 @@ import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import { asArray, asNumber, asObject, asString } from "./figma-mixed";
+import { withFigmaMetadata, type FigmaMetadata } from "./figma-metadata";
 import type { MappingResult } from "./types";
 
 interface MockTextNode {
@@ -28,11 +29,15 @@ interface MockTextNode {
   characters: string;
   width?: number;
   height?: number;
+  x?: number;
+  y?: number;
   fontSize?: number;
   fontWeight?: number;
   fontName?: { family: string; style: string };
   fills?: FigmaPaint[];
   textAlignHorizontal?: "LEFT" | "CENTER" | "RIGHT" | "JUSTIFIED";
+  textCase?: "ORIGINAL" | "UPPER" | "LOWER" | "TITLE" | "SMALL_CAPS" | "SMALL_CAPS_FORCED";
+  textAutoResize?: "NONE" | "WIDTH_AND_HEIGHT" | "HEIGHT" | "TRUNCATE";
   lineHeight?: { unit: "PIXELS" | "PERCENT" | "AUTO"; value?: number };
   letterSpacing?: { unit: "PIXELS" | "PERCENT"; value: number };
   visible?: boolean;
@@ -44,6 +49,11 @@ interface MockTextNode {
   getSharedPluginData?(namespace: string, key: string): string;
 }
 
+export interface TextMapOptions {
+  parentX?: number;
+  parentY?: number;
+}
+
 const ALIGN_MAP: Record<string, TextStyle["textAlign"]> = {
   LEFT: "left",
   CENTER: "center",
@@ -51,7 +61,7 @@ const ALIGN_MAP: Record<string, TextStyle["textAlign"]> = {
   JUSTIFIED: "justify",
 };
 
-export function mapText(node: MockTextNode): MappingResult {
+export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResult {
   const parsed = parseLayerName(node.name, { primitiveKind: "text" });
   const style = extractStyle(node);
 
@@ -70,6 +80,29 @@ export function mapText(node: MockTextNode): MappingResult {
   if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
   if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
 
+  // metadata.figma — capture the Figma-specific text properties LSML does
+  // not carry (textCase, textAutoResize, full fontName.style) plus the
+  // absolute position for non-auto-layout parents.
+  const px = asNumber(node.x) ?? 0;
+  const py = asNumber(node.y) ?? 0;
+  const parentX = opts?.parentX ?? 0;
+  const parentY = opts?.parentY ?? 0;
+  const relX = roundTo3(px - parentX);
+  const relY = roundTo3(py - parentY);
+  const figma: FigmaMetadata = { position: { x: relX, y: relY } };
+  const tc = asString(node.textCase);
+  if (tc && tc !== "ORIGINAL") {
+    figma.textCase = tc as Exclude<FigmaMetadata["textCase"], undefined>;
+  }
+  const tar = asString(node.textAutoResize);
+  if (tar && tar !== "NONE") {
+    figma.textAutoResize = tar as Exclude<FigmaMetadata["textAutoResize"], undefined>;
+  }
+  const fontName = asObject<{ family: string; style: string }>(node.fontName);
+  const fontStyleRaw = fontName ? asString(fontName.style) : undefined;
+  if (fontStyleRaw) figma.fontStyle = fontStyleRaw;
+  withFigmaMetadata(prim, figma);
+
   // When no [bind:...] directive is present, the node's `characters` is the
   // static text. We surface it via a synthesised leaf path that the bundle
   // assembler plants under `defaults`.
@@ -80,6 +113,10 @@ export function mapText(node: MockTextNode): MappingResult {
     };
   }
   return { node: prim };
+}
+
+function roundTo3(n: number): number {
+  return Math.round(n * 1000) / 1000;
 }
 
 function readPluginData(node: MockTextNode, key: string): string | null {

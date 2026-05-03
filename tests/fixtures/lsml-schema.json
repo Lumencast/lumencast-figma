@@ -406,6 +406,7 @@
         "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
         "rotation": { "type": "number" },
         "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" },
+        "metadata": { "type": "object", "additionalProperties": true },
         "animate": { "$ref": "#/$defs/AnimateDirective" },
         "keyframes": { "$ref": "#/$defs/Keyframes" }
       }
@@ -446,7 +447,8 @@
         "sizing": { "$ref": "#/$defs/Sizing" },
         "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
         "rotation": { "type": "number" },
-        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" },
+        "metadata": { "type": "object", "additionalProperties": true }
       }
     },
 
@@ -492,7 +494,8 @@
         "sizing": { "$ref": "#/$defs/Sizing" },
         "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
         "rotation": { "type": "number" },
-        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" },
+        "metadata": { "type": "object", "additionalProperties": true }
       }
     },
 
@@ -522,7 +525,8 @@
         "sizing": { "$ref": "#/$defs/Sizing" },
         "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
         "rotation": { "type": "number" },
-        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" },
+        "metadata": { "type": "object", "additionalProperties": true }
       },
       "not": {
         "description": "background and backgrounds are mutually exclusive.",
@@ -553,7 +557,8 @@
         "sizing": { "$ref": "#/$defs/Sizing" },
         "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
         "rotation": { "type": "number" },
-        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" },
+        "metadata": { "type": "object", "additionalProperties": true }
       }
     },
 
@@ -581,7 +586,8 @@
         "sizing": { "$ref": "#/$defs/Sizing" },
         "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
         "rotation": { "type": "number" },
-        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" },
+        "metadata": { "type": "object", "additionalProperties": true }
       }
     },
 
@@ -618,7 +624,8 @@
         "sizing": { "$ref": "#/$defs/Sizing" },
         "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
         "rotation": { "type": "number" },
-        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" },
+        "metadata": { "type": "object", "additionalProperties": true }
       },
       "allOf": [
         {
@@ -676,7 +683,8 @@
         "sizing": { "$ref": "#/$defs/Sizing" },
         "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
         "rotation": { "type": "number" },
-        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" },
+        "metadata": { "type": "object", "additionalProperties": true }
       },
       "anyOf": [{ "required": ["media_kind"] }, { "required": ["kind_hint"] }]
     },
@@ -760,7 +768,8 @@
         "sizing": { "$ref": "#/$defs/Sizing" },
         "opacity": { "type": "number", "minimum": 0, "maximum": 1 },
         "rotation": { "type": "number" },
-        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" }
+        "bindUniversal": { "$ref": "#/$defs/BindUniversalMap" },
+        "metadata": { "type": "object", "additionalProperties": true }
       }
     },
 

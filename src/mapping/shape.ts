@@ -11,6 +11,7 @@ import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { resolveVariable } from "./variables";
 import { asArray, asNumber } from "./figma-mixed";
+import { withFigmaMetadata } from "./figma-metadata";
 import type { MappingContext, MappingResult } from "./types";
 
 interface MockShapeNode {
@@ -19,6 +20,11 @@ interface MockShapeNode {
   name: string;
   width: number;
   height: number;
+  /** Absolute Figma coordinates on the canvas. The export pipeline computes
+   *  the position relative to the parent in `traverse.ts` and stamps it
+   *  into `metadata.figma.position`. */
+  x?: number;
+  y?: number;
   fills?: FigmaPaint[];
   strokes?: { type: "SOLID"; color: { r: number; g: number; b: number }; opacity?: number }[];
   strokeWeight?: number;
@@ -34,7 +40,16 @@ interface MockShapeNode {
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
 }
 
-export function mapShape(node: MockShapeNode, ctx?: MappingContext): MappingResult {
+export interface ShapeMapOptions {
+  parentX?: number;
+  parentY?: number;
+}
+
+export function mapShape(
+  node: MockShapeNode,
+  ctx?: MappingContext,
+  opts?: ShapeMapOptions,
+): MappingResult {
   const parsed = parseLayerName(node.name, { primitiveKind: "shape" });
   const fillsArr = asArray<FigmaPaint>(node.fills) ?? [];
   const fills = fillsArr
@@ -59,6 +74,25 @@ export function mapShape(node: MockShapeNode, ctx?: MappingContext): MappingResu
     const path = vp?.[0]?.data;
     if (path) prim.pathData = path;
   }
+
+  // metadata.figma.position — preserve absolute placement for shapes that
+  // sit inside non-auto-layout frames. LSML's `shape` has no native
+  // position field ; without this metadata, every shape collapses to (0,0)
+  // on re-import. metadata.figma.size — preserve vector dimensions so the
+  // path renders at the right scale (LSML §4.6 leaves size unspecified for
+  // path geometry).
+  const px = asNumber(node.x) ?? 0;
+  const py = asNumber(node.y) ?? 0;
+  const parentX = opts?.parentX ?? 0;
+  const parentY = opts?.parentY ?? 0;
+  const relX = roundTo3(px - parentX);
+  const relY = roundTo3(py - parentY);
+  withFigmaMetadata(prim, {
+    position: { x: relX, y: relY },
+    ...(prim.geometry === "path" && w !== undefined && h !== undefined
+      ? { size: { w: roundTo3(w), h: roundTo3(h) } }
+      : {}),
+  });
 
   if (fills.length === 1 && fills[0]?.kind === "solid" && fills[0].opacity === undefined) {
     prim.fill = fills[0].color;
