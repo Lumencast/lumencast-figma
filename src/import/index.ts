@@ -14,6 +14,7 @@ import { embedAssets, type AssetByteSource } from "./assets";
 import { buildPrimitive } from "./walk";
 import { reconcileAppend } from "./reconcile";
 import { collectFonts, preloadFonts } from "./fonts";
+import { createImportTrace } from "./trace";
 import type { ImportFigmaApi } from "./figma-api";
 
 export interface ImportBundleOptions {
@@ -47,12 +48,14 @@ export async function importBundle(opts: ImportBundleOptions): Promise<ImportRes
   console.warn("[lumencast] import step 3/4 done");
 
   console.warn("[lumencast] import step 4/4 — build primitive tree");
+  const trace = createImportTrace();
   const ctx = {
     defaults: bundle.defaults ?? {},
     assetMap,
     warn(code: string, message: string) {
       warnings.push({ code, message });
     },
+    trace,
   };
   const rootNode = buildPrimitive(bundle.layout, opts.api, ctx);
   reconcileAppend(opts.api, rootNode);
@@ -66,11 +69,23 @@ export async function importBundle(opts: ImportBundleOptions): Promise<ImportRes
     `[lumencast] import step 4/4 done — root id: ${rootNode.id} ; built ${built}/${expected} primitives, ${buildFailures} failed`,
   );
 
-  return {
+  const result: ImportResult = {
     rootNodeId: rootNode.id,
     primitivesCreated: built,
     warnings,
+    debugArtefacts: {
+      importTrace: JSON.stringify(
+        {
+          summary: { expected, built, failed: buildFailures },
+          warnings,
+          entries: trace.entries,
+        },
+        null,
+        2,
+      ),
+    },
   };
+  return result;
 }
 
 function countPrimitives(node: PrimitiveNode): number {

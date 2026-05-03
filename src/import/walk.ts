@@ -32,6 +32,12 @@ export function buildPrimitive(
     "";
   const tag = `${path}.${kind}${ariaOrName ? `[${ariaOrName.slice(0, 20)}]` : ""}`;
   console.warn("[lumencast] build →", tag);
+  ctx.trace?.push({
+    path,
+    kind,
+    ...(ariaOrName ? { name: ariaOrName } : {}),
+    action: "build-start",
+  });
 
   try {
     switch (prim.kind) {
@@ -80,6 +86,13 @@ export function buildPrimitive(
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[lumencast] BUILD FAIL ${tag}: ${msg}`);
     if (err instanceof Error && err.stack) console.error(err.stack);
+    ctx.trace?.push({
+      path,
+      kind,
+      ...(ariaOrName ? { name: ariaOrName } : {}),
+      action: "build-failed",
+      error: msg,
+    });
     throw err;
   }
 }
@@ -97,6 +110,9 @@ function appendSafely(
   try {
     child = build();
   } catch (err) {
+    // The build call already pushed a `build-failed` trace entry for the
+    // child itself ; we just record the warning here so the UI surfaces a
+    // count and the path is preserved in the warnings list.
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[lumencast] APPEND skipped at ${path}: build failed — ${msg}`);
     ctx.warn("IMPORT_BUILD_FAILED", `Could not build primitive at ${path} : ${msg}`);
@@ -108,5 +124,11 @@ function appendSafely(
     const msg = err instanceof Error ? err.message : String(err);
     console.error(`[lumencast] APPEND skipped at ${path}: appendChild failed — ${msg}`);
     ctx.warn("IMPORT_APPEND_FAILED", `Could not append child at ${path} : ${msg}`);
+    ctx.trace?.push({
+      path,
+      kind: child.type,
+      action: "append-failed",
+      error: msg,
+    });
   }
 }

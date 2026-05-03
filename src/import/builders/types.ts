@@ -1,5 +1,7 @@
 // Shared context passed to per-primitive builders during import.
 
+import type { ImportTrace } from "../trace";
+
 export interface BuildContext {
   /** Bundle-level `defaults` map. Builders consult it to reverse-resolve
    *  `__lit.*` synthesised LeafPaths (text characters, image asset paths). */
@@ -9,4 +11,8 @@ export interface BuildContext {
   assetMap: Record<string, string>;
   /** Sink for non-fatal warnings surfaced to the UI. */
   warn(code: string, message: string): void;
+  /** Optional structured trace recorder. The walker pushes one entry per
+   *  visited primitive ; the import pipeline serialises it as
+   *  `import-trace.json` for the user-facing diagnostic file. */
+  trace?: ImportTrace;
 }

@@ -89,6 +89,12 @@ export interface ImportResult {
   rootNodeId: string;
   primitivesCreated: number;
   warnings: PluginWarning[];
+  /** Optional diagnostic artefact. The UI writes it to disk as
+   *  `<scene_id>-import-trace.json` after each import so users can ship
+   *  the trace back without copy-pasting console output. */
+  debugArtefacts?: {
+    importTrace: string;
+  };
 }
 
 export interface PluginWarning {
