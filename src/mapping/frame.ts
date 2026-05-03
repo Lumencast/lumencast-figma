@@ -6,12 +6,12 @@
 // runtime treats the root as the document origin).
 
 import type { Bind, Fill, FramePrimitive } from "~shared/lsml-types";
-import { paintToFill, type FigmaPaint, paintToSolidCss } from "./color";
+import { paintToFill, rawGradientTransform, type FigmaPaint, paintToSolidCss } from "./color";
+import { withFigmaMetadata } from "./figma-metadata";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { resolveVariable } from "./variables";
 import { asArray, asBoolean, asNumber } from "./figma-mixed";
-import { withFigmaMetadata } from "./figma-metadata";
 import type { MappingContext, MappingResult } from "./types";
 
 export interface FrameMapInput {
@@ -88,6 +88,16 @@ export function mapFrame(
     prim.backgrounds = fills;
   }
 
+  // Preserve raw gradient matrices parallel-indexed with the emitted fills
+  // for byte-stable round-trip. Helper drops the array when every entry is
+  // null, so plain solid backgrounds carry no metadata noise.
+  if (fills.length > 0) {
+    const transforms = fillsArr
+      .filter((p) => p.type !== "IMAGE")
+      .map((p) => rawGradientTransform(p));
+    withFigmaMetadata(prim, { gradientTransforms: transforms });
+  }
+
   if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
   if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
 
@@ -108,14 +118,12 @@ export function mapFrame(
   }
   if (Object.keys(bind).length > 0) prim.bind = bind;
 
-  // metadata.figma.clipsContent — only emit when the value diverges from
-  // the Figma default (true). Importing a frame without explicit metadata
-  // applies `clipsContent: true` already, so capturing `true` here would
-  // pollute every roundtrip with redundant metadata. We only need to
-  // round-trip the non-default `false` case.
+  // `clipsContent` is a first-class field as of LSML 1.1 (§4.3). Default
+  // is `true` ; we only emit when the source frame diverges, so plain
+  // frames don't carry redundant noise.
   const clips = asBoolean(node.clipsContent);
   if (clips === false) {
-    withFigmaMetadata(prim, { clipsContent: false });
+    prim.clipsContent = false;
   }
 
   if (defaults) return { node: prim, defaults };

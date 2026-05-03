@@ -26,13 +26,28 @@
 //     auto-grow surprises.
 
 export interface FigmaMetadata {
+  /** @deprecated since v0.2 — use universal `position` (LSML §5.4). Kept
+   *  for back-compat reads of v0.1 bundles. */
   position?: { x: number; y: number };
+  /** @deprecated since v0.2 — `shape.size` is now first-class for path
+   *  geometry. Kept for v0.1 reads. */
   size?: { w: number; h: number };
+  /** @deprecated since v0.2 — use `style.textTransform` (LSML §4.4.1).
+   *  Still emitted for SMALL_CAPS / SMALL_CAPS_FORCED which have no
+   *  spec equivalent yet. */
   textCase?: "ORIGINAL" | "UPPER" | "LOWER" | "TITLE" | "SMALL_CAPS" | "SMALL_CAPS_FORCED";
   textAutoResize?: "NONE" | "WIDTH_AND_HEIGHT" | "HEIGHT" | "TRUNCATE";
   /** Original Figma `fontName.style` string, e.g. "Bold", "Medium Italic". */
   fontStyle?: string;
+  /** @deprecated since v0.2 — use `frame.clipsContent` (LSML §4.3). Kept
+   *  for v0.1 reads. */
   clipsContent?: boolean;
+  /** Raw Figma 2x3 affine matrices, parallel-indexed with `fills[]` (or
+   *  `backgrounds[]` on a frame). Preserves rotation+translation+scale of
+   *  gradient handles that LSML's `angle_deg` flattens. Each entry is null
+   *  for non-gradient fills (solid, image). Round-trip uses these in
+   *  preference to reconstructing from `angle_deg` when present. */
+  gradientTransforms?: (number[][] | null)[];
 }
 
 /** Decorate a primitive's `metadata` block with figma-specific keys. Only
@@ -67,5 +82,13 @@ function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
   if (meta.textAutoResize && meta.textAutoResize !== "NONE") out.textAutoResize = meta.textAutoResize;
   if (meta.fontStyle) out.fontStyle = meta.fontStyle;
   if (meta.clipsContent !== undefined) out.clipsContent = meta.clipsContent;
+  if (meta.gradientTransforms && meta.gradientTransforms.length > 0) {
+    // Drop the array if every entry is null (no gradients had transforms
+    // worth preserving) — keeps the metadata block empty in the common
+    // single-solid-fill case.
+    if (meta.gradientTransforms.some((t) => t !== null)) {
+      out.gradientTransforms = meta.gradientTransforms;
+    }
+  }
   return out;
 }

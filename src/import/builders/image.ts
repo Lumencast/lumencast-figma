@@ -48,10 +48,12 @@ export function buildImage(
 
   applyUniversal(node, prim);
 
+  // Position : universal prop (LSML 1.1 §5.4) with v0.1 metadata fallback.
   const figmaMeta = readFigmaMetadata(prim);
-  if (figmaMeta.position) {
-    (node as unknown as { x?: number; y?: number }).x = figmaMeta.position.x;
-    (node as unknown as { x?: number; y?: number }).y = figmaMeta.position.y;
+  const pos = prim.position ?? figmaMeta.position;
+  if (pos) {
+    (node as unknown as { x?: number; y?: number }).x = pos.x;
+    (node as unknown as { x?: number; y?: number }).y = pos.y;
   }
 
   return node;

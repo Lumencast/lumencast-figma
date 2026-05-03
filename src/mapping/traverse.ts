@@ -97,6 +97,14 @@ export function walk(
         return mapShape(node as never, ctx, parentOpts);
       case "ELLIPSE":
       case "VECTOR":
+      case "BOOLEAN_OPERATION":
+      case "STAR":
+      case "POLYGON":
+      case "LINE":
+        // All vector-like nodes share `fillGeometry` (post-boolean flatten)
+        // — mapShape consumes it as `shape.paths[]`. Treating BOOLEAN_OPERATION
+        // as a single shape (instead of recursing into its children) is the
+        // fix for "logo becomes plein de vectors".
         console.warn("[lumencast]   → mapShape (", node.type, ")");
         return mapShape(node as never, ctx, parentOpts);
       case "INSTANCE":

@@ -36,13 +36,28 @@ export function buildShape(
     node.resize(figmaMeta.size.w, figmaMeta.size.h);
   }
 
-  if (prim.geometry === "path" && prim.pathData) {
-    node.vectorPaths = [{ data: prim.pathData, windingRule: "NONZERO" }];
+  if (prim.geometry === "path") {
+    // LSML 1.1 §4.6 : `paths[]` is the multi-subpath form, `pathData` the
+    // single-path shorthand. The two are mutually exclusive at the schema
+    // level, so we accept whichever is present.
+    if (prim.paths && prim.paths.length > 0) {
+      node.vectorPaths = prim.paths.map((p) => ({
+        data: p.data,
+        windingRule: p.windingRule ?? "NONZERO",
+      }));
+    } else if (prim.pathData) {
+      node.vectorPaths = [{ data: prim.pathData, windingRule: "NONZERO" }];
+    }
   }
 
-  // Fills.
+  // Fills. When the source captured raw gradient matrices in
+  // `metadata.figma.gradientTransforms[]` (v0.2+), use those instead of
+  // reconstructing from `angle_deg` — preserves Figma's exact handle.
+  const transforms = figmaMeta.gradientTransforms ?? [];
   if (prim.fills && prim.fills.length > 0) {
-    node.fills = prim.fills.map(fillToPaint).filter((p): p is ImportPaint => p !== null);
+    node.fills = prim.fills
+      .map((f, i) => fillToPaint(f, transforms[i] ?? null))
+      .filter((p): p is ImportPaint => p !== null);
   } else if (prim.fill !== undefined) {
     const rgb = cssToRgb(prim.fill);
     if (rgb) {
@@ -70,18 +85,20 @@ export function buildShape(
 
   applyUniversal(node, prim);
 
-  // Apply absolute position from metadata.figma.position. Frame builders
-  // append children after they're constructed, so we set x/y on the node
-  // before the parent appends — Figma keeps the assignment.
-  if (figmaMeta.position) {
-    (node as unknown as { x?: number; y?: number }).x = figmaMeta.position.x;
-    (node as unknown as { x?: number; y?: number }).y = figmaMeta.position.y;
+  // Position : universal prop (LSML 1.1 §5.4). v0.1 bundles stashed it
+  // in `metadata.figma.position` ; we still read that as a fallback.
+  // Frame builders append children after they're constructed, so we set
+  // x/y on the node before the parent appends — Figma keeps the assignment.
+  const pos = prim.position ?? figmaMeta.position;
+  if (pos) {
+    (node as unknown as { x?: number; y?: number }).x = pos.x;
+    (node as unknown as { x?: number; y?: number }).y = pos.y;
   }
 
   return node;
 }
 
-function fillToPaint(fill: Fill): ImportPaint | null {
+function fillToPaint(fill: Fill, rawTransform: number[][] | null): ImportPaint | null {
   if (fill.kind === "solid") {
     const rgb = cssToRgb(fill.color);
     if (!rgb) return null;
@@ -103,12 +120,15 @@ function fillToPaint(fill: Fill): ImportPaint | null {
           s !== null,
       );
     if (stops.length < 2) return null;
+    const transform =
+      rawTransform ??
+      gradientTransformFromAngle(
+        fill.kind === "linear-gradient" ? (fill.angle_deg ?? 0) : 0,
+      );
     const out: ImportPaint = {
       type: fill.kind === "linear-gradient" ? "GRADIENT_LINEAR" : "GRADIENT_RADIAL",
       gradientStops: stops,
-      gradientTransform: gradientTransformFromAngle(
-        fill.kind === "linear-gradient" ? (fill.angle_deg ?? 0) : 0,
-      ),
+      gradientTransform: transform,
     };
     if (fill.opacity !== undefined && fill.opacity !== 1) out.opacity = fill.opacity;
     return out;

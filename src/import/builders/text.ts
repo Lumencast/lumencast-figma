@@ -89,22 +89,39 @@ export function buildText(
     }
   }
 
-  // Re-apply Figma-only props from metadata.figma : textCase (uppercase
-  // visual transform), textAutoResize (frame-fit behaviour), and the
-  // absolute position for non-auto-layout parents.
-  if (figmaMeta.textCase) {
-    (node as unknown as { textCase?: string }).textCase = figmaMeta.textCase;
+  // textCase : prefer the canonical `style.textTransform` (LSML 1.1
+  // §4.4.1). Fall back to `metadata.figma.textCase` for v0.1 bundles
+  // produced before the spec change.
+  const textCase =
+    transformToTextCase(prim.style?.textTransform) ?? figmaMeta.textCase;
+  if (textCase) {
+    (node as unknown as { textCase?: string }).textCase = textCase;
   }
   if (figmaMeta.textAutoResize) {
     (node as unknown as { textAutoResize?: string }).textAutoResize = figmaMeta.textAutoResize;
   }
-  if (figmaMeta.position) {
-    (node as unknown as { x?: number; y?: number }).x = figmaMeta.position.x;
-    (node as unknown as { x?: number; y?: number }).y = figmaMeta.position.y;
+  // Position : prefer the canonical universal prop (LSML 1.1 §5.4) ;
+  // fall back to `metadata.figma.position` for v0.1 bundles.
+  const pos = prim.position ?? figmaMeta.position;
+  if (pos) {
+    (node as unknown as { x?: number; y?: number }).x = pos.x;
+    (node as unknown as { x?: number; y?: number }).y = pos.y;
   }
 
   applyUniversal(node, prim);
   return node;
+}
+
+/** Map LSML `style.textTransform` (LSML §4.4.1) back to Figma's `textCase`.
+ *  Returns undefined when no transform is declared, leaving the caller to
+ *  fall back to `metadata.figma.textCase` for v0.1 bundles. */
+function transformToTextCase(
+  tt: string | undefined,
+): "UPPER" | "LOWER" | "TITLE" | undefined {
+  if (tt === "uppercase") return "UPPER";
+  if (tt === "lowercase") return "LOWER";
+  if (tt === "capitalize") return "TITLE";
+  return undefined;
 }
 
 /** Derive a Figma `fontName.style` string from LSML's numeric `fontWeight`

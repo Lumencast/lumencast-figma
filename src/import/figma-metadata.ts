@@ -11,6 +11,10 @@ export interface FigmaMetadata {
   textAutoResize?: "NONE" | "WIDTH_AND_HEIGHT" | "HEIGHT" | "TRUNCATE";
   fontStyle?: string;
   clipsContent?: boolean;
+  /** Raw Figma 2x3 affine matrices indexed parallel with the prim's `fills[]`
+   *  / `backgrounds[]`. Used by the import builder to restore byte-stable
+   *  gradient handles when present (avoids the lossy angle_deg round-trip). */
+  gradientTransforms?: (number[][] | null)[];
 }
 
 export function readFigmaMetadata(prim: { metadata?: Record<string, unknown> }): FigmaMetadata {

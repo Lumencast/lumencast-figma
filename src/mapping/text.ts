@@ -76,24 +76,36 @@ export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResul
     bind: parsed.bind ?? { value: litPath },
     ...extractUniversal(node),
   };
+  // textCase → style.textTransform (LSML §4.4.1). Figma's UPPER/LOWER/TITLE
+  // map directly. SMALL_CAPS / SMALL_CAPS_FORCED have no LSML equivalent
+  // yet — preserve them in metadata.figma until the spec adds an enum.
+  const tc = asString(node.textCase);
+  if (tc) {
+    const tt = textCaseToTransform(tc);
+    if (tt) {
+      style.textTransform = tt;
+    } else if (tc === "SMALL_CAPS" || tc === "SMALL_CAPS_FORCED") {
+      withFigmaMetadata(prim, { textCase: tc as "SMALL_CAPS" | "SMALL_CAPS_FORCED" });
+    }
+  }
   if (Object.keys(style).length > 0) prim.style = style;
   if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
   if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
 
-  // metadata.figma — capture the Figma-specific text properties LSML does
-  // not carry (textCase, textAutoResize, full fontName.style) plus the
-  // absolute position for non-auto-layout parents.
+  // Universal `position` (LSML §5.4) — relative to parent's coordinate
+  // origin. Non-zero only ; the root is at the document origin.
   const px = asNumber(node.x) ?? 0;
   const py = asNumber(node.y) ?? 0;
   const parentX = opts?.parentX ?? 0;
   const parentY = opts?.parentY ?? 0;
   const relX = roundTo3(px - parentX);
   const relY = roundTo3(py - parentY);
-  const figma: FigmaMetadata = { position: { x: relX, y: relY } };
-  const tc = asString(node.textCase);
-  if (tc && tc !== "ORIGINAL") {
-    figma.textCase = tc as Exclude<FigmaMetadata["textCase"], undefined>;
-  }
+  if (relX !== 0 || relY !== 0) prim.position = { x: relX, y: relY };
+
+  // textAutoResize and the raw fontName.style (e.g. "SemiBold Italic") have
+  // no LSML representation — keep them in metadata.figma so the import
+  // builder can pick the closest font variant on roundtrip.
+  const figma: FigmaMetadata = {};
   const tar = asString(node.textAutoResize);
   if (tar && tar !== "NONE") {
     figma.textAutoResize = tar as Exclude<FigmaMetadata["textAutoResize"], undefined>;
@@ -101,7 +113,7 @@ export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResul
   const fontName = asObject<{ family: string; style: string }>(node.fontName);
   const fontStyleRaw = fontName ? asString(fontName.style) : undefined;
   if (fontStyleRaw) figma.fontStyle = fontStyleRaw;
-  withFigmaMetadata(prim, figma);
+  if (Object.keys(figma).length > 0) withFigmaMetadata(prim, figma);
 
   // When no [bind:...] directive is present, the node's `characters` is the
   // static text. We surface it via a synthesised leaf path that the bundle
@@ -117,6 +129,16 @@ export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResul
 
 function roundTo3(n: number): number {
   return Math.round(n * 1000) / 1000;
+}
+
+function textCaseToTransform(
+  tc: string,
+): "uppercase" | "lowercase" | "capitalize" | undefined {
+  if (tc === "UPPER") return "uppercase";
+  if (tc === "LOWER") return "lowercase";
+  if (tc === "TITLE") return "capitalize";
+  // ORIGINAL → omit. SMALL_CAPS / SMALL_CAPS_FORCED → caller falls back.
+  return undefined;
 }
 
 function readPluginData(node: MockTextNode, key: string): string | null {
