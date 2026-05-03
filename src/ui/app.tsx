@@ -41,6 +41,9 @@ export function App() {
             sceneId: msg.payload.bundle.scene_id,
             bundleBytes: msg.payload.canonical,
             assets: msg.payload.assets,
+            ...(msg.payload.debugArtefacts
+              ? { debugArtefacts: msg.payload.debugArtefacts }
+              : {}),
           });
           break;
         }

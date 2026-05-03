@@ -57,6 +57,8 @@ export interface WalkOptions {
   isRoot: boolean;
   parentX?: number;
   parentY?: number;
+  /** Tree depth for the trace recorder (root = 0). Internal — callers don't set it. */
+  depth?: number;
 }
 
 /** Map a single Figma node + its descendants. Returns null when the node
@@ -67,12 +69,15 @@ export function walk(
   ctx: MappingContext,
   opts: WalkOptions,
 ): MappingResult | null {
+  const depth = opts.depth ?? 0;
   console.warn("[lumencast] walk:", node.type, node.id, node.name);
   if (node.visible === false) {
+    ctx.trace?.push({ depth, type: node.type, id: node.id, name: node.name, action: "skip-invisible" });
     return null;
   }
   if (isOperatorInputComponent(node)) {
     console.warn("[lumencast]   → operator-input component, skipped from tree");
+    ctx.trace?.push({ depth, type: node.type, id: node.id, name: node.name, action: "skip-operator-input" });
     return null;
   }
 
@@ -83,17 +88,21 @@ export function walk(
   if (opts.parentX !== undefined) parentOpts.parentX = opts.parentX;
   if (opts.parentY !== undefined) parentOpts.parentY = opts.parentY;
 
+  const traceBase = { depth, type: node.type, id: node.id, name: node.name };
   try {
     switch (node.type) {
       case "TEXT":
         console.warn("[lumencast]   → mapText");
+        ctx.trace?.push({ ...traceBase, action: "map-text" });
         return mapText(node as never, parentOpts);
       case "RECTANGLE":
         if (hasImageFill(node)) {
           console.warn("[lumencast]   → mapImage");
+          ctx.trace?.push({ ...traceBase, action: "map-image" });
           return mapImage(node as never, ctx, parentOpts);
         }
         console.warn("[lumencast]   → mapShape (rect)");
+        ctx.trace?.push({ ...traceBase, action: "map-shape", note: "rect" });
         return mapShape(node as never, ctx, parentOpts);
       case "ELLIPSE":
       case "VECTOR":
@@ -106,6 +115,7 @@ export function walk(
         // as a single shape (instead of recursing into its children) is the
         // fix for "logo becomes plein de vectors".
         console.warn("[lumencast]   → mapShape (", node.type, ")");
+        ctx.trace?.push({ ...traceBase, action: "map-shape", note: node.type });
         return mapShape(node as never, ctx, parentOpts);
       case "INSTANCE":
       case "FRAME": {
@@ -118,14 +128,17 @@ export function walk(
         const inst = mapInstance(node as never, instOpts, ctx);
         if (inst) {
           console.warn("[lumencast]   → mapInstance (matched §4.9)");
+          ctx.trace?.push({ ...traceBase, action: "map-instance" });
           return inst;
         }
         console.warn("[lumencast]   → walkContainer (frame/stack)");
+        ctx.trace?.push({ ...traceBase, action: "walk-container", note: node.type });
         return walkContainer(node, ctx, opts);
       }
       case "COMPONENT":
       case "GROUP":
         console.warn("[lumencast]   → walkContainer (", node.type, ")");
+        ctx.trace?.push({ ...traceBase, action: "walk-container", note: node.type });
         return walkContainer(node, ctx, opts);
       default:
         ctx.warn(
@@ -133,9 +146,11 @@ export function walk(
           `Node type ${node.type} has no LSML 1.1 mapping ; skipped.`,
           node.id,
         );
+        ctx.trace?.push({ ...traceBase, action: "skip-unsupported" });
         return null;
     }
   } catch (err) {
+    ctx.trace?.push({ ...traceBase, action: "error", error: err instanceof Error ? err.message : String(err) });
     console.error("[lumencast] FAIL inside walk for", node.type, node.id, node.name, "→", err);
     if (err instanceof Error) console.error("[lumencast]   stack:", err.stack);
     throw err;
@@ -151,9 +166,10 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
   const childResults: MappingResult[] = [];
   const myX = asNumber(node.x) ?? 0;
   const myY = asNumber(node.y) ?? 0;
+  const childDepth = (opts.depth ?? 0) + 1;
   const childNodes = asArray<AnyFigmaNode>(node.children) ?? [];
   for (const child of childNodes) {
-    const r = walk(child, ctx, { isRoot: false, parentX: myX, parentY: myY });
+    const r = walk(child, ctx, { isRoot: false, parentX: myX, parentY: myY, depth: childDepth });
     if (r) childResults.push(r);
   }
   const children = childResults.map((r) => r.node) as PrimitiveNode[];

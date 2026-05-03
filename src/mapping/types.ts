@@ -2,6 +2,7 @@
 
 import type { OperatorInputSpec, PrimitiveNode } from "~shared/lsml-types";
 import type { VariableResolverApi } from "./variables";
+import type { MappingTrace } from "./trace";
 
 export interface MappingResult {
   /** The LSML primitive that replaces the Figma node. */
@@ -27,4 +28,8 @@ export interface MappingContext {
    *  paint / size / color binds and emit token-LeafPath bindings instead of
    *  static values (LSML §17.0 composition). */
   variables?: VariableResolverApi;
+  /** Optional trace recorder. When present, traverse.ts pushes one entry
+   *  per visited node — used to populate `_debug/mapping-trace.json` in
+   *  the .lsmlz archive. */
+  trace?: MappingTrace;
 }

@@ -27,6 +27,10 @@ export interface RunExportOptions {
   root: RootNode;
   sceneId?: string;
   variables?: VariableResolverApi;
+  /** Capture `_debug/raw-figma.json` + `_debug/mapping-trace.json` into
+   *  the result. The UI bundles them into the .lsmlz archive so users
+   *  can ship diagnostics back without re-exposing console output. */
+  captureDebugArtefacts?: boolean;
 }
 
 export interface RunExportError extends Error {
@@ -54,6 +58,7 @@ export async function runExport(
     hash: built.sceneVersion,
     canonical: built.canonical,
   };
+  if (built.debugArtefacts) result.debugArtefacts = built.debugArtefacts;
   return result;
 }
 

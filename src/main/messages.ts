@@ -66,6 +66,14 @@ export interface ExportResult {
   warnings: PluginWarning[];
   /** sha256 of the canonicalized bundle (== scene_version) */
   hash: string;
+  /** Optional diagnostic artefacts. Present only when the export was
+   *  invoked with `captureDebugArtefacts: true`. The UI writes them to
+   *  `_debug/raw-figma.json` + `_debug/mapping-trace.json` inside the
+   *  .lsmlz archive. Both are pre-serialised JSON strings. */
+  debugArtefacts?: {
+    rawFigma: string;
+    mappingTrace: string;
+  };
 }
 
 export interface ExportedAsset {

@@ -17,6 +17,7 @@ export interface DownloadOptions {
   /** UTF-8 canonical bytes of the sealed bundle. */
   bundleBytes: string;
   assets: ExportResult["assets"];
+  debugArtefacts?: ExportResult["debugArtefacts"];
 }
 
 export function downloadExport(opts: DownloadOptions): void {
@@ -30,6 +31,7 @@ export function downloadExport(opts: DownloadOptions): void {
       // copy so fflate sees a plain ArrayBuffer-backed view.
       bytes: new Uint8Array(a.bytes),
     })),
+    ...(opts.debugArtefacts ? { debugArtefacts: opts.debugArtefacts } : {}),
   });
   triggerBlobDownload(archive, `${opts.sceneId}${LSML_ARCHIVE_EXTENSION}`);
 }
