@@ -56,11 +56,19 @@ export async function importBundle(opts: ImportBundleOptions): Promise<ImportRes
   };
   const rootNode = buildPrimitive(bundle.layout, opts.api, ctx);
   reconcileAppend(opts.api, rootNode);
-  console.warn("[lumencast] import step 4/4 done — root id:", rootNode.id);
+
+  const expected = countPrimitives(bundle.layout);
+  const buildFailures = warnings.filter(
+    (w) => w.code === "IMPORT_BUILD_FAILED" || w.code === "IMPORT_APPEND_FAILED",
+  ).length;
+  const built = expected - buildFailures;
+  console.warn(
+    `[lumencast] import step 4/4 done — root id: ${rootNode.id} ; built ${built}/${expected} primitives, ${buildFailures} failed`,
+  );
 
   return {
     rootNodeId: rootNode.id,
-    primitivesCreated: countPrimitives(bundle.layout),
+    primitivesCreated: built,
     warnings,
   };
 }
