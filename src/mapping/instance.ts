@@ -48,7 +48,6 @@ interface InstanceMapOptions {
   isRoot: boolean;
   parentX?: number;
   parentY?: number;
-  parentRotation?: number;
 }
 
 /** Returns the LSML instance primitive when the INSTANCE has the required
@@ -79,7 +78,7 @@ export function mapInstance(
     kind: "instance",
     scene_id: sceneId,
     scene_version: sceneVersion,
-    ...extractUniversal(node, { parentRotation: opts.parentRotation ?? 0 }),
+    ...extractUniversal(node),
   };
 
   // size : always emit on instance — runtime needs the slot dimensions.

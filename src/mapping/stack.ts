@@ -40,7 +40,6 @@ export interface StackMapInput {
 export interface StackMapOptions {
   parentX?: number;
   parentY?: number;
-  parentRotation?: number;
 }
 
 const PRIMARY_JUSTIFY: Record<string, StackPrimitive["justify"]> = {
@@ -68,7 +67,7 @@ export function mapStack(
     kind: "stack",
     direction: node.layoutMode === "HORIZONTAL" ? "horizontal" : "vertical",
     children,
-    ...extractUniversal(node, { parentRotation: opts?.parentRotation ?? 0 }),
+    ...extractUniversal(node),
   };
 
   // Universal `position` (LSML §5.4) — auto-layout frames still sit at

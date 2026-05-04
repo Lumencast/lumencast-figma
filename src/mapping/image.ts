@@ -37,7 +37,6 @@ interface MockImageNode {
 }
 
 export interface ImageMapOptions {
-  parentRotation?: number;
   parentX?: number;
   parentY?: number;
 }
@@ -86,7 +85,7 @@ export function mapImage(
     bind,
     alt: parsed.displayName || "",
     size: { w: roundTo3(w), h: roundTo3(h) },
-    ...extractUniversal(node, { parentRotation: opts?.parentRotation ?? 0 }),
+    ...extractUniversal(node),
   };
 
   // Map Figma scaleMode → LSML fit. Figma defaults to FILL.

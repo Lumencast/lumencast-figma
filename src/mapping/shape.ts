@@ -46,7 +46,6 @@ interface MockShapeNode {
 }
 
 export interface ShapeMapOptions {
-  parentRotation?: number;
   parentX?: number;
   parentY?: number;
 }
@@ -66,7 +65,7 @@ export function mapShape(
   const prim: ShapePrimitive = {
     kind: "shape",
     geometry: geometryFor(node),
-    ...extractUniversal(node, { parentRotation: opts?.parentRotation ?? 0 }),
+    ...extractUniversal(node),
   };
 
   const w = asNumber(node.width);
