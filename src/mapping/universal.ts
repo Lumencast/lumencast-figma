@@ -27,7 +27,19 @@ function modeFromFigma(m: "FIXED" | "HUG" | "FILL" | undefined): SizingMode | nu
   return null;
 }
 
-export function extractUniversal(node: FigmaNodeWithUniversal): UniversalProps {
+export interface ExtractUniversalOptions {
+  /** Cumulative rotation of the closest rotated ancestor (degrees). When
+   *  the current node's `rotation` matches the parent's, we emit `rotation: 0`
+   *  — Figma's rotation hierarchy is multiplicative on the visual side, so
+   *  re-applying the same rotation to a child of an already-rotated parent
+   *  doubles it. The fix : emit the LOCAL rotation (delta from parent's). */
+  parentRotation?: number;
+}
+
+export function extractUniversal(
+  node: FigmaNodeWithUniversal,
+  opts?: ExtractUniversalOptions,
+): UniversalProps {
   const out: UniversalProps = {};
 
   console.warn(
@@ -51,8 +63,10 @@ export function extractUniversal(node: FigmaNodeWithUniversal): UniversalProps {
     out.opacity = roundTo3(opacity);
   }
   const rotation = asNumber(node.rotation);
-  if (rotation !== undefined && rotation !== 0) {
-    out.rotation = roundTo3(rotation);
+  const parentRot = opts?.parentRotation ?? 0;
+  if (rotation !== undefined) {
+    const local = normaliseDegrees(rotation - parentRot);
+    if (local !== 0) out.rotation = roundTo3(local);
   }
 
   const lsH = asString(node.layoutSizingHorizontal) as "FIXED" | "HUG" | "FILL" | undefined;
@@ -63,6 +77,13 @@ export function extractUniversal(node: FigmaNodeWithUniversal): UniversalProps {
     out.sizing = { x: sx ?? "fixed", y: sy ?? "fixed" };
   }
   return out;
+}
+
+/** Normalise a degree value to (-180, 180] so deltas like 96 - 96 = 0
+ *  but 270 - 0 = 270 → -90 (closest equivalent). */
+function normaliseDegrees(d: number): number {
+  const n = ((d % 360) + 540) % 360 - 180;
+  return Math.abs(n) < 1e-6 ? 0 : n;
 }
 
 function roundTo3(n: number): number {

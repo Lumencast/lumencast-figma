@@ -51,6 +51,7 @@ interface MockTextNode {
 }
 
 export interface TextMapOptions {
+  parentRotation?: number;
   parentX?: number;
   parentY?: number;
 }
@@ -75,7 +76,7 @@ export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResul
   const prim: TextPrimitive = {
     kind: "text",
     bind: parsed.bind ?? { value: litPath },
-    ...extractUniversal(node),
+    ...extractUniversal(node, { parentRotation: opts?.parentRotation ?? 0 }),
   };
   // textCase → style.textTransform (LSML §4.4.1). Figma's UPPER/LOWER/TITLE
   // map directly. SMALL_CAPS / SMALL_CAPS_FORCED have no LSML equivalent
