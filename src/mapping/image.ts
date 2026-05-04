@@ -14,7 +14,7 @@ import { parseLayerName } from "../export/bindings";
 import { extractUniversal } from "./universal";
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import { asArray, asNumber } from "./figma-mixed";
-import { withFigmaMetadata } from "./figma-metadata";
+import { withFigmaMetadata, type FigmaMetadata } from "./figma-metadata";
 import { captureFigmaExtras } from "./figma-extras";
 import type { FigmaPaint } from "./color";
 import type { MappingContext, MappingResult } from "./types";
@@ -111,6 +111,18 @@ export function mapImage(
     withFigmaMetadata(prim, { layerName: node.name });
   }
 
+  // Per-image-paint extras (LSML 1.1 §17.4 / x-figma.authoring/1).
+  // Figma's IMAGE paint carries blendMode + opacity + scalingFactor + rotation
+  // + filters + imageTransform alongside the imageHash. LSML's `image` only
+  // has fit/size/bind.src, so without this metadata we lose the visual
+  // composition (e.g. mix-blend-hard-light against a coloured layer
+  // underneath produces the source's vivid red ; default NORMAL blend
+  // collapses to a yellower / brighter render).
+  const paintMeta = capturePaintExtras(imagePaint);
+  if (paintMeta && Object.keys(paintMeta).length > 0) {
+    withFigmaMetadata(prim, { imagePaint: paintMeta });
+  }
+
   captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
     localPosition: prim.position ?? { x: 0, y: 0 },
   });
@@ -150,6 +162,62 @@ function scaleModeToFit(mode: FigmaPaint["scaleMode"] | undefined): ImagePrimiti
 
 function roundTo3(n: number): number {
   return Math.round(n * 1000) / 1000;
+}
+
+/** Extract the non-default fields of an IMAGE paint into the import-friendly
+ *  shape stashed under `metadata.figma.imagePaint`. Skips defaults so plain
+ *  images don't carry noise. Returns null when nothing is worth preserving. */
+function capturePaintExtras(
+  paint: FigmaPaint,
+): NonNullable<FigmaMetadata["imagePaint"]> | null {
+  const out: NonNullable<FigmaMetadata["imagePaint"]> = {};
+  const blend = (paint as unknown as { blendMode?: unknown }).blendMode;
+  if (typeof blend === "string" && blend !== "PASS_THROUGH" && blend !== "NORMAL") {
+    out.blendMode = blend as NonNullable<typeof out.blendMode>;
+  }
+  if (typeof paint.opacity === "number" && paint.opacity !== 1) {
+    out.opacity = paint.opacity;
+  }
+  if (paint.visible === false) out.visible = false;
+  const scaling = (paint as unknown as { scalingFactor?: unknown }).scalingFactor;
+  if (typeof scaling === "number" && scaling !== 1) out.scalingFactor = scaling;
+  const rotation = (paint as unknown as { rotation?: unknown }).rotation;
+  if (typeof rotation === "number" && rotation !== 0) out.rotation = rotation;
+  const filters = (paint as unknown as { filters?: Record<string, unknown> }).filters;
+  if (filters && typeof filters === "object") {
+    const f: NonNullable<typeof out.filters> = {};
+    for (const key of [
+      "exposure",
+      "contrast",
+      "saturation",
+      "temperature",
+      "tint",
+      "highlights",
+      "shadows",
+    ] as const) {
+      const v = filters[key];
+      if (typeof v === "number" && v !== 0) f[key] = v;
+    }
+    if (Object.keys(f).length > 0) out.filters = f;
+  }
+  const imageTransform = (paint as unknown as { imageTransform?: unknown }).imageTransform;
+  if (Array.isArray(imageTransform) && imageTransform.length === 2) {
+    const cleaned: number[][] = [];
+    for (const r of imageTransform) {
+      if (!Array.isArray(r) || r.length !== 3) return Object.keys(out).length > 0 ? out : null;
+      cleaned.push(r.map((c) => (typeof c === "number" ? c : 0)));
+    }
+    // Skip the identity matrix [[1,0,0],[0,1,0]].
+    const isIdentity =
+      cleaned[0]![0] === 1 &&
+      cleaned[0]![1] === 0 &&
+      cleaned[0]![2] === 0 &&
+      cleaned[1]![0] === 0 &&
+      cleaned[1]![1] === 1 &&
+      cleaned[1]![2] === 0;
+    if (!isIdentity) out.imageTransform = cleaned;
+  }
+  return Object.keys(out).length > 0 ? out : null;
 }
 
 export type { MockImageNode };

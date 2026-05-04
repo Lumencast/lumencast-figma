@@ -39,6 +39,23 @@ export function buildImage(
       imageHash: ctx.assetMap[assetPath]!,
       scaleMode: prim.fit === "contain" ? "FIT" : "FILL",
     };
+    // Splice per-paint extras from `metadata.figma.imagePaint` (LSML 1.1
+    // §17.4 / x-figma.authoring/1) so blendMode + scalingFactor + rotation
+    // + filters + imageTransform survive the round-trip. Without this the
+    // visual collapses to a default-blend render and the user's vivid red
+    // (HARD_LIGHT against an underlying coloured layer) becomes a yellower
+    // raw-image render.
+    const ip = figmaMeta.imagePaint;
+    if (ip) {
+      const w = fill as unknown as Record<string, unknown>;
+      if (ip.blendMode) w["blendMode"] = ip.blendMode;
+      if (ip.opacity !== undefined) w["opacity"] = ip.opacity;
+      if (ip.visible !== undefined) w["visible"] = ip.visible;
+      if (ip.scalingFactor !== undefined) w["scalingFactor"] = ip.scalingFactor;
+      if (ip.rotation !== undefined) w["rotation"] = ip.rotation;
+      if (ip.filters) w["filters"] = ip.filters;
+      if (ip.imageTransform) w["imageTransform"] = ip.imageTransform;
+    }
     node.fills = [fill];
   } else {
     ctx.warn(

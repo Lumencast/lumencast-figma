@@ -87,6 +87,25 @@ export interface FigmaMetadata {
   /** Source Figma node type when it wasn't a FRAME (GROUP / BOOLEAN_OPERATION).
    *  Triggers post-build conversion to a real Figma GroupNode. */
   sourceType?: "GROUP" | "BOOLEAN_OPERATION";
+  /** Per-image-paint extras for `image` primitives. Restored on the
+   *  IMAGE paint before `node.fills = [paint]` is assigned. */
+  imagePaint?: {
+    blendMode?: FigmaBlendMode;
+    opacity?: number;
+    visible?: boolean;
+    scalingFactor?: number;
+    rotation?: number;
+    filters?: {
+      exposure?: number;
+      contrast?: number;
+      saturation?: number;
+      temperature?: number;
+      tint?: number;
+      highlights?: number;
+      shadows?: number;
+    };
+    imageTransform?: number[][];
+  };
   /** Raw 2x3 affine transform — used to restore flip + rotation atomically
    *  when the source node had a negative-determinant transform. */
   transform?: number[][];

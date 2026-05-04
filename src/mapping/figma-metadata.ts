@@ -122,6 +122,43 @@ export interface FigmaMetadata {
    *  the source. */
   sourceType?: "GROUP" | "BOOLEAN_OPERATION";
 
+  /** Per-image-paint metadata for `image` primitives — Figma exposes
+   *  several knobs on the IMAGE fill itself (separate from the LSML
+   *  `image.fit` field) that we round-trip via this block. The import
+   *  side splices each non-null key back into the freshly-constructed
+   *  IMAGE paint before assigning to `node.fills`. */
+  imagePaint?: {
+    /** PASS_THROUGH/NORMAL skipped by the export. The user-visible
+     *  difference between source and re-imported scenes when the source
+     *  paints with HARD_LIGHT (or any non-default blend) collapses
+     *  without this. */
+    blendMode?: FigmaBlendMode;
+    /** Per-paint opacity. Skipped when 1. */
+    opacity?: number;
+    /** Per-paint visibility. Skipped when true. */
+    visible?: boolean;
+    /** FILL mode subdivision : fraction of the container the image
+     *  covers. Default 1. Skipped when 1. */
+    scalingFactor?: number;
+    /** Image rotation in degrees, applied at paint-time. Default 0. */
+    rotation?: number;
+    /** Figma's image-filter knobs (exposure, contrast, saturation,
+     *  temperature, tint, highlights, shadows). All values are -1..1.
+     *  Captured verbatim ; the import re-applies them. */
+    filters?: {
+      exposure?: number;
+      contrast?: number;
+      saturation?: number;
+      temperature?: number;
+      tint?: number;
+      highlights?: number;
+      shadows?: number;
+    };
+    /** Affine transform applied to the image's local UV space (pan/zoom
+     *  effect inside the container). 2x3 matrix. */
+    imageTransform?: number[][];
+  };
+
   // --- Geometry / layout fallbacks ---
 
   /** @deprecated since v0.2 — use universal `position` (LSML §5.4). Kept
@@ -243,6 +280,7 @@ function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
   const out: FigmaMetadata = {};
   if (meta.layerName) out.layerName = meta.layerName;
   if (meta.sourceType) out.sourceType = meta.sourceType;
+  if (meta.imagePaint && Object.keys(meta.imagePaint).length > 0) out.imagePaint = meta.imagePaint;
   if (meta.transform && meta.transform.length === 2) out.transform = meta.transform;
   if (meta.position && (meta.position.x !== 0 || meta.position.y !== 0)) {
     out.position = meta.position;
