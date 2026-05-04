@@ -15,6 +15,8 @@ import { mapInstance } from "./instance";
 import type { MappingContext, MappingResult } from "./types";
 import { OPERATOR_INPUT_COMPONENT_NAME } from "~shared/constants";
 import { asArray, asNumber } from "./figma-mixed";
+import { paintToFill, type FigmaPaint } from "./color";
+import type { Fill, Stroke } from "~shared/lsml-types";
 
 interface AnyFigmaNode {
   type: string;
@@ -229,6 +231,24 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
   }
   const children = childResults.map((r) => r.node) as PrimitiveNode[];
 
+  // BOOLEAN_OPERATION render-fidelity : Figma's BO renders using its own
+  // fill/strokes, IGNORING the operand vectors' own fill/stroke values.
+  // Now that we recurse into BO operands (so the layer-panel structure
+  // round-trips), we must override each operand's emitted fill/stroke
+  // with the BO's own — otherwise the visible Union picks up the
+  // operands' decorative gradients (e.g. the M emblem rendered half
+  // white / half orange instead of pure white).
+  if (node.type === "BOOLEAN_OPERATION") {
+    const boFills = (asArray<FigmaPaint>(node.fills) ?? [])
+      .filter((p) => p.type !== "IMAGE")
+      .map((p) => paintToFill(p))
+      .filter((f): f is Fill => f !== null);
+    const boStrokes = mapBooleanOperationStrokes(node);
+    for (const child of children) {
+      overrideShapeFillsStrokes(child, boFills, boStrokes);
+    }
+  }
+
   let result: MappingResult;
   if (isStack) {
     const stackOpts: { parentX?: number; parentY?: number; parentRotation?: number } = {};
@@ -263,4 +283,60 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
   if (assetRefs.length) out.assetRefs = assetRefs;
   if (operatorInputs.length) out.operatorInputs = operatorInputs;
   return out;
+}
+
+interface FigmaSolidStroke {
+  type: "SOLID";
+  color: { r: number; g: number; b: number };
+  opacity?: number;
+}
+
+function mapBooleanOperationStrokes(node: AnyFigmaNode): Stroke[] {
+  const strokesArr = asArray<FigmaSolidStroke>(
+    (node as unknown as { strokes?: unknown }).strokes,
+  );
+  if (!strokesArr) return [];
+  const weight = asNumber((node as unknown as { strokeWeight?: unknown }).strokeWeight) ?? 1;
+  const out: Stroke[] = [];
+  for (const s of strokesArr) {
+    if (s.type !== "SOLID" || !s.color) continue;
+    const r = Math.round(s.color.r * 255);
+    const g = Math.round(s.color.g * 255);
+    const b = Math.round(s.color.b * 255);
+    const hex = `#${r.toString(16).padStart(2, "0")}${g.toString(16).padStart(2, "0")}${b.toString(16).padStart(2, "0")}`;
+    out.push({ color: hex, width: weight });
+  }
+  return out;
+}
+
+/** Replace the fill/stroke fields on a SHAPE primitive (ignore others —
+ *  text, image, frame, stack carry their own paint conventions) with the
+ *  override values. Used by the BOOLEAN_OPERATION pass to make recursed
+ *  operands render with the BO's own fills instead of their decorative
+ *  per-operand gradients. */
+function overrideShapeFillsStrokes(
+  prim: PrimitiveNode,
+  fills: Fill[],
+  strokes: Stroke[],
+): void {
+  if ((prim as { kind: string }).kind !== "shape") return;
+  const shape = prim as { fill?: string; fills?: Fill[]; stroke?: Stroke; strokes?: Stroke[] };
+  delete shape.fill;
+  delete shape.fills;
+  if (
+    fills.length === 1 &&
+    fills[0]?.kind === "solid" &&
+    fills[0].opacity === undefined
+  ) {
+    shape.fill = fills[0].color;
+  } else if (fills.length > 0) {
+    shape.fills = fills;
+  }
+  delete shape.stroke;
+  delete shape.strokes;
+  if (strokes.length === 1 && strokes[0]) {
+    shape.stroke = strokes[0];
+  } else if (strokes.length > 1) {
+    shape.strokes = strokes;
+  }
 }
