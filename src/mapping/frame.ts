@@ -15,7 +15,7 @@ import { asArray, asBoolean, asNumber } from "./figma-mixed";
 import type { MappingContext, MappingResult } from "./types";
 
 export interface FrameMapInput {
-  type: "FRAME" | "COMPONENT" | "INSTANCE" | "GROUP";
+  type: "FRAME" | "COMPONENT" | "INSTANCE" | "GROUP" | "BOOLEAN_OPERATION";
   id: string;
   name: string;
   width: number;
@@ -121,8 +121,18 @@ export function mapFrame(
   // `clipsContent` is a first-class field as of LSML 1.1 (§4.3). Default
   // is `true` ; we only emit when the source frame diverges, so plain
   // frames don't carry redundant noise.
+  //
+  // GROUP and BOOLEAN_OPERATION nodes in Figma never clip their children
+  // (they don't even have a `clipsContent` property). When we lower them
+  // to LSML `frame`, we MUST emit `clipsContent: false` explicitly,
+  // otherwise the import side defaults to true and clips children that
+  // legitimately extend past the group's bounding box (e.g. an Ellipse
+  // 865×865 inside a Group whose bbox is only 701×701 — the visible
+  // overflow is what the user sees as a decorative sphere).
   const clips = asBoolean(node.clipsContent);
-  if (clips === false) {
+  if (node.type === "GROUP" || node.type === "BOOLEAN_OPERATION") {
+    prim.clipsContent = false;
+  } else if (clips === false) {
     prim.clipsContent = false;
   }
 
