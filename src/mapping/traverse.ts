@@ -25,6 +25,7 @@ interface AnyFigmaNode {
   height?: number;
   x?: number;
   y?: number;
+  rotation?: number;
   layoutMode?: string;
   fills?: unknown[];
   characters?: string;
@@ -57,6 +58,10 @@ export interface WalkOptions {
   isRoot: boolean;
   parentX?: number;
   parentY?: number;
+  /** Cumulative rotation of the closest rotated ancestor in the chain (degrees).
+   *  Per-primitive mappers subtract this from `node.rotation` to emit the
+   *  local rotation — see `extractUniversal`. */
+  parentRotation?: number;
   /** Tree depth for the trace recorder (root = 0). Internal — callers don't set it. */
   depth?: number;
 }
@@ -87,9 +92,10 @@ export function walk(
   // Build the parent-coords option block once — every leaf-primitive
   // mapper uses it to compute its `metadata.figma.position` relative to
   // the parent, so non-frame children of absolute layouts roundtrip.
-  const parentOpts: { parentX?: number; parentY?: number } = {};
+  const parentOpts: { parentX?: number; parentY?: number; parentRotation?: number } = {};
   if (opts.parentX !== undefined) parentOpts.parentX = opts.parentX;
   if (opts.parentY !== undefined) parentOpts.parentY = opts.parentY;
+  if (opts.parentRotation !== undefined) parentOpts.parentRotation = opts.parentRotation;
 
   const traceBase = { depth, type: node.type, id: node.id, name: node.name };
   try {
@@ -131,11 +137,15 @@ export function walk(
         return walkContainer(node, ctx, opts);
       case "INSTANCE":
       case "FRAME": {
-        const instOpts: { isRoot: boolean; parentX?: number; parentY?: number } = {
-          isRoot: opts.isRoot,
-        };
+        const instOpts: {
+          isRoot: boolean;
+          parentX?: number;
+          parentY?: number;
+          parentRotation?: number;
+        } = { isRoot: opts.isRoot };
         if (opts.parentX !== undefined) instOpts.parentX = opts.parentX;
         if (opts.parentY !== undefined) instOpts.parentY = opts.parentY;
+        if (opts.parentRotation !== undefined) instOpts.parentRotation = opts.parentRotation;
         console.warn("[lumencast]   → mapInstance (try)");
         const inst = mapInstance(node as never, instOpts, ctx);
         if (inst) {
@@ -199,26 +209,43 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
   const isCoordSystem = COORD_SYSTEM_TYPES.has(node.type);
   const myX = isCoordSystem ? 0 : asNumber(node.x) ?? 0;
   const myY = isCoordSystem ? 0 : asNumber(node.y) ?? 0;
+  // Rotation hierarchy : Figma reports each node's `rotation` independently
+  // (the parent's rotation isn't subtracted). When we re-apply rotation on
+  // every nested level on import, the visual rotation compounds and the
+  // AABB inflates. Track the parent's rotation here and pass it to children
+  // so `extractUniversal` emits LOCAL rotation (delta from parent's).
+  const myRotation = asNumber(node.rotation) ?? 0;
   const childDepth = (opts.depth ?? 0) + 1;
   const childNodes = asArray<AnyFigmaNode>(node.children) ?? [];
   for (const child of childNodes) {
-    const r = walk(child, ctx, { isRoot: false, parentX: myX, parentY: myY, depth: childDepth });
+    const r = walk(child, ctx, {
+      isRoot: false,
+      parentX: myX,
+      parentY: myY,
+      parentRotation: myRotation,
+      depth: childDepth,
+    });
     if (r) childResults.push(r);
   }
   const children = childResults.map((r) => r.node) as PrimitiveNode[];
 
   let result: MappingResult;
   if (isStack) {
-    const stackOpts: { parentX?: number; parentY?: number } = {};
+    const stackOpts: { parentX?: number; parentY?: number; parentRotation?: number } = {};
     if (opts.parentX !== undefined) stackOpts.parentX = opts.parentX;
     if (opts.parentY !== undefined) stackOpts.parentY = opts.parentY;
+    if (opts.parentRotation !== undefined) stackOpts.parentRotation = opts.parentRotation;
     result = mapStack(node as never, children as StackPrimitive["children"], stackOpts);
   } else {
-    const frameOpts: { isRoot: boolean; parentX?: number; parentY?: number } = {
-      isRoot: opts.isRoot,
-    };
+    const frameOpts: {
+      isRoot: boolean;
+      parentX?: number;
+      parentY?: number;
+      parentRotation?: number;
+    } = { isRoot: opts.isRoot };
     if (opts.parentX !== undefined) frameOpts.parentX = opts.parentX;
     if (opts.parentY !== undefined) frameOpts.parentY = opts.parentY;
+    if (opts.parentRotation !== undefined) frameOpts.parentRotation = opts.parentRotation;
     result = mapFrame(node as never, frameOpts, children as FramePrimitive["children"], ctx);
   }
 

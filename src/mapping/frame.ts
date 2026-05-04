@@ -42,6 +42,8 @@ export interface FrameMapOptions {
   /** Parent's coordinate origin in Figma — children's `x/y` are absolute in Figma. */
   parentX?: number;
   parentY?: number;
+  /** Cumulative rotation of the closest rotated ancestor (degrees). */
+  parentRotation?: number;
 }
 
 export function mapFrame(
@@ -55,7 +57,7 @@ export function mapFrame(
   const prim: FramePrimitive = {
     kind: "frame",
     children,
-    ...extractUniversal(node),
+    ...extractUniversal(node, { parentRotation: opts.parentRotation ?? 0 }),
   };
 
   const w = asNumber(node.width) ?? 0;
