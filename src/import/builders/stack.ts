@@ -32,6 +32,13 @@ export function buildStack(
   node.name = figmaMeta.layerName ?? "Stack";
   node.layoutMode = prim.direction === "horizontal" ? "HORIZONTAL" : "VERTICAL";
 
+  // `figma.createFrame()` returns a node with default white solid fill +
+  // black 1px stroke. LSML stacks are transparent by default ; clear
+  // both so the imported tree doesn't pick up phantom backgrounds and
+  // borders the source never had.
+  (node as unknown as { fills?: unknown[] }).fills = [];
+  (node as unknown as { strokes?: unknown[] }).strokes = [];
+
   if (prim.gap !== undefined) node.itemSpacing = prim.gap;
   if (prim.wrap === true) {
     node.layoutWrap = "WRAP";

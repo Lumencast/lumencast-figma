@@ -30,6 +30,15 @@ export function buildFrame(
   if (prim.size) node.resize(prim.size.w, prim.size.h);
   node.layoutMode = "NONE";
 
+  // `figma.createFrame()` returns a node with default white solid fill
+  // and a black 1px stroke. The LSML model assumes transparent unless
+  // a fill is declared, so we clear those defaults before re-applying
+  // anything from the bundle. Without this every imported frame whose
+  // source was transparent ends up with a visible white background +
+  // black border that the legacy doesn't have.
+  (node as unknown as { fills?: ImportPaint[] }).fills = [];
+  (node as unknown as { strokes?: unknown[] }).strokes = [];
+
   // `clipsContent` : prefer the canonical first-class field (LSML 1.1
   // §4.3). Fall back to `metadata.figma.clipsContent` for v0.1 bundles.
   // Default true matches the Figma frame default — without this, child

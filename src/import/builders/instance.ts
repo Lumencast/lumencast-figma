@@ -22,6 +22,10 @@ export function buildInstance(
   const node = api.createInstancePlaceholder();
   const figmaMeta = readFigmaMetadata(prim);
   node.name = figmaMeta.layerName ?? `Instance: ${prim.scene_id}`;
+  // Placeholder is built from `figma.createFrame()` under the hood — clear
+  // the default white fill + black stroke before reapplying source state.
+  (node as unknown as { fills?: unknown[] }).fills = [];
+  (node as unknown as { strokes?: unknown[] }).strokes = [];
 
   if (prim.size) node.resize(prim.size.w, prim.size.h);
   if (prim.position) {
