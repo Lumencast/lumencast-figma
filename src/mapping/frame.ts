@@ -145,6 +145,13 @@ export function mapFrame(
     withFigmaMetadata(prim, { layerName: node.name });
   }
 
+  // Mark groups + boolean-operations so the import side can convert the
+  // freshly-created LSML frame back into a real Figma GroupNode (via
+  // `figma.group()`) — preserves the layer-panel distinction.
+  if (node.type === "GROUP" || node.type === "BOOLEAN_OPERATION") {
+    withFigmaMetadata(prim, { sourceType: node.type });
+  }
+
   // Universal x-figma.authoring/1 extras (effects, blendMode, mask flags,
   // per-corner radii + smoothing, stroke details, constraints, layout
   // overrides). Per-primitive captures above handle frame-specific keys.

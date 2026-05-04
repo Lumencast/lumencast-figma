@@ -13,11 +13,20 @@ import type { BuildContext } from "./types";
 export function buildFrame(
   prim: FramePrimitive,
   api: ImportFigmaApi,
-  _ctx: BuildContext,
+  ctx: BuildContext,
 ): ImportFrameNode {
   const node = api.createFrame();
   const figmaMeta = readFigmaMetadata(prim);
   node.name = figmaMeta.layerName ?? "Frame";
+
+  // When the source was a GROUP or BOOLEAN_OPERATION, queue this frame
+  // for post-build conversion. We can't call `figma.group()` here — the
+  // children aren't built yet AND the frame isn't appended to a parent
+  // yet. The pipeline iterates `ctx.groupConversions` after the tree is
+  // mounted and replaces each placeholder frame with a real GroupNode.
+  if (figmaMeta.sourceType === "GROUP" || figmaMeta.sourceType === "BOOLEAN_OPERATION") {
+    ctx.groupConversions.push({ frame: node, sourceType: figmaMeta.sourceType });
+  }
   if (prim.size) node.resize(prim.size.w, prim.size.h);
   node.layoutMode = "NONE";
 

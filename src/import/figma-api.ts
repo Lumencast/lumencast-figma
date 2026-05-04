@@ -126,4 +126,14 @@ export interface ImportFigmaApi {
   loadFontAsync(font: FontReference): Promise<void>;
   /** The current page's append entry-point (figma.currentPage.appendChild). */
   appendToPage(node: ImportBaseNode): void;
+  /** Wraps `figma.group(nodes, parent, index?)`. Used by the post-build
+   *  conversion pass to turn frames marked `metadata.figma.sourceType=GROUP`
+   *  back into real Figma GroupNodes. Children must already be in the
+   *  document ; figma.group MOVES them into a fresh group and inserts the
+   *  group at the given index of `parent`. */
+  group(
+    nodes: ImportBaseNode[],
+    parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
+    index?: number,
+  ): ImportBaseNode;
 }

@@ -15,7 +15,8 @@ import { buildPrimitive } from "./walk";
 import { reconcileAppend } from "./reconcile";
 import { collectFonts, preloadFonts } from "./fonts";
 import { createImportTrace } from "./trace";
-import type { ImportFigmaApi } from "./figma-api";
+import type { ImportBaseNode, ImportFigmaApi } from "./figma-api";
+import type { PendingGroupConversion } from "./builders/types";
 
 export interface ImportBundleOptions {
   api: ImportFigmaApi;
@@ -49,6 +50,7 @@ export async function importBundle(opts: ImportBundleOptions): Promise<ImportRes
 
   console.warn("[lumencast] import step 4/4 — build primitive tree");
   const trace = createImportTrace();
+  const groupConversions: PendingGroupConversion[] = [];
   const ctx = {
     defaults: bundle.defaults ?? {},
     assetMap,
@@ -56,9 +58,33 @@ export async function importBundle(opts: ImportBundleOptions): Promise<ImportRes
       warnings.push({ code, message });
     },
     trace,
+    groupConversions,
   };
   const rootNode = buildPrimitive(bundle.layout, opts.api, ctx);
   reconcileAppend(opts.api, rootNode);
+
+  // Post-pass : convert frames marked `metadata.figma.sourceType=GROUP`
+  // back into real Figma GroupNodes. Walk in REVERSE of build order so
+  // the deepest nested groups convert first — by the time we process an
+  // outer group, its inner groups already exist as GroupNodes within it.
+  if (groupConversions.length > 0) {
+    console.warn(
+      `[lumencast] import — converting ${groupConversions.length} placeholder frame(s) → real Figma groups`,
+    );
+    for (let i = groupConversions.length - 1; i >= 0; i--) {
+      const entry = groupConversions[i]!;
+      try {
+        convertFrameToGroup(entry.frame, opts.api);
+      } catch (err) {
+        const msg = err instanceof Error ? err.message : String(err);
+        console.error(`[lumencast] group conversion failed: ${msg}`);
+        warnings.push({
+          code: "GROUP_CONVERSION_FAILED",
+          message: `Could not convert placeholder frame to real GroupNode : ${msg}`,
+        });
+      }
+    }
+  }
 
   const expected = countPrimitives(bundle.layout);
   const buildFailures = warnings.filter(
@@ -94,6 +120,48 @@ function countPrimitives(node: PrimitiveNode): number {
     for (const c of node.children) n += countPrimitives(c);
   }
   return n;
+}
+
+type GroupConversionParent = ImportBaseNode & {
+  children?: ImportBaseNode[];
+  appendChild(child: ImportBaseNode): void;
+};
+
+type GroupConversionFrame = ImportBaseNode & {
+  name: string;
+  children?: ImportBaseNode[];
+  parent?: GroupConversionParent;
+  remove?(): void;
+};
+
+/** Replace a placeholder FrameNode with a real Figma GroupNode wrapping the
+ *  same children. We rely on `figma.group(children, parent, index)` which
+ *  MOVES the children into a fresh group inserted at `index` of `parent`.
+ *  Figma's API auto-translates relative coords when nodes change parent,
+ *  so the visual result matches the source's group rendering. */
+function convertFrameToGroup(frame: ImportBaseNode, api: ImportFigmaApi): void {
+  const f = frame as unknown as GroupConversionFrame;
+  const parent = f.parent;
+  if (!parent || !parent.children) {
+    throw new Error("placeholder frame has no parent — cannot convert to GroupNode");
+  }
+  const children = f.children ? [...f.children] : [];
+  if (children.length === 0) {
+    // Empty group — leave the frame as-is. (Figma rejects creating an
+    // empty group and a 0-child placeholder is rare in practice.)
+    return;
+  }
+  const index = parent.children.indexOf(frame);
+  const group = api.group(children, parent, index >= 0 ? index : undefined);
+  // Restore the source layer name — figma.group() defaults to "Group" + n.
+  (group as unknown as { name: string }).name = f.name;
+  // Remove the now-empty placeholder.
+  if (typeof f.remove === "function") {
+    f.remove();
+  } else if (parent.children) {
+    const i = parent.children.indexOf(frame);
+    if (i >= 0) parent.children.splice(i, 1);
+  }
 }
 
 export { parseBundle } from "./parse";

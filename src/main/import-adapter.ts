@@ -56,5 +56,17 @@ export function createFigmaImportAdapter(): ImportFigmaApi {
     appendToPage: (node: ImportBaseNode) => {
       figma.currentPage.appendChild(node as unknown as SceneNode);
     },
+    group: (nodes, parent, index) => {
+      // Figma's plugin API : `figma.group(nodes, parent, index?)` moves the
+      // given nodes into a fresh GroupNode inside `parent`. Used by the
+      // post-build group-conversion pass.
+      const sceneNodes = nodes as unknown as SceneNode[];
+      const sceneParent = parent as unknown as BaseNode & ChildrenMixin;
+      const group =
+        index !== undefined
+          ? figma.group(sceneNodes, sceneParent, index)
+          : figma.group(sceneNodes, sceneParent);
+      return group as unknown as ImportBaseNode;
+    },
   };
 }

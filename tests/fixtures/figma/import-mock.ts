@@ -33,6 +33,11 @@ export interface BuiltNode {
   type: string;
   id: string;
   name: string;
+  /** Set by appendChild on a parent (or by figma.group). Used by the
+   *  group-conversion post-pass. */
+  parent?: BuiltNode;
+  /** Detach from parent. Mirrors Figma's `node.remove()`. */
+  remove?(): void;
   visible?: boolean;
   opacity?: number;
   rotation?: number;
@@ -125,7 +130,22 @@ export function createImportMock(): ImportMock {
       n.height = h;
     };
     frame.appendChild = (child: ImportBaseNode) => {
-      n.children.push(child as unknown as BuiltNode);
+      const c = child as unknown as BuiltNode;
+      // Detach from previous parent if any (mock only — real Figma does
+      // this implicitly when re-parenting).
+      if (c.parent && c.parent.children) {
+        const i = c.parent.children.indexOf(c);
+        if (i >= 0) c.parent.children.splice(i, 1);
+      }
+      n.children.push(c);
+      c.parent = n;
+    };
+    n.remove = () => {
+      if (n.parent && n.parent.children) {
+        const i = n.parent.children.indexOf(n);
+        if (i >= 0) n.parent.children.splice(i, 1);
+        delete n.parent;
+      }
     };
     return frame;
   };
@@ -172,6 +192,34 @@ export function createImportMock(): ImportMock {
     },
     appendToPage: (node) => {
       store.appended.push(node as unknown as BuiltNode);
+    },
+    group: (nodes, parent, index) => {
+      // Mock figma.group : create a synthetic GROUP node, MOVE the given
+      // children into it, insert into the parent at `index` (or end). Used
+      // by the post-build conversion pass to validate group reconstruction
+      // without a live Figma sandbox.
+      const groupNode = wrapFrame(mkBase("GROUP"));
+      groupNode.name = "Group";
+      const groupBuilt = groupNode as unknown as BuiltNode;
+      const parentNode = parent as unknown as BuiltNode;
+      // Detach each child from its current parent (the placeholder frame
+      // we're about to discard) and re-parent into the new group.
+      for (const child of nodes) {
+        const c = child as unknown as BuiltNode;
+        if (c.parent && c.parent.children) {
+          const i = c.parent.children.indexOf(c);
+          if (i >= 0) c.parent.children.splice(i, 1);
+        }
+        groupBuilt.children.push(c);
+        c.parent = groupBuilt;
+      }
+      if (index !== undefined && index <= parentNode.children.length) {
+        parentNode.children.splice(index, 0, groupBuilt);
+      } else {
+        parentNode.children.push(groupBuilt);
+      }
+      groupBuilt.parent = parentNode;
+      return groupNode as unknown as ImportBaseNode;
     },
     appended: () => store.appended,
   };

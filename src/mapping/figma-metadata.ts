@@ -114,6 +114,14 @@ export interface FigmaMetadata {
   /** Original Figma `node.name` including any `[bind:...]` directive prefix. */
   layerName?: string;
 
+  /** Source Figma node type when it isn't a FRAME — typically `GROUP` or
+   *  `BOOLEAN_OPERATION`. LSML has no native group primitive, so the
+   *  export flattens both to LSML `frame`. On re-import the builder
+   *  consults this hint and converts the frame into a real Figma
+   *  GroupNode via `figma.group()` so the layer-panel structure matches
+   *  the source. */
+  sourceType?: "GROUP" | "BOOLEAN_OPERATION";
+
   // --- Geometry / layout fallbacks ---
 
   /** @deprecated since v0.2 — use universal `position` (LSML §5.4). Kept
@@ -234,6 +242,7 @@ export function readFigmaMetadata(prim: { metadata?: Record<string, unknown> }):
 function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
   const out: FigmaMetadata = {};
   if (meta.layerName) out.layerName = meta.layerName;
+  if (meta.sourceType) out.sourceType = meta.sourceType;
   if (meta.transform && meta.transform.length === 2) out.transform = meta.transform;
   if (meta.position && (meta.position.x !== 0 || meta.position.y !== 0)) {
     out.position = meta.position;
