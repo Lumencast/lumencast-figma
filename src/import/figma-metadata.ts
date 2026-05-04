@@ -15,6 +15,9 @@ export interface FigmaMetadata {
    *  / `backgrounds[]`. Used by the import builder to restore byte-stable
    *  gradient handles when present (avoids the lossy angle_deg round-trip). */
   gradientTransforms?: (number[][] | null)[];
+  /** Original Figma `node.name` including any `[bind:...]` directives.
+   *  Each builder restores it verbatim onto the created node. */
+  layerName?: string;
 }
 
 export function readFigmaMetadata(prim: { metadata?: Record<string, unknown> }): FigmaMetadata {

@@ -19,9 +19,8 @@ export function buildText(
   ctx: BuildContext,
 ): ImportTextNode {
   const node = api.createText();
-  node.name = deriveName(prim);
-
   const figmaMeta = readFigmaMetadata(prim);
+  node.name = figmaMeta.layerName ?? deriveName(prim);
 
   // CRITICAL : set the font BEFORE assigning `characters`. Figma applies
   // the font currently on `fontName` to characters at write time, so the

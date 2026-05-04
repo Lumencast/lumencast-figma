@@ -13,7 +13,8 @@ export function buildImage(
   ctx: BuildContext,
 ): ImportShapeNode {
   const node = api.createRectangle();
-  node.name = deriveName(prim);
+  const figmaMeta = readFigmaMetadata(prim);
+  node.name = figmaMeta.layerName ?? deriveName(prim);
   node.resize(prim.size.w, prim.size.h);
 
   // Resolve the asset path. The bind.src LeafPath usually starts with
@@ -49,7 +50,6 @@ export function buildImage(
   applyUniversal(node, prim);
 
   // Position : universal prop (LSML 1.1 §5.4) with v0.1 metadata fallback.
-  const figmaMeta = readFigmaMetadata(prim);
   const pos = prim.position ?? figmaMeta.position;
   if (pos) {
     (node as unknown as { x?: number; y?: number }).x = pos.x;

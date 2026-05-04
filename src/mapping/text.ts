@@ -115,6 +115,12 @@ export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResul
   if (fontStyleRaw) figma.fontStyle = fontStyleRaw;
   if (Object.keys(figma).length > 0) withFigmaMetadata(prim, figma);
 
+  // Preserve the source Figma layer name (raw, including any [bind:...]
+  // directive prefix) so the import side can restore it verbatim.
+  if (node.name && node.name.trim().length > 0) {
+    withFigmaMetadata(prim, { layerName: node.name });
+  }
+
   // When no [bind:...] directive is present, the node's `characters` is the
   // static text. We surface it via a synthesised leaf path that the bundle
   // assembler plants under `defaults`.

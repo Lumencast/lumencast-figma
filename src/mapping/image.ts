@@ -14,6 +14,7 @@ import { parseLayerName } from "../export/bindings";
 import { extractUniversal } from "./universal";
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import { asArray, asNumber } from "./figma-mixed";
+import { withFigmaMetadata } from "./figma-metadata";
 import type { FigmaPaint } from "./color";
 import type { MappingContext, MappingResult } from "./types";
 
@@ -102,6 +103,11 @@ export function mapImage(
   const relX = roundTo3(px - parentX);
   const relY = roundTo3(py - parentY);
   if (relX !== 0 || relY !== 0) prim.position = { x: relX, y: relY };
+
+  // Stash the source layer name so the import side can restore it verbatim.
+  if (node.name && node.name.trim().length > 0) {
+    withFigmaMetadata(prim, { layerName: node.name });
+  }
 
   const out: { node: ImagePrimitive; defaults?: Record<string, unknown>; assetRefs: string[] } = {
     node: prim,

@@ -25,8 +25,8 @@ export function buildShape(
       break;
   }
 
-  node.name = prim.ariaLabel ?? "Shape";
   const figmaMeta = readFigmaMetadata(prim);
+  node.name = figmaMeta.layerName ?? prim.ariaLabel ?? "Shape";
 
   if (prim.size) {
     node.resize(prim.size.w, prim.size.h);

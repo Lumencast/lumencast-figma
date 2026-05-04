@@ -126,6 +126,12 @@ export function mapFrame(
     prim.clipsContent = false;
   }
 
+  // Stash the source layer name so the import side can restore it
+  // verbatim. Skips when the name is the empty string or just whitespace.
+  if (node.name && node.name.trim().length > 0) {
+    withFigmaMetadata(prim, { layerName: node.name });
+  }
+
   if (defaults) return { node: prim, defaults };
   return { node: prim };
 }

@@ -141,6 +141,12 @@ export function mapShape(
   if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
   if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
 
+  // Preserve the source Figma layer name (raw, including any [bind:...]
+  // directive prefix) so the import side can restore it verbatim.
+  if (node.name && node.name.trim().length > 0) {
+    withFigmaMetadata(prim, { layerName: node.name });
+  }
+
   // Variable bindings : when fills[0] has a bound color variable AND the
   // shape rendered a single solid `fill`, replace the static fill with a
   // `bind: { fill: "tokens.<group>.<name>" }` and seed defaults. (Multi-fill

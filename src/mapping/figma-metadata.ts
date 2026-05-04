@@ -48,6 +48,11 @@ export interface FigmaMetadata {
    *  for non-gradient fills (solid, image). Round-trip uses these in
    *  preference to reconstructing from `angle_deg` when present. */
   gradientTransforms?: (number[][] | null)[];
+  /** Original Figma layer name (`node.name`) including any `[bind:...]`
+   *  directives. The import side restores it verbatim so the layer panel
+   *  in Figma matches the source exactly — useful when iterating on
+   *  layouts via re-import + manual tweak + re-export. */
+  layerName?: string;
 }
 
 /** Decorate a primitive's `metadata` block with figma-specific keys. Only
@@ -90,5 +95,6 @@ function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
       out.gradientTransforms = meta.gradientTransforms;
     }
   }
+  if (meta.layerName) out.layerName = meta.layerName;
   return out;
 }

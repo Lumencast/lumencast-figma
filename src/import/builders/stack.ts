@@ -3,6 +3,7 @@
 import type { StackPrimitive } from "~shared/lsml-types";
 import type { ImportFigmaApi, ImportFrameNode } from "../figma-api";
 import { applyUniversal } from "../universal";
+import { readFigmaMetadata } from "../figma-metadata";
 import type { BuildContext } from "./types";
 
 const JUSTIFY_MAP: Record<string, ImportFrameNode["primaryAxisAlignItems"]> = {
@@ -26,7 +27,8 @@ export function buildStack(
   _ctx: BuildContext,
 ): ImportFrameNode {
   const node = api.createFrame();
-  node.name = "Stack";
+  const figmaMeta = readFigmaMetadata(prim);
+  node.name = figmaMeta.layerName ?? "Stack";
   node.layoutMode = prim.direction === "horizontal" ? "HORIZONTAL" : "VERTICAL";
 
   if (prim.gap !== undefined) node.itemSpacing = prim.gap;

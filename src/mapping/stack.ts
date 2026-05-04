@@ -5,6 +5,7 @@ import { paintToFill, type FigmaPaint } from "./color";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { asArray, asNumber, asString } from "./figma-mixed";
+import { withFigmaMetadata } from "./figma-metadata";
 import type { MappingResult } from "./types";
 
 export interface StackMapInput {
@@ -119,6 +120,10 @@ export function mapStack(
   if (parsed.bind) prim.bind = parsed.bind;
   if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
   if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
+
+  if (node.name && node.name.trim().length > 0) {
+    withFigmaMetadata(prim, { layerName: node.name });
+  }
 
   return { node: prim };
 }

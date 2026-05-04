@@ -15,8 +15,8 @@ export function buildFrame(
   _ctx: BuildContext,
 ): ImportFrameNode {
   const node = api.createFrame();
-  node.name = "Frame";
   const figmaMeta = readFigmaMetadata(prim);
+  node.name = figmaMeta.layerName ?? "Frame";
   if (prim.size) node.resize(prim.size.w, prim.size.h);
   node.layoutMode = "NONE";
 
