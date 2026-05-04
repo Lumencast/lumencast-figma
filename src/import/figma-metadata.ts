@@ -23,9 +23,47 @@ export interface FigmaEffectBlur {
   type: "LAYER_BLUR" | "BACKGROUND_BLUR";
   visible?: boolean;
   radius: number;
+  blurType?: "NORMAL" | "PROGRESSIVE";
 }
 
-export type FigmaEffect = FigmaEffectShadow | FigmaEffectBlur;
+export interface FigmaEffectNoise {
+  type: "NOISE";
+  visible?: boolean;
+  noiseSize: number;
+  noiseSizeVector?: { x: number; y: number };
+  noiseType: "MONOTONE" | "MULTITONE" | "DUOTONE";
+  color?: { r: number; g: number; b: number; a: number };
+  density: number;
+  secondaryColor?: { r: number; g: number; b: number; a: number };
+}
+
+export interface FigmaEffectTexture {
+  type: "TEXTURE";
+  visible?: boolean;
+  radius: number;
+  noiseSize: number;
+  noiseSizeVector?: { x: number; y: number };
+  clipToShape?: boolean;
+}
+
+export interface FigmaEffectGlass {
+  type: "GLASS";
+  visible?: boolean;
+  radius: number;
+  refraction: number;
+  depth: number;
+  lightAngle: number;
+  lightIntensity: number;
+  dispersion: number;
+  splay: number;
+}
+
+export type FigmaEffect =
+  | FigmaEffectShadow
+  | FigmaEffectBlur
+  | FigmaEffectNoise
+  | FigmaEffectTexture
+  | FigmaEffectGlass;
 
 export type FigmaBlendMode =
   | "PASS_THROUGH"
@@ -82,11 +120,34 @@ export interface FigmaHyperlink {
   url: string;
 }
 
+export interface FigmaPaintMetadata {
+  type: "SOLID" | "GRADIENT_LINEAR" | "GRADIENT_RADIAL";
+  visible?: boolean;
+  opacity?: number;
+  blendMode?: FigmaBlendMode;
+  color?: { r: number; g: number; b: number };
+  gradientStops?: {
+    position: number;
+    color: { r: number; g: number; b: number; a: number };
+  }[];
+  gradientTransform?: number[][];
+}
+
 export interface FigmaMetadata {
   layerName?: string;
   /** Source Figma node type when it wasn't a FRAME (GROUP / BOOLEAN_OPERATION).
    *  Triggers post-build conversion to a real Figma GroupNode. */
   sourceType?: "GROUP" | "BOOLEAN_OPERATION";
+  /** Full fills array captured from a text node — used when LSML's
+   *  `style.color` (single CSS color) can't represent the source's
+   *  gradient or multi-fill paint. */
+  textFills?: FigmaPaintMetadata[];
+  /** Captured stroke paints (text / frame have no native LSML stroke ;
+   *  shape uses this only for non-SOLID strokes). */
+  strokes?: FigmaPaintMetadata[];
+  /** Uniform stroke weight for text + frame primitives. */
+  strokeWeight?: number;
+
   /** Per-image-paint extras for `image` primitives. Restored on the
    *  IMAGE paint before `node.fills = [paint]` is assigned. */
   imagePaint?: {

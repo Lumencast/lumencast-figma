@@ -123,6 +123,27 @@ export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResul
     withFigmaMetadata(prim, { layerName: node.name });
   }
 
+  // Capture the source's full fills array when it isn't a single trivial
+  // SOLID — LSML's `style.color` only carries one CSS color, so gradient
+  // text or multi-fill text must round-trip via `metadata.figma.textFills`.
+  // The import builder reconstructs the paint array and assigns
+  // `node.fills = …` verbatim.
+  const fillsForText = asArray<FigmaPaint>(node.fills) ?? [];
+  const needsTextFills =
+    fillsForText.length > 0 &&
+    !(
+      fillsForText.length === 1 &&
+      fillsForText[0]?.type === "SOLID" &&
+      (fillsForText[0]?.opacity === undefined || fillsForText[0]?.opacity === 1) &&
+      ((fillsForText[0] as unknown as { blendMode?: string }).blendMode ?? "NORMAL") === "NORMAL"
+    );
+  if (needsTextFills) {
+    const textFills = fillsForText
+      .map((p) => paintToFigmaMetadata(p))
+      .filter((p): p is NonNullable<FigmaMetadata["textFills"]>[number] => p !== null);
+    if (textFills.length > 0) withFigmaMetadata(prim, { textFills });
+  }
+
   // Text-specific authoring extras
   const textExtras: FigmaMetadata = {};
   const ps = asNumber((node as { paragraphSpacing?: unknown }).paragraphSpacing);
@@ -153,6 +174,40 @@ export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResul
 
 function roundTo3(n: number): number {
   return Math.round(n * 1000) / 1000;
+}
+
+/** Convert a Figma `Paint` into the serialisable shape stashed under
+ *  `metadata.figma.textFills[]`. Handles SOLID + GRADIENT_LINEAR +
+ *  GRADIENT_RADIAL ; anything else (image fills on text are unusual)
+ *  is dropped. Defaults are filtered out so plain paints stay compact. */
+function paintToFigmaMetadata(
+  paint: FigmaPaint,
+): NonNullable<FigmaMetadata["textFills"]>[number] | null {
+  const type = paint.type;
+  if (type !== "SOLID" && type !== "GRADIENT_LINEAR" && type !== "GRADIENT_RADIAL") return null;
+  const out: NonNullable<FigmaMetadata["textFills"]>[number] = { type };
+  if ((paint as { visible?: boolean }).visible === false) out.visible = false;
+  if (typeof paint.opacity === "number" && paint.opacity !== 1) out.opacity = paint.opacity;
+  const blend = (paint as unknown as { blendMode?: unknown }).blendMode;
+  if (typeof blend === "string" && blend !== "NORMAL" && blend !== "PASS_THROUGH") {
+    out.blendMode = blend as NonNullable<typeof out.blendMode>;
+  }
+  if (type === "SOLID" && paint.color) {
+    out.color = { r: paint.color.r, g: paint.color.g, b: paint.color.b };
+  }
+  if ((type === "GRADIENT_LINEAR" || type === "GRADIENT_RADIAL") && paint.gradientStops) {
+    out.gradientStops = paint.gradientStops.map((s) => ({
+      position: s.position,
+      color: { r: s.color.r, g: s.color.g, b: s.color.b, a: s.color.a },
+    }));
+    if (paint.gradientTransform && paint.gradientTransform.length === 2) {
+      out.gradientTransform = [
+        [...paint.gradientTransform[0]!],
+        [...paint.gradientTransform[1]!],
+      ];
+    }
+  }
+  return out;
 }
 
 function textCaseToTransform(

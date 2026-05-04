@@ -13,12 +13,15 @@ import type {
   FigmaConstraints,
   FigmaEffect,
   FigmaMetadata,
+  FigmaPaintMetadata,
   FigmaStrokeDetails,
 } from "./figma-metadata";
 
 interface MaybeFigmaWritable {
   relativeTransform?: number[][];
   effects?: FigmaEffect[];
+  strokes?: unknown[];
+  strokeWeight?: number;
   blendMode?: string;
   isMask?: boolean;
   maskType?: string;
@@ -52,6 +55,16 @@ export function applyFigmaExtras(node: ImportBaseNode, meta: FigmaMetadata): voi
   if (meta.effects && meta.effects.length > 0) {
     const v = meta.effects;
     safeSet(() => (w.effects = v));
+  }
+  if (meta.strokes && meta.strokes.length > 0) {
+    const paints = meta.strokes
+      .map(figmaPaintMetadataToImportStroke)
+      .filter((p): p is unknown => p !== null);
+    if (paints.length > 0) safeSet(() => (w.strokes = paints));
+    if (meta.strokeWeight !== undefined) {
+      const sw = meta.strokeWeight;
+      safeSet(() => (w.strokeWeight = sw));
+    }
   }
   if (meta.blendMode && meta.blendMode !== "PASS_THROUGH" && meta.blendMode !== "NORMAL") {
     const v = meta.blendMode;
@@ -164,4 +177,39 @@ function safeSet(fn: () => void): void {
     // (e.g. cornerRadii on a vector). Silently skip — visual fidelity
     // for that key is forfeited but the node still imports.
   }
+}
+
+/** Reconstruct a Figma stroke paint object from the serialised
+ *  `metadata.figma.strokes[]` entry. Same paint shape as fills — passed
+ *  to `node.strokes = …` so per-stroke blendMode/opacity + gradient
+ *  transforms survive the round-trip. */
+function figmaPaintMetadataToImportStroke(p: FigmaPaintMetadata): unknown {
+  if (p.type === "SOLID") {
+    if (!p.color) return null;
+    const out: Record<string, unknown> = { type: "SOLID", color: p.color };
+    if (p.opacity !== undefined && p.opacity !== 1) out["opacity"] = p.opacity;
+    if (p.visible === false) out["visible"] = false;
+    if (p.blendMode) out["blendMode"] = p.blendMode;
+    return out;
+  }
+  if (p.type === "GRADIENT_LINEAR" || p.type === "GRADIENT_RADIAL") {
+    if (!p.gradientStops || p.gradientStops.length < 1) return null;
+    const transform =
+      p.gradientTransform && p.gradientTransform.length === 2
+        ? p.gradientTransform
+        : [
+            [1, 0, 0],
+            [0, 1, 0],
+          ];
+    const out: Record<string, unknown> = {
+      type: p.type,
+      gradientStops: p.gradientStops,
+      gradientTransform: transform,
+    };
+    if (p.opacity !== undefined && p.opacity !== 1) out["opacity"] = p.opacity;
+    if (p.visible === false) out["visible"] = false;
+    if (p.blendMode) out["blendMode"] = p.blendMode;
+    return out;
+  }
+  return null;
 }

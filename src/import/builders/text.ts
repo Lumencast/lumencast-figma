@@ -10,7 +10,7 @@ import type { ImportFigmaApi, ImportPaint, ImportTextNode } from "../figma-api";
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import { cssToRgb } from "../color";
 import { applyUniversal } from "../universal";
-import { readFigmaMetadata } from "../figma-metadata";
+import { readFigmaMetadata, type FigmaPaintMetadata } from "../figma-metadata";
 import { applyFigmaExtras } from "../figma-extras";
 import type { BuildContext } from "./types";
 
@@ -89,6 +89,16 @@ export function buildText(
       node.fills = [fill];
     }
   }
+  // `metadata.figma.textFills` overrides `style.color` when present —
+  // covers gradients, multi-fill, per-paint blend / opacity that LSML's
+  // single-color field can't express. Default-NORMAL paints with a
+  // single SOLID fill round-trip via `style.color` instead.
+  if (figmaMeta.textFills && figmaMeta.textFills.length > 0) {
+    const paints = figmaMeta.textFills
+      .map((p) => figmaPaintMetadataToImportPaint(p))
+      .filter((p): p is ImportPaint => p !== null);
+    if (paints.length > 0) node.fills = paints;
+  }
   if (prim.style?.textAlign) {
     const align = prim.style.textAlign.toUpperCase();
     if (align === "LEFT" || align === "CENTER" || align === "RIGHT" || align === "JUSTIFIED") {
@@ -164,4 +174,38 @@ function deriveName(prim: TextPrimitive): string {
     return `[bind:${path}] Text`;
   }
   return "Text";
+}
+
+/** Reconstruct an ImportPaint from the serialisable
+ *  `metadata.figma.textFills[]` shape. Used by the text builder when
+ *  the source carried a non-trivial fill (gradient, multi-fill, etc.). */
+function figmaPaintMetadataToImportPaint(p: FigmaPaintMetadata): ImportPaint | null {
+  if (p.type === "SOLID") {
+    if (!p.color) return null;
+    const out: ImportPaint = { type: "SOLID", color: p.color };
+    if (p.opacity !== undefined && p.opacity !== 1) out.opacity = p.opacity;
+    if (p.visible === false) out.visible = false;
+    if (p.blendMode) (out as unknown as Record<string, unknown>)["blendMode"] = p.blendMode;
+    return out;
+  }
+  if (p.type === "GRADIENT_LINEAR" || p.type === "GRADIENT_RADIAL") {
+    if (!p.gradientStops || p.gradientStops.length < 1) return null;
+    const transform =
+      p.gradientTransform && p.gradientTransform.length === 2
+        ? p.gradientTransform
+        : [
+            [1, 0, 0],
+            [0, 1, 0],
+          ];
+    const out: ImportPaint = {
+      type: p.type,
+      gradientStops: p.gradientStops,
+      gradientTransform: transform,
+    };
+    if (p.opacity !== undefined && p.opacity !== 1) out.opacity = p.opacity;
+    if (p.visible === false) out.visible = false;
+    if (p.blendMode) (out as unknown as Record<string, unknown>)["blendMode"] = p.blendMode;
+    return out;
+  }
+  return null;
 }

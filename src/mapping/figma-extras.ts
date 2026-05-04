@@ -26,6 +26,8 @@ import {
 interface MaybeFigmaNode {
   relativeTransform?: unknown;
   effects?: unknown;
+  strokes?: unknown;
+  strokeWeight?: unknown;
   blendMode?: unknown;
   isMask?: unknown;
   maskType?: unknown;
@@ -55,6 +57,7 @@ interface MaybeFigmaNode {
 
 const SHADOW_TYPES = new Set(["DROP_SHADOW", "INNER_SHADOW"]);
 const BLUR_TYPES = new Set(["LAYER_BLUR", "BACKGROUND_BLUR"]);
+const NOISE_TYPES = new Set(["MONOTONE", "MULTITONE", "DUOTONE"]);
 
 const BLEND_MODES = new Set<FigmaBlendMode>([
   "PASS_THROUGH",
@@ -134,6 +137,17 @@ export function captureFigmaExtras<T extends { metadata?: Record<string, unknown
   // Effects
   const effects = parseEffects(node.effects);
   if (effects.length > 0) figma.effects = effects;
+
+  // Stroke paints (any type) + uniform stroke weight. Stash always —
+  // text and frame have no LSML stroke representation, and shape's
+  // LSML `Stroke` only carries SOLID color + width. The import side
+  // applies via `node.strokes = …` and `node.strokeWeight = …`.
+  const strokes = parseStrokePaints(node.strokes);
+  if (strokes.length > 0) {
+    figma.strokes = strokes;
+    const sw = asNumber(node.strokeWeight);
+    if (sw !== undefined) figma.strokeWeight = sw;
+  }
 
   // Blend mode (skip default)
   const blend = asString(node.blendMode);
@@ -274,7 +288,87 @@ function parseEffects(raw: unknown): FigmaEffect[] {
     } else if (BLUR_TYPES.has(type)) {
       const radius = asNumber(obj["radius"]);
       if (radius === undefined) continue;
-      out.push({ type: type as "LAYER_BLUR" | "BACKGROUND_BLUR", radius });
+      const blur: FigmaEffect = { type: type as "LAYER_BLUR" | "BACKGROUND_BLUR", radius };
+      const bt = asString(obj["blurType"]);
+      if (bt === "NORMAL" || bt === "PROGRESSIVE") {
+        (blur as { blurType?: "NORMAL" | "PROGRESSIVE" }).blurType = bt;
+      }
+      out.push(blur);
+    } else if (type === "NOISE") {
+      const noiseSize = asNumber(obj["noiseSize"]);
+      const noiseType = asString(obj["noiseType"]);
+      const density = asNumber(obj["density"]);
+      if (noiseSize === undefined || !noiseType || !NOISE_TYPES.has(noiseType) || density === undefined) continue;
+      const e: FigmaEffect = {
+        type: "NOISE",
+        noiseSize,
+        noiseType: noiseType as "MONOTONE" | "MULTITONE" | "DUOTONE",
+        density,
+      };
+      const v = asObject<{ x: unknown; y: unknown }>(obj["noiseSizeVector"]);
+      if (v) {
+        const x = asNumber(v.x);
+        const y = asNumber(v.y);
+        if (x !== undefined && y !== undefined) (e as { noiseSizeVector?: { x: number; y: number } }).noiseSizeVector = { x, y };
+      }
+      const color = asObject<{ r: unknown; g: unknown; b: unknown; a: unknown }>(obj["color"]);
+      if (color) {
+        const r = asNumber(color.r) ?? 0;
+        const g = asNumber(color.g) ?? 0;
+        const b = asNumber(color.b) ?? 0;
+        const a = asNumber(color.a) ?? 1;
+        (e as { color?: { r: number; g: number; b: number; a: number } }).color = { r, g, b, a };
+      }
+      const sc = asObject<{ r: unknown; g: unknown; b: unknown; a: unknown }>(obj["secondaryColor"]);
+      if (sc) {
+        const r = asNumber(sc.r) ?? 0;
+        const g = asNumber(sc.g) ?? 0;
+        const b = asNumber(sc.b) ?? 0;
+        const a = asNumber(sc.a) ?? 1;
+        (e as { secondaryColor?: { r: number; g: number; b: number; a: number } }).secondaryColor = { r, g, b, a };
+      }
+      out.push(e);
+    } else if (type === "TEXTURE") {
+      const radius = asNumber(obj["radius"]);
+      const noiseSize = asNumber(obj["noiseSize"]);
+      if (radius === undefined || noiseSize === undefined) continue;
+      const e: FigmaEffect = { type: "TEXTURE", radius, noiseSize };
+      const v = asObject<{ x: unknown; y: unknown }>(obj["noiseSizeVector"]);
+      if (v) {
+        const x = asNumber(v.x);
+        const y = asNumber(v.y);
+        if (x !== undefined && y !== undefined) (e as { noiseSizeVector?: { x: number; y: number } }).noiseSizeVector = { x, y };
+      }
+      const clip = asBoolean(obj["clipToShape"]);
+      if (clip !== undefined) (e as { clipToShape?: boolean }).clipToShape = clip;
+      out.push(e);
+    } else if (type === "GLASS") {
+      const radius = asNumber(obj["radius"]);
+      const refraction = asNumber(obj["refraction"]);
+      const depth = asNumber(obj["depth"]);
+      const lightAngle = asNumber(obj["lightAngle"]);
+      const lightIntensity = asNumber(obj["lightIntensity"]);
+      const dispersion = asNumber(obj["dispersion"]);
+      const splay = asNumber(obj["splay"]);
+      if (
+        radius === undefined ||
+        refraction === undefined ||
+        depth === undefined ||
+        lightAngle === undefined ||
+        lightIntensity === undefined ||
+        dispersion === undefined ||
+        splay === undefined
+      ) continue;
+      out.push({
+        type: "GLASS",
+        radius,
+        refraction,
+        depth,
+        lightAngle,
+        lightIntensity,
+        dispersion,
+        splay,
+      });
     }
   }
   return out;
@@ -297,6 +391,73 @@ function parseTransform(raw: unknown): number[][] | null {
       row.push(n);
     }
     out.push(row);
+  }
+  return out;
+}
+
+/** Parse a Figma `node.strokes` array into FigmaPaintMetadata entries.
+ *  Same shape as `paintToFigmaMetadata` in text.ts but for strokes ;
+ *  used by the universal capture so text + frame + shape (non-SOLID)
+ *  strokes round-trip with the full paint surface. */
+function parseStrokePaints(raw: unknown): NonNullable<FigmaMetadata["strokes"]> {
+  const arr = asArray<unknown>(raw);
+  if (!arr) return [];
+  const out: NonNullable<FigmaMetadata["strokes"]> = [];
+  for (const p of arr) {
+    if (!p || typeof p !== "object") continue;
+    const obj = p as Record<string, unknown>;
+    const type = asString(obj["type"]);
+    if (type !== "SOLID" && type !== "GRADIENT_LINEAR" && type !== "GRADIENT_RADIAL") continue;
+    const entry: NonNullable<FigmaMetadata["strokes"]>[number] = { type };
+    if (asBoolean(obj["visible"]) === false) entry.visible = false;
+    const op = asNumber(obj["opacity"]);
+    if (op !== undefined && op !== 1) entry.opacity = op;
+    const blend = asString(obj["blendMode"]);
+    if (blend && BLEND_MODES.has(blend as FigmaBlendMode) && blend !== "NORMAL" && blend !== "PASS_THROUGH") {
+      entry.blendMode = blend as FigmaBlendMode;
+    }
+    if (type === "SOLID") {
+      const color = asObject<{ r: unknown; g: unknown; b: unknown }>(obj["color"]);
+      if (!color) continue;
+      const r = asNumber(color.r) ?? 0;
+      const g = asNumber(color.g) ?? 0;
+      const b = asNumber(color.b) ?? 0;
+      entry.color = { r, g, b };
+    } else {
+      const stops = asArray<unknown>(obj["gradientStops"]);
+      if (!stops) continue;
+      const cleaned: NonNullable<typeof entry.gradientStops> = [];
+      for (const s of stops) {
+        if (!s || typeof s !== "object") continue;
+        const so = s as Record<string, unknown>;
+        const pos = asNumber(so["position"]);
+        const c = asObject<{ r: unknown; g: unknown; b: unknown; a: unknown }>(so["color"]);
+        if (pos === undefined || !c) continue;
+        cleaned.push({
+          position: pos,
+          color: {
+            r: asNumber(c.r) ?? 0,
+            g: asNumber(c.g) ?? 0,
+            b: asNumber(c.b) ?? 0,
+            a: asNumber(c.a) ?? 1,
+          },
+        });
+      }
+      if (cleaned.length === 0) continue;
+      entry.gradientStops = cleaned;
+      const t = asArray<unknown>(obj["gradientTransform"]);
+      if (t && t.length === 2) {
+        const r0 = asArray<unknown>(t[0]);
+        const r1 = asArray<unknown>(t[1]);
+        if (r0 && r1 && r0.length === 3 && r1.length === 3) {
+          entry.gradientTransform = [
+            [asNumber(r0[0]) ?? 0, asNumber(r0[1]) ?? 0, asNumber(r0[2]) ?? 0],
+            [asNumber(r1[0]) ?? 0, asNumber(r1[1]) ?? 0, asNumber(r1[2]) ?? 0],
+          ];
+        }
+      }
+    }
+    out.push(entry);
   }
   return out;
 }

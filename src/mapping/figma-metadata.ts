@@ -32,9 +32,49 @@ export interface FigmaEffectBlur {
   type: "LAYER_BLUR" | "BACKGROUND_BLUR";
   visible?: boolean;
   radius: number;
+  /** Figma 2024+ : blur kernel choice. Default "NORMAL". */
+  blurType?: "NORMAL" | "PROGRESSIVE";
 }
 
-export type FigmaEffect = FigmaEffectShadow | FigmaEffectBlur;
+export interface FigmaEffectNoise {
+  type: "NOISE";
+  visible?: boolean;
+  noiseSize: number;
+  noiseSizeVector?: { x: number; y: number };
+  noiseType: "MONOTONE" | "MULTITONE" | "DUOTONE";
+  color?: { r: number; g: number; b: number; a: number };
+  density: number;
+  /** MULTITONE/DUOTONE secondary colour (when applicable). */
+  secondaryColor?: { r: number; g: number; b: number; a: number };
+}
+
+export interface FigmaEffectTexture {
+  type: "TEXTURE";
+  visible?: boolean;
+  radius: number;
+  noiseSize: number;
+  noiseSizeVector?: { x: number; y: number };
+  clipToShape?: boolean;
+}
+
+export interface FigmaEffectGlass {
+  type: "GLASS";
+  visible?: boolean;
+  radius: number;
+  refraction: number;
+  depth: number;
+  lightAngle: number;
+  lightIntensity: number;
+  dispersion: number;
+  splay: number;
+}
+
+export type FigmaEffect =
+  | FigmaEffectShadow
+  | FigmaEffectBlur
+  | FigmaEffectNoise
+  | FigmaEffectTexture
+  | FigmaEffectGlass;
 
 // ---------- Blend mode (Figma's 19 modes) ----------
 
@@ -100,6 +140,28 @@ export interface FigmaGradientStop {
   opacity?: number;
 }
 
+// ---------- Paint metadata (per-fill capture for text + extras) ----------
+
+/** Serialisable subset of a Figma `Paint` (SOLID / GRADIENT_LINEAR /
+ *  GRADIENT_RADIAL). Stashed under `metadata.figma.textFills[]` so text
+ *  primitives with non-trivial fills (gradients, multi-fill, per-paint
+ *  blend mode) round-trip with full fidelity. */
+export interface FigmaPaintMetadata {
+  type: "SOLID" | "GRADIENT_LINEAR" | "GRADIENT_RADIAL";
+  visible?: boolean;
+  opacity?: number;
+  blendMode?: FigmaBlendMode;
+  /** SOLID only — RGB 0..1. */
+  color?: { r: number; g: number; b: number };
+  /** GRADIENT_* — stops with RGBA 0..1. */
+  gradientStops?: {
+    position: number;
+    color: { r: number; g: number; b: number; a: number };
+  }[];
+  /** GRADIENT_* — 2x3 affine matrix. */
+  gradientTransform?: number[][];
+}
+
 // ---------- Hyperlinks (text) ----------
 
 export interface FigmaHyperlink {
@@ -121,6 +183,26 @@ export interface FigmaMetadata {
    *  GroupNode via `figma.group()` so the layer-panel structure matches
    *  the source. */
   sourceType?: "GROUP" | "BOOLEAN_OPERATION";
+
+  /** Captured fills for `text` primitives. LSML's `style.color` only carries
+   *  a CSS color, so SOLID fills round-trip via that channel. Gradient or
+   *  multi-fill text needs the full paint array — stashed here verbatim
+   *  and re-applied on import via `node.fills = …`. Each entry is a
+   *  Figma-shaped paint with the keys we need to reconstruct ImportPaint. */
+  textFills?: FigmaPaintMetadata[];
+
+  /** Captured stroke paints. LSML's `Stroke` only carries `{color, width}`
+   *  (SOLID only), and `text` / `frame` primitives have no native stroke
+   *  representation at all. This array preserves the full per-stroke
+   *  paint surface (gradient strokes, image strokes, blendMode/opacity)
+   *  and is applied on import via `node.strokes = …`. Used for shape
+   *  (when non-SOLID), text, and frame. */
+  strokes?: FigmaPaintMetadata[];
+
+  /** Uniform stroke weight for text and frame primitives — shape carries
+   *  it via LSML's `stroke.width`. Skipped when the strokes array is
+   *  empty or every per-side weight is set in `strokeDetails`. */
+  strokeWeight?: number;
 
   /** Per-image-paint metadata for `image` primitives — Figma exposes
    *  several knobs on the IMAGE fill itself (separate from the LSML
@@ -281,6 +363,9 @@ function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
   if (meta.layerName) out.layerName = meta.layerName;
   if (meta.sourceType) out.sourceType = meta.sourceType;
   if (meta.imagePaint && Object.keys(meta.imagePaint).length > 0) out.imagePaint = meta.imagePaint;
+  if (meta.textFills && meta.textFills.length > 0) out.textFills = meta.textFills;
+  if (meta.strokes && meta.strokes.length > 0) out.strokes = meta.strokes;
+  if (meta.strokeWeight !== undefined && meta.strokeWeight !== 1) out.strokeWeight = meta.strokeWeight;
   if (meta.transform && meta.transform.length === 2) out.transform = meta.transform;
   if (meta.position && (meta.position.x !== 0 || meta.position.y !== 0)) {
     out.position = meta.position;
