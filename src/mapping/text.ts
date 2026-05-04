@@ -135,7 +135,9 @@ export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResul
   if (ml !== undefined) textExtras.maxLines = ml;
   if (Object.keys(textExtras).length > 0) withFigmaMetadata(prim, textExtras);
 
-  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim);
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
+    localPosition: prim.position ?? { x: 0, y: 0 },
+  });
 
   // When no [bind:...] directive is present, the node's `characters` is the
   // static text. We surface it via a synthesised leaf path that the bundle

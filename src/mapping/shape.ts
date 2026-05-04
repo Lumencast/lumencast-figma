@@ -149,7 +149,9 @@ export function mapShape(
     withFigmaMetadata(prim, { layerName: node.name });
   }
 
-  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim);
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
+    localPosition: prim.position ?? { x: 0, y: 0 },
+  });
 
   // Variable bindings : when fills[0] has a bound color variable AND the
   // shape rendered a single solid `fill`, replace the static fill with a

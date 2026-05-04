@@ -148,7 +148,9 @@ export function mapFrame(
   // Universal x-figma.authoring/1 extras (effects, blendMode, mask flags,
   // per-corner radii + smoothing, stroke details, constraints, layout
   // overrides). Per-primitive captures above handle frame-specific keys.
-  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim);
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
+    localPosition: prim.position ?? { x: 0, y: 0 },
+  });
 
   if (defaults) return { node: prim, defaults };
   return { node: prim };

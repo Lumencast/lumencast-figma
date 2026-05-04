@@ -135,7 +135,9 @@ export function mapInstance(
     withFigmaMetadata(prim, { layerName: node.name });
   }
 
-  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim);
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
+    localPosition: prim.position ?? { x: 0, y: 0 },
+  });
 
   return { node: prim };
 }

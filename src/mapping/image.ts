@@ -111,7 +111,9 @@ export function mapImage(
     withFigmaMetadata(prim, { layerName: node.name });
   }
 
-  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim);
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
+    localPosition: prim.position ?? { x: 0, y: 0 },
+  });
 
   const out: { node: ImagePrimitive; defaults?: Record<string, unknown>; assetRefs: string[] } = {
     node: prim,

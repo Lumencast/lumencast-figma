@@ -90,23 +90,45 @@ const LAYOUT_ALIGN_VALUES = new Set<FigmaLayoutAlign>([
 
 const MASK_TYPES = new Set<FigmaMaskType>(["ALPHA", "LUMINANCE", "VECTOR", "OUTLINE"]);
 
+export interface CaptureFigmaExtrasOptions {
+  /** LSML position the per-primitive mapper just emitted (relative to the
+   *  LSML parent). When the source has a flipped transform, the captured
+   *  matrix's translation is in the source's coord system — which differs
+   *  from the LSML parent's after we convert GROUP → FRAME. We rewrite
+   *  the matrix's tx/ty (m02/m12) to match the LSML position so that
+   *  applying `node.relativeTransform = matrix` on import lands the
+   *  visual at the correct local coordinates. */
+  localPosition?: { x: number; y: number };
+}
+
 /** Capture every profile-relevant property and merge into prim.metadata.figma.
  *  No-op when the host node exposes nothing of interest. */
 export function captureFigmaExtras<T extends { metadata?: Record<string, unknown> }>(
   node: MaybeFigmaNode,
   prim: T,
+  opts?: CaptureFigmaExtrasOptions,
 ): T {
   const figma: FigmaMetadata = {};
 
   // Flip detection : Figma's `node.rotation` getter returns the rotation
   // magnitude but loses the flip orientation. A flipped node's
   // relativeTransform has a negative determinant on the linear part. When
-  // detected, stash the full 2x3 matrix so the import side can restore
-  // the orientation exactly via `node.relativeTransform = ...`.
+  // detected, stash the 2x3 matrix so the import side can restore the
+  // orientation exactly via `node.relativeTransform = ...`. The matrix's
+  // translation is rewritten to the LSML-local position so the parent's
+  // coord-system change (GROUP source → FRAME on import) doesn't shift
+  // the node off-target.
   const transform = parseTransform(node.relativeTransform);
   if (transform) {
     const det = transform[0]![0]! * transform[1]![1]! - transform[0]![1]! * transform[1]![0]!;
-    if (det < 0) figma.transform = transform;
+    if (det < 0) {
+      const tx = opts?.localPosition?.x ?? 0;
+      const ty = opts?.localPosition?.y ?? 0;
+      figma.transform = [
+        [transform[0]![0]!, transform[0]![1]!, tx],
+        [transform[1]![0]!, transform[1]![1]!, ty],
+      ];
+    }
   }
 
   // Effects
