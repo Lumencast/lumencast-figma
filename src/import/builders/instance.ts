@@ -11,6 +11,7 @@ import { PLUGIN_DATA_NAMESPACE, PLUGIN_DATA_KEYS } from "~shared/constants";
 import type { ImportFigmaApi, ImportInstanceNode } from "../figma-api";
 import { applyUniversal } from "../universal";
 import { readFigmaMetadata } from "../figma-metadata";
+import { applyFigmaExtras } from "../figma-extras";
 import type { BuildContext } from "./types";
 
 export function buildInstance(
@@ -54,5 +55,6 @@ export function buildInstance(
   }
 
   applyUniversal(node, prim);
+  applyFigmaExtras(node, figmaMeta);
   return node;
 }

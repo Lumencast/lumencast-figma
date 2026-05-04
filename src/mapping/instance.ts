@@ -21,6 +21,7 @@ import type { InstancePrimitive, LeafPath } from "~shared/lsml-types";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { withFigmaMetadata } from "./figma-metadata";
+import { captureFigmaExtras } from "./figma-extras";
 import type { MappingContext, MappingResult } from "./types";
 import { PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 
@@ -132,6 +133,8 @@ export function mapInstance(
   if (node.name && node.name.trim().length > 0) {
     withFigmaMetadata(prim, { layerName: node.name });
   }
+
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim);
 
   return { node: prim };
 }

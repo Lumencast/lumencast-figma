@@ -8,6 +8,7 @@
 import type { Bind, Fill, FramePrimitive } from "~shared/lsml-types";
 import { paintToFill, rawGradientTransform, type FigmaPaint, paintToSolidCss } from "./color";
 import { withFigmaMetadata } from "./figma-metadata";
+import { captureFigmaExtras } from "./figma-extras";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { resolveVariable } from "./variables";
@@ -141,6 +142,11 @@ export function mapFrame(
   if (node.name && node.name.trim().length > 0) {
     withFigmaMetadata(prim, { layerName: node.name });
   }
+
+  // Universal x-figma.authoring/1 extras (effects, blendMode, mask flags,
+  // per-corner radii + smoothing, stroke details, constraints, layout
+  // overrides). Per-primitive captures above handle frame-specific keys.
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim);
 
   if (defaults) return { node: prim, defaults };
   return { node: prim };

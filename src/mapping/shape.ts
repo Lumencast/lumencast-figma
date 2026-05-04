@@ -12,6 +12,7 @@ import { parseLayerName } from "../export/bindings";
 import { resolveVariable } from "./variables";
 import { asArray, asNumber } from "./figma-mixed";
 import { withFigmaMetadata } from "./figma-metadata";
+import { captureFigmaExtras } from "./figma-extras";
 import type { MappingContext, MappingResult } from "./types";
 
 interface MockShapeNode {
@@ -146,6 +147,8 @@ export function mapShape(
   if (node.name && node.name.trim().length > 0) {
     withFigmaMetadata(prim, { layerName: node.name });
   }
+
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim);
 
   // Variable bindings : when fills[0] has a bound color variable AND the
   // shape rendered a single solid `fill`, replace the static fill with a

@@ -71,10 +71,13 @@ export function walk(
 ): MappingResult | null {
   const depth = opts.depth ?? 0;
   console.warn("[lumencast] walk:", node.type, node.id, node.name);
-  if (node.visible === false) {
-    ctx.trace?.push({ depth, type: node.type, id: node.id, name: node.name, action: "skip-invisible" });
-    return null;
-  }
+  // Invisible nodes are NOT skipped — they flow through to the per-
+  // primitive mappers, which read `node.visible === false` via
+  // `extractUniversal` and emit `visible: false` on the LSML primitive.
+  // Skipping them here would lose the source's structural fidelity (the
+  // user expects the imported tree to contain every node from the
+  // source, hidden or not, so they can re-show them by toggling
+  // visibility in Figma without re-exporting).
   if (isOperatorInputComponent(node)) {
     console.warn("[lumencast]   → operator-input component, skipped from tree");
     ctx.trace?.push({ depth, type: node.type, id: node.id, name: node.name, action: "skip-operator-input" });

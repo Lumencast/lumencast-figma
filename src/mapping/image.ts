@@ -15,6 +15,7 @@ import { extractUniversal } from "./universal";
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import { asArray, asNumber } from "./figma-mixed";
 import { withFigmaMetadata } from "./figma-metadata";
+import { captureFigmaExtras } from "./figma-extras";
 import type { FigmaPaint } from "./color";
 import type { MappingContext, MappingResult } from "./types";
 
@@ -108,6 +109,8 @@ export function mapImage(
   if (node.name && node.name.trim().length > 0) {
     withFigmaMetadata(prim, { layerName: node.name });
   }
+
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim);
 
   const out: { node: ImagePrimitive; defaults?: Record<string, unknown>; assetRefs: string[] } = {
     node: prim,

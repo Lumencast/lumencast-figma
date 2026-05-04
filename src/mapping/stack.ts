@@ -6,6 +6,7 @@ import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { asArray, asNumber, asString } from "./figma-mixed";
 import { withFigmaMetadata } from "./figma-metadata";
+import { captureFigmaExtras } from "./figma-extras";
 import type { MappingResult } from "./types";
 
 export interface StackMapInput {
@@ -124,6 +125,8 @@ export function mapStack(
   if (node.name && node.name.trim().length > 0) {
     withFigmaMetadata(prim, { layerName: node.name });
   }
+
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim);
 
   return { node: prim };
 }

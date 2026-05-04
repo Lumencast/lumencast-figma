@@ -5,6 +5,7 @@ import type { ImportFigmaApi, ImportPaint, ImportShapeNode, ImportStroke } from 
 import { cssToRgb, cssToRgba } from "../color";
 import { applyUniversal } from "../universal";
 import { readFigmaMetadata } from "../figma-metadata";
+import { applyFigmaExtras } from "../figma-extras";
 import type { BuildContext } from "./types";
 
 export function buildShape(
@@ -92,6 +93,7 @@ export function buildShape(
   }
 
   applyUniversal(node, prim);
+  applyFigmaExtras(node, figmaMeta);
 
   // Position : universal prop (LSML 1.1 §5.4). v0.1 bundles stashed it
   // in `metadata.figma.position` ; we still read that as a fallback.

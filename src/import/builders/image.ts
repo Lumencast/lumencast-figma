@@ -5,6 +5,7 @@ import type { ImportFigmaApi, ImportPaint, ImportShapeNode } from "../figma-api"
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import { applyUniversal } from "../universal";
 import { readFigmaMetadata } from "../figma-metadata";
+import { applyFigmaExtras } from "../figma-extras";
 import type { BuildContext } from "./types";
 
 export function buildImage(
@@ -48,6 +49,7 @@ export function buildImage(
   }
 
   applyUniversal(node, prim);
+  applyFigmaExtras(node, figmaMeta);
 
   // Position : universal prop (LSML 1.1 §5.4) with v0.1 metadata fallback.
   const pos = prim.position ?? figmaMeta.position;

@@ -4,6 +4,7 @@ import type { StackPrimitive } from "~shared/lsml-types";
 import type { ImportFigmaApi, ImportFrameNode } from "../figma-api";
 import { applyUniversal } from "../universal";
 import { readFigmaMetadata } from "../figma-metadata";
+import { applyFigmaExtras } from "../figma-extras";
 import type { BuildContext } from "./types";
 
 const JUSTIFY_MAP: Record<string, ImportFrameNode["primaryAxisAlignItems"]> = {
@@ -60,6 +61,7 @@ export function buildStack(
   }
 
   applyUniversal(node, prim);
+  applyFigmaExtras(node, figmaMeta);
 
   // Position : universal prop (LSML 1.1 §5.4). Auto-layout frames sit at
   // an absolute position inside their parent ; without this the imported

@@ -11,6 +11,7 @@ import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import { cssToRgb } from "../color";
 import { applyUniversal } from "../universal";
 import { readFigmaMetadata } from "../figma-metadata";
+import { applyFigmaExtras } from "../figma-extras";
 import type { BuildContext } from "./types";
 
 export function buildText(
@@ -115,6 +116,7 @@ export function buildText(
   }
 
   applyUniversal(node, prim);
+  applyFigmaExtras(node, figmaMeta);
   return node;
 }
 

@@ -14,7 +14,7 @@
 
 import type { ExportedAsset, PluginWarning } from "../main/messages";
 import type { OperatorInputSpec, SceneBundle } from "~shared/lsml-types";
-import { LSML_VERSION } from "~shared/constants";
+import { FIGMA_AUTHORING_PROFILE, LSML_VERSION } from "~shared/constants";
 import { DEFAULT_SCHEMA_URL } from "~shared/lsml-schema";
 import { mapTree, type MappingContext } from "../mapping";
 import { createMappingTrace } from "../mapping/trace";
@@ -144,6 +144,7 @@ export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundle
     lsml: LSML_VERSION,
     scene_id: sceneId,
     scene_version: "sha256:placeholder", // overwritten by sealBundle
+    profiles: [FIGMA_AUTHORING_PROFILE],
     layout: mapped.node,
   };
   if (mapped.defaults && Object.keys(mapped.defaults).length > 0) {

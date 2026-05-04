@@ -7,6 +7,7 @@ import type { ImportFigmaApi, ImportFrameNode, ImportPaint } from "../figma-api"
 import { cssToRgb, cssToRgba } from "../color";
 import { applyUniversal } from "../universal";
 import { readFigmaMetadata } from "../figma-metadata";
+import { applyFigmaExtras } from "../figma-extras";
 import type { BuildContext } from "./types";
 
 export function buildFrame(
@@ -53,6 +54,7 @@ export function buildFrame(
   }
 
   applyUniversal(node, prim);
+  applyFigmaExtras(node, figmaMeta);
   return node;
 }
 

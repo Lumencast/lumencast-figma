@@ -20,6 +20,7 @@ import { parseLayerName } from "../export/bindings";
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import { asArray, asNumber, asObject, asString } from "./figma-mixed";
 import { withFigmaMetadata, type FigmaMetadata } from "./figma-metadata";
+import { captureFigmaExtras } from "./figma-extras";
 import type { MappingResult } from "./types";
 
 interface MockTextNode {
@@ -120,6 +121,20 @@ export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResul
   if (node.name && node.name.trim().length > 0) {
     withFigmaMetadata(prim, { layerName: node.name });
   }
+
+  // Text-specific authoring extras
+  const textExtras: FigmaMetadata = {};
+  const ps = asNumber((node as { paragraphSpacing?: unknown }).paragraphSpacing);
+  if (ps !== undefined && ps !== 0) textExtras.paragraphSpacing = ps;
+  const pi = asNumber((node as { paragraphIndent?: unknown }).paragraphIndent);
+  if (pi !== undefined && pi !== 0) textExtras.paragraphIndent = pi;
+  const tt = asString((node as { textTruncation?: unknown }).textTruncation);
+  if (tt === "ENDING") textExtras.textTruncation = tt;
+  const ml = asNumber((node as { maxLines?: unknown }).maxLines);
+  if (ml !== undefined) textExtras.maxLines = ml;
+  if (Object.keys(textExtras).length > 0) withFigmaMetadata(prim, textExtras);
+
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim);
 
   // When no [bind:...] directive is present, the node's `characters` is the
   // static text. We surface it via a synthesised leaf path that the bundle
