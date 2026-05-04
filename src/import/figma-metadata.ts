@@ -84,6 +84,9 @@ export interface FigmaHyperlink {
 
 export interface FigmaMetadata {
   layerName?: string;
+  /** Raw 2x3 affine transform — used to restore flip + rotation atomically
+   *  when the source node had a negative-determinant transform. */
+  transform?: number[][];
   position?: { x: number; y: number };
   size?: { w: number; h: number };
   clipsContent?: boolean;

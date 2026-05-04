@@ -17,6 +17,7 @@ import type {
 } from "./figma-metadata";
 
 interface MaybeFigmaWritable {
+  relativeTransform?: number[][];
   effects?: FigmaEffect[];
   blendMode?: string;
   isMask?: boolean;
@@ -102,6 +103,17 @@ export function applyFigmaExtras(node: ImportBaseNode, meta: FigmaMetadata): voi
   if (meta.maxHeight !== undefined && meta.maxHeight !== null) {
     const v = meta.maxHeight;
     safeSet(() => (w.maxHeight = v));
+  }
+
+  // Apply the flip-preserving transform LAST when present : Figma's
+  // `node.relativeTransform = matrix` overrides x / y / rotation in one
+  // atomic write, restoring not just position+rotation but also flip
+  // (negative-determinant linear part). When the source had no flip we
+  // never emit `meta.transform`, so this is a no-op for plain rotated
+  // nodes.
+  if (meta.transform && meta.transform.length === 2) {
+    const v = meta.transform;
+    safeSet(() => (w.relativeTransform = v));
   }
 }
 

@@ -38,6 +38,9 @@ interface SnapshotNode {
   width?: number;
   height?: number;
   rotation?: number;
+  /** Figma's raw 2x3 affine transform `[[m00, m01, tx], [m10, m11, ty]]`
+   *  captured for diagnostic purposes (flip detection, exact pose). */
+  relativeTransform?: number[][];
   opacity?: number;
   layoutMode?: string;
   layoutSizingHorizontal?: string;
@@ -145,6 +148,11 @@ export function snapshotFigmaNode(node: AnyNode, depth = 0): SnapshotNode {
   copyNumber(node, dst, "width");
   copyNumber(node, dst, "height");
   copyNumber(node, dst, "rotation");
+  // relativeTransform is a 2x3 array of arrays — sanitizeArray strips Symbols.
+  const rt = sanitizeArray(node["relativeTransform"]);
+  if (rt && rt.length === 2) {
+    out.relativeTransform = rt as number[][];
+  }
   copyNumber(node, dst, "opacity");
   copyString(node, dst, "layoutMode");
   copyString(node, dst, "layoutSizingHorizontal");

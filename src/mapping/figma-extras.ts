@@ -24,6 +24,7 @@ import {
 } from "./figma-metadata";
 
 interface MaybeFigmaNode {
+  relativeTransform?: unknown;
   effects?: unknown;
   blendMode?: unknown;
   isMask?: unknown;
@@ -96,6 +97,17 @@ export function captureFigmaExtras<T extends { metadata?: Record<string, unknown
   prim: T,
 ): T {
   const figma: FigmaMetadata = {};
+
+  // Flip detection : Figma's `node.rotation` getter returns the rotation
+  // magnitude but loses the flip orientation. A flipped node's
+  // relativeTransform has a negative determinant on the linear part. When
+  // detected, stash the full 2x3 matrix so the import side can restore
+  // the orientation exactly via `node.relativeTransform = ...`.
+  const transform = parseTransform(node.relativeTransform);
+  if (transform) {
+    const det = transform[0]![0]! * transform[1]![1]! - transform[0]![1]! * transform[1]![0]!;
+    if (det < 0) figma.transform = transform;
+  }
 
   // Effects
   const effects = parseEffects(node.effects);
@@ -242,6 +254,27 @@ function parseEffects(raw: unknown): FigmaEffect[] {
       if (radius === undefined) continue;
       out.push({ type: type as "LAYER_BLUR" | "BACKGROUND_BLUR", radius });
     }
+  }
+  return out;
+}
+
+/** Coerce `node.relativeTransform` (which may be the figma.mixed Symbol or
+ *  contain Symbol-wrapped numbers) into a clean `number[][]` 2x3 matrix.
+ *  Returns null if the shape doesn't match. */
+function parseTransform(raw: unknown): number[][] | null {
+  const rows = asArray<unknown>(raw);
+  if (!rows || rows.length !== 2) return null;
+  const out: number[][] = [];
+  for (const r of rows) {
+    const cols = asArray<unknown>(r);
+    if (!cols || cols.length !== 3) return null;
+    const row: number[] = [];
+    for (const c of cols) {
+      const n = asNumber(c);
+      if (n === undefined) return null;
+      row.push(n);
+    }
+    out.push(row);
   }
   return out;
 }

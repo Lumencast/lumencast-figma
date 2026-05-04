@@ -126,6 +126,20 @@ export interface FigmaMetadata {
    *  for v0.1 reads. */
   clipsContent?: boolean;
 
+  /** Figma's raw 2x3 affine transform `[[m00, m01, tx], [m10, m11, ty]]`.
+   *  Captured ONLY when the linear part has a negative determinant — i.e.
+   *  the node has been flipped horizontally or vertically. For pure
+   *  rotations + translations the LSML universal `position` + `rotation`
+   *  cover everything ; we don't pollute the bundle.
+   *
+   *  Why this matters : Figma's `node.rotation` getter alone cannot
+   *  distinguish a rotation θ from a (flip + rotation) pair that looks
+   *  the same visually but differs in orientation. Re-applying rotation
+   *  only on import drops the flip and the rendered visual is the mirror
+   *  of the source. Re-applying the full `relativeTransform` preserves it.
+   *  (Documented in `spec/profiles/figma-authoring.md`.) */
+  transform?: number[][];
+
   // --- Visual layering ---
 
   /** Effects stack — applied in array order at render time. */
@@ -220,6 +234,7 @@ export function readFigmaMetadata(prim: { metadata?: Record<string, unknown> }):
 function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
   const out: FigmaMetadata = {};
   if (meta.layerName) out.layerName = meta.layerName;
+  if (meta.transform && meta.transform.length === 2) out.transform = meta.transform;
   if (meta.position && (meta.position.x !== 0 || meta.position.y !== 0)) {
     out.position = meta.position;
   }
