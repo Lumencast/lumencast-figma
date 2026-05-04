@@ -19,7 +19,7 @@ import type {
 
 interface MaybeFigmaWritable {
   relativeTransform?: number[][];
-  effects?: FigmaEffect[];
+  effects?: unknown[];
   strokes?: unknown[];
   strokeWeight?: number;
   blendMode?: string;
@@ -53,8 +53,14 @@ export function applyFigmaExtras(node: ImportBaseNode, meta: FigmaMetadata): voi
   const w = node as unknown as MaybeFigmaWritable;
 
   if (meta.effects && meta.effects.length > 0) {
-    const v = meta.effects;
-    safeSet(() => (w.effects = v));
+    // Figma's `node.effects = …` setter is strict : `visible` and
+    // `blendMode` are REQUIRED on shadow effects, `radius` is required
+    // on every type, etc. Our export side optimises by skipping default
+    // values (visible=true, blendMode=NORMAL, spread=0) — for re-import
+    // we must put them back, otherwise the whole assignment throws and
+    // safeSet swallows it silently leaving the node effect-less.
+    const normalised = meta.effects.map(normaliseEffectForFigma);
+    safeSet(() => (w.effects = normalised));
   }
   if (meta.strokes && meta.strokes.length > 0) {
     const paints = meta.strokes
@@ -177,6 +183,74 @@ function safeSet(fn: () => void): void {
     // (e.g. cornerRadii on a vector). Silently skip — visual fidelity
     // for that key is forfeited but the node still imports.
   }
+}
+
+/** Reconstruct a full Figma effect object with required fields back-
+ *  filled. Figma's `node.effects = …` setter rejects partial entries
+ *  (e.g. an INNER_SHADOW without `visible` and `blendMode`) — and
+ *  rejection of any single entry causes the whole assignment to throw.
+ *  We strip the export-side optimisation by re-introducing defaults. */
+function normaliseEffectForFigma(e: FigmaEffect): unknown {
+  if (e.type === "DROP_SHADOW" || e.type === "INNER_SHADOW") {
+    const out: Record<string, unknown> = {
+      type: e.type,
+      color: e.color,
+      offset: e.offset,
+      radius: e.radius,
+      spread: e.spread ?? 0,
+      visible: e.visible ?? true,
+      blendMode: e.blendMode ?? "NORMAL",
+    };
+    if (e.type === "DROP_SHADOW") {
+      out["showShadowBehindNode"] =
+        (e as { showShadowBehindNode?: boolean }).showShadowBehindNode ?? false;
+    }
+    return out;
+  }
+  if (e.type === "LAYER_BLUR" || e.type === "BACKGROUND_BLUR") {
+    return {
+      type: e.type,
+      radius: e.radius,
+      visible: e.visible ?? true,
+      blurType: e.blurType ?? "NORMAL",
+    };
+  }
+  if (e.type === "NOISE") {
+    return {
+      type: "NOISE",
+      visible: e.visible ?? true,
+      noiseSize: e.noiseSize,
+      noiseSizeVector: e.noiseSizeVector ?? { x: e.noiseSize, y: e.noiseSize },
+      noiseType: e.noiseType,
+      density: e.density,
+      ...(e.color !== undefined ? { color: e.color } : {}),
+      ...(e.secondaryColor !== undefined ? { secondaryColor: e.secondaryColor } : {}),
+    };
+  }
+  if (e.type === "TEXTURE") {
+    return {
+      type: "TEXTURE",
+      visible: e.visible ?? true,
+      radius: e.radius,
+      noiseSize: e.noiseSize,
+      noiseSizeVector: e.noiseSizeVector ?? { x: e.noiseSize, y: e.noiseSize },
+      clipToShape: e.clipToShape ?? false,
+    };
+  }
+  if (e.type === "GLASS") {
+    return {
+      type: "GLASS",
+      visible: e.visible ?? true,
+      radius: e.radius,
+      refraction: e.refraction,
+      depth: e.depth,
+      lightAngle: e.lightAngle,
+      lightIntensity: e.lightIntensity,
+      dispersion: e.dispersion,
+      splay: e.splay,
+    };
+  }
+  return e;
 }
 
 /** Reconstruct a Figma stroke paint object from the serialised
