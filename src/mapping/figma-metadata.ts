@@ -56,14 +56,24 @@ export interface FigmaMetadata {
 }
 
 /** Decorate a primitive's `metadata` block with figma-specific keys. Only
- *  emits a metadata block when at least one figma key is non-empty. */
+ *  emits a metadata block when at least one figma key is non-empty.
+ *
+ *  Mappers call this multiple times during a single primitive's
+ *  construction (once per category : position, gradient transforms,
+ *  layer name, ...). Each call merges its keys into any pre-existing
+ *  `figma` sub-block — early versions OVERWROTE the block, losing fields
+ *  set by previous calls. */
 export function withFigmaMetadata<T extends { metadata?: Record<string, unknown> }>(
   prim: T,
   figma: FigmaMetadata,
 ): T {
   const filtered = pruneEmpty(figma);
   if (Object.keys(filtered).length === 0) return prim;
-  prim.metadata = { ...(prim.metadata ?? {}), figma: filtered };
+  const existing = (prim.metadata?.["figma"] as FigmaMetadata | undefined) ?? {};
+  prim.metadata = {
+    ...(prim.metadata ?? {}),
+    figma: { ...existing, ...filtered },
+  };
   return prim;
 }
 

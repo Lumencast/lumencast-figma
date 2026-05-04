@@ -106,17 +106,26 @@ export function walk(
         return mapShape(node as never, ctx, parentOpts);
       case "ELLIPSE":
       case "VECTOR":
-      case "BOOLEAN_OPERATION":
       case "STAR":
       case "POLYGON":
       case "LINE":
-        // All vector-like nodes share `fillGeometry` (post-boolean flatten)
-        // — mapShape consumes it as `shape.paths[]`. Treating BOOLEAN_OPERATION
-        // as a single shape (instead of recursing into its children) is the
-        // fix for "logo becomes plein de vectors".
         console.warn("[lumencast]   → mapShape (", node.type, ")");
         ctx.trace?.push({ ...traceBase, action: "map-shape", note: node.type });
         return mapShape(node as never, ctx, parentOpts);
+      case "BOOLEAN_OPERATION":
+        // BOOLEAN_OPERATION has its operand vectors as children. Treating it
+        // as a single shape via `mapShape` + `fillGeometry` would visually
+        // flatten the union but DROP the operand nodes from the LSML tree
+        // (the user expects a 1:1 node count with the source). Route it
+        // through walkContainer so the operands round-trip as siblings —
+        // for UNION (the common case) the rendered result is identical to
+        // the boolean output since same-colour overlaps sum visually. Other
+        // BO modes (subtract/intersect/exclude) lose the operation but keep
+        // structural fidelity ; the visual loss is documented as a 1.1.x
+        // limitation in the import logs.
+        console.warn("[lumencast]   → walkContainer (BOOLEAN_OPERATION)");
+        ctx.trace?.push({ ...traceBase, action: "walk-container", note: node.type });
+        return walkContainer(node, ctx, opts);
       case "INSTANCE":
       case "FRAME": {
         const instOpts: { isRoot: boolean; parentX?: number; parentY?: number } = {
