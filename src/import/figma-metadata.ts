@@ -187,6 +187,10 @@ export interface FigmaMetadata {
   /** Source Figma node type when it wasn't a FRAME (GROUP / BOOLEAN_OPERATION).
    *  Triggers post-build conversion to a real Figma GroupNode. */
   sourceType?: "GROUP" | "BOOLEAN_OPERATION";
+  /** Boolean operation flavour. Only meaningful when `sourceType ===
+   *  "BOOLEAN_OPERATION"`. Routes the post-build wrap to
+   *  `api.union/subtract/intersect/exclude` instead of `api.group`. */
+  booleanOperation?: "UNION" | "SUBTRACT" | "INTERSECT" | "EXCLUDE";
   /** Full fills array captured from a text node — used when LSML's
    *  `style.color` (single CSS color) can't represent the source's
    *  gradient or multi-fill paint. */

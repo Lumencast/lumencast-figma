@@ -159,6 +159,47 @@ export function createImportMock(): ImportMock {
     return inst;
   };
 
+  // Shared synthesis path for figma.group + the four boolean-op flavours.
+  // Each one creates a synthetic container node, MOVES the given children
+  // into it, and inserts it into the parent at the requested index. Used
+  // by the post-build conversion pass to validate group / BO reconstruction
+  // without a live Figma sandbox. The optional `booleanOperation` arg
+  // tags BOOLEAN_OPERATION nodes so downstream assertions can detect the
+  // op flavour the same way Figma's API exposes it.
+  const wrapAsContainer = (
+    type: "GROUP" | "BOOLEAN_OPERATION",
+    name: string,
+    nodes: ImportBaseNode[],
+    parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
+    index?: number,
+    booleanOperation?: "UNION" | "SUBTRACT" | "INTERSECT" | "EXCLUDE",
+  ): ImportBaseNode => {
+    const containerNode = wrapFrame(mkBase(type));
+    containerNode.name = name;
+    const containerBuilt = containerNode as unknown as BuiltNode;
+    if (booleanOperation) {
+      (containerBuilt as { booleanOperation?: string }).booleanOperation =
+        booleanOperation;
+    }
+    const parentNode = parent as unknown as BuiltNode;
+    for (const child of nodes) {
+      const c = child as unknown as BuiltNode;
+      if (c.parent && c.parent.children) {
+        const i = c.parent.children.indexOf(c);
+        if (i >= 0) c.parent.children.splice(i, 1);
+      }
+      containerBuilt.children.push(c);
+      c.parent = containerBuilt;
+    }
+    if (index !== undefined && index <= parentNode.children.length) {
+      parentNode.children.splice(index, 0, containerBuilt);
+    } else {
+      parentNode.children.push(containerBuilt);
+    }
+    containerBuilt.parent = parentNode;
+    return containerNode as unknown as ImportBaseNode;
+  };
+
   const api: ImportMock = {
     createText: () => wrapText(mkBase("TEXT")),
     createRectangle: () => wrapShape(mkBase("RECTANGLE")),
@@ -193,34 +234,16 @@ export function createImportMock(): ImportMock {
     appendToPage: (node) => {
       store.appended.push(node as unknown as BuiltNode);
     },
-    group: (nodes, parent, index) => {
-      // Mock figma.group : create a synthetic GROUP node, MOVE the given
-      // children into it, insert into the parent at `index` (or end). Used
-      // by the post-build conversion pass to validate group reconstruction
-      // without a live Figma sandbox.
-      const groupNode = wrapFrame(mkBase("GROUP"));
-      groupNode.name = "Group";
-      const groupBuilt = groupNode as unknown as BuiltNode;
-      const parentNode = parent as unknown as BuiltNode;
-      // Detach each child from its current parent (the placeholder frame
-      // we're about to discard) and re-parent into the new group.
-      for (const child of nodes) {
-        const c = child as unknown as BuiltNode;
-        if (c.parent && c.parent.children) {
-          const i = c.parent.children.indexOf(c);
-          if (i >= 0) c.parent.children.splice(i, 1);
-        }
-        groupBuilt.children.push(c);
-        c.parent = groupBuilt;
-      }
-      if (index !== undefined && index <= parentNode.children.length) {
-        parentNode.children.splice(index, 0, groupBuilt);
-      } else {
-        parentNode.children.push(groupBuilt);
-      }
-      groupBuilt.parent = parentNode;
-      return groupNode as unknown as ImportBaseNode;
-    },
+    group: (nodes, parent, index) =>
+      wrapAsContainer("GROUP", "Group", nodes, parent, index),
+    union: (nodes, parent, index) =>
+      wrapAsContainer("BOOLEAN_OPERATION", "Union", nodes, parent, index, "UNION"),
+    subtract: (nodes, parent, index) =>
+      wrapAsContainer("BOOLEAN_OPERATION", "Subtract", nodes, parent, index, "SUBTRACT"),
+    intersect: (nodes, parent, index) =>
+      wrapAsContainer("BOOLEAN_OPERATION", "Intersect", nodes, parent, index, "INTERSECT"),
+    exclude: (nodes, parent, index) =>
+      wrapAsContainer("BOOLEAN_OPERATION", "Exclude", nodes, parent, index, "EXCLUDE"),
     appended: () => store.appended,
   };
 

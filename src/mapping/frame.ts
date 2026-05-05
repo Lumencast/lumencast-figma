@@ -35,6 +35,8 @@ export interface FrameMapInput {
   clipsContent?: boolean;
   layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
+  /** Only meaningful when `type === "BOOLEAN_OPERATION"`. */
+  booleanOperation?: "UNION" | "SUBTRACT" | "INTERSECT" | "EXCLUDE";
 }
 
 export interface FrameMapOptions {
@@ -180,9 +182,16 @@ export function mapFrame(
 
   // Mark groups + boolean-operations so the import side can convert the
   // freshly-created LSML frame back into a real Figma GroupNode (via
-  // `figma.group()`) — preserves the layer-panel distinction.
+  // `figma.group()`) — preserves the layer-panel distinction. For BO,
+  // also capture the operation flavour (UNION/SUBTRACT/INTERSECT/EXCLUDE)
+  // so the importer can call the matching `figma.union/subtract/...`
+  // API and reproduce the actual cut/overlap geometry instead of just
+  // grouping the operands.
   if (node.type === "GROUP" || node.type === "BOOLEAN_OPERATION") {
     withFigmaMetadata(prim, { sourceType: node.type });
+    if (node.type === "BOOLEAN_OPERATION" && node.booleanOperation) {
+      withFigmaMetadata(prim, { booleanOperation: node.booleanOperation });
+    }
   }
 
   // Stash any IMAGE fills captured above. Done here (after sourceType)

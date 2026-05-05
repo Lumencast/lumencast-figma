@@ -272,6 +272,14 @@ export interface FigmaMetadata {
    *  the source. */
   sourceType?: "GROUP" | "BOOLEAN_OPERATION";
 
+  /** Boolean operation flavour. Only meaningful when `sourceType ===
+   *  "BOOLEAN_OPERATION"`. Captured so the importer can call the right
+   *  Figma API (`figma.union` / `subtract` / `intersect` / `exclude`)
+   *  instead of `figma.group`, preserving the actual cut/overlap
+   *  semantics. `UNION` is the default when missing — matches the
+   *  pre-1.1.x behaviour of routing every BO through `figma.group`. */
+  booleanOperation?: "UNION" | "SUBTRACT" | "INTERSECT" | "EXCLUDE";
+
   /** Captured fills for `text` primitives. LSML's `style.color` only carries
    *  a CSS color, so SOLID fills round-trip via that channel. Gradient or
    *  multi-fill text needs the full paint array — stashed here verbatim
@@ -498,6 +506,7 @@ function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
   const out: FigmaMetadata = {};
   if (meta.layerName) out.layerName = meta.layerName;
   if (meta.sourceType) out.sourceType = meta.sourceType;
+  if (meta.booleanOperation) out.booleanOperation = meta.booleanOperation;
   if (meta.imagePaint && Object.keys(meta.imagePaint).length > 0) out.imagePaint = meta.imagePaint;
   if (meta.textFills && meta.textFills.length > 0) out.textFills = meta.textFills;
   if (meta.strokes && meta.strokes.length > 0) out.strokes = meta.strokes;

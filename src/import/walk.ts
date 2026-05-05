@@ -267,6 +267,35 @@ function isAutoLayout(node: ImportBaseNode): boolean {
   return mode === "HORIZONTAL" || mode === "VERTICAL";
 }
 
+type WrapKind = "group" | "union" | "subtract" | "intersect" | "exclude";
+
+function pickWrapApi(
+  api: ImportFigmaApi,
+  meta: FigmaMetadata,
+): {
+  kind: WrapKind;
+  fn: (
+    nodes: ImportBaseNode[],
+    parent: FramishParent,
+    index?: number,
+  ) => ImportBaseNode;
+} {
+  if (meta.sourceType !== "BOOLEAN_OPERATION") {
+    return { kind: "group", fn: (n, p, i) => api.group(n, p, i) };
+  }
+  switch (meta.booleanOperation) {
+    case "SUBTRACT":
+      return { kind: "subtract", fn: (n, p, i) => api.subtract(n, p, i) };
+    case "INTERSECT":
+      return { kind: "intersect", fn: (n, p, i) => api.intersect(n, p, i) };
+    case "EXCLUDE":
+      return { kind: "exclude", fn: (n, p, i) => api.exclude(n, p, i) };
+    case "UNION":
+    default:
+      return { kind: "union", fn: (n, p, i) => api.union(n, p, i) };
+  }
+}
+
 /** Inline "flat-then-group" path for GROUP / BOOLEAN_OPERATION sources.
  *
  *  Recursively attaches the GROUP's descendants to `parent` (the LSML
@@ -362,22 +391,55 @@ function buildGroupInline(
     if (i >= 0) index = i;
   }
 
+  // Pick the wrap API based on the source's container type. GROUP →
+  // `figma.group`. BOOLEAN_OPERATION + flavour → `figma.union/subtract/
+  // intersect/exclude` so SUBTRACT / INTERSECT / EXCLUDE actually carve
+  // the operands instead of merely grouping them. Missing flavour or an
+  // unknown value falls back to UNION (== group-equivalent visual for
+  // operands whose fills were already overridden at export time).
+  const wrap = pickWrapApi(api, meta);
   let group: ImportBaseNode;
   try {
-    group = api.group(flatChildren, parent, index);
+    group = wrap.fn(flatChildren, parent, index);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
-    ctx.warn(
-      "GROUP_CONVERSION_FAILED",
-      `figma.group() failed at ${path} : ${msg}. The flat children remain in the parent at their world positions.`,
-    );
-    ctx.trace?.push({
-      path,
-      kind: "frame",
-      action: "group-inline-failed",
-      error: msg,
-    });
-    return null;
+    // BO conversion can fail when operands are types Figma refuses
+    // (e.g. text, frames). Fall back to plain group so the layer panel
+    // still shows the operands instead of dropping the whole subtree.
+    if (wrap.kind !== "group") {
+      ctx.warn(
+        "BOOLEAN_OPERATION_FALLBACK",
+        `${wrap.kind}() failed at ${path} : ${msg}. Falling back to figma.group() ; visual fidelity for the boolean op is lost.`,
+      );
+      try {
+        group = api.group(flatChildren, parent, index);
+      } catch (err2) {
+        const msg2 = err2 instanceof Error ? err2.message : String(err2);
+        ctx.warn(
+          "GROUP_CONVERSION_FAILED",
+          `figma.group() fallback also failed at ${path} : ${msg2}. The flat children remain in the parent at their world positions.`,
+        );
+        ctx.trace?.push({
+          path,
+          kind: "frame",
+          action: "group-inline-failed",
+          error: msg2,
+        });
+        return null;
+      }
+    } else {
+      ctx.warn(
+        "GROUP_CONVERSION_FAILED",
+        `figma.group() failed at ${path} : ${msg}. The flat children remain in the parent at their world positions.`,
+      );
+      ctx.trace?.push({
+        path,
+        kind: "frame",
+        action: "group-inline-failed",
+        error: msg,
+      });
+      return null;
+    }
   }
 
   (group as unknown as { name: string }).name = meta.layerName ?? "Group";

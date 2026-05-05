@@ -148,4 +148,28 @@ export interface ImportFigmaApi {
     parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
     index?: number,
   ): ImportBaseNode;
+  /** Wraps `figma.union(nodes, parent, index?)`. Same node-moving semantics
+   *  as `figma.group` but produces a real `BooleanOperationNode` with the
+   *  matching `booleanOperation`. Used by the flat-then-wrap path when the
+   *  source was a `BOOLEAN_OPERATION` with that flavour. */
+  union(
+    nodes: ImportBaseNode[],
+    parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
+    index?: number,
+  ): ImportBaseNode;
+  subtract(
+    nodes: ImportBaseNode[],
+    parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
+    index?: number,
+  ): ImportBaseNode;
+  intersect(
+    nodes: ImportBaseNode[],
+    parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
+    index?: number,
+  ): ImportBaseNode;
+  exclude(
+    nodes: ImportBaseNode[],
+    parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
+    index?: number,
+  ): ImportBaseNode;
 }

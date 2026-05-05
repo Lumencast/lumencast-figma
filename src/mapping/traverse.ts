@@ -34,6 +34,8 @@ interface AnyFigmaNode {
   children?: AnyFigmaNode[];
   // Used by INSTANCE only.
   mainComponent?: { name: string } | null;
+  // Used by BOOLEAN_OPERATION only.
+  booleanOperation?: "UNION" | "SUBTRACT" | "INTERSECT" | "EXCLUDE";
 }
 
 function isOperatorInputComponent(node: AnyFigmaNode, ctx: MappingContext): boolean {
@@ -289,21 +291,28 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
   }
   const children = childResults.map((r) => r.node) as PrimitiveNode[];
 
-  // BOOLEAN_OPERATION render-fidelity : Figma's BO renders using its own
-  // fill/strokes, IGNORING the operand vectors' own fill/stroke values.
-  // Now that we recurse into BO operands (so the layer-panel structure
-  // round-trips), we must override each operand's emitted fill/stroke
-  // with the BO's own — otherwise the visible Union picks up the
-  // operands' decorative gradients (e.g. the M emblem rendered half
-  // white / half orange instead of pure white).
+  // BOOLEAN_OPERATION render-fidelity, UNION-only fallback.
+  //
+  // For UNION (and the unknown/legacy case), the importer wraps the
+  // operands in a plain GroupNode — operands paint with their own
+  // fills, so we override each operand with the BO's fills to
+  // reproduce the visible same-colour union. SUBTRACT / INTERSECT /
+  // EXCLUDE are now reconstructed as real BooleanOperationNodes by the
+  // importer (`figma.subtract` / `intersect` / `exclude`), which
+  // renders with the BO's own paint regardless of the operands' fills
+  // — overriding there would silently destroy the operands' source
+  // fills with no visual benefit.
   if (node.type === "BOOLEAN_OPERATION") {
-    const boFills = (asArray<FigmaPaint>(node.fills) ?? [])
-      .filter((p) => p.type !== "IMAGE")
-      .map((p) => paintToFill(p))
-      .filter((f): f is Fill => f !== null);
-    const boStrokes = mapBooleanOperationStrokes(node);
-    for (const child of children) {
-      overrideShapeFillsStrokes(child, boFills, boStrokes);
+    const op = node.booleanOperation ?? "UNION";
+    if (op === "UNION") {
+      const boFills = (asArray<FigmaPaint>(node.fills) ?? [])
+        .filter((p) => p.type !== "IMAGE")
+        .map((p) => paintToFill(p))
+        .filter((f): f is Fill => f !== null);
+      const boStrokes = mapBooleanOperationStrokes(node);
+      for (const child of children) {
+        overrideShapeFillsStrokes(child, boFills, boStrokes);
+      }
     }
   }
 
