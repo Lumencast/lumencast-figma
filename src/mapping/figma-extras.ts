@@ -102,13 +102,29 @@ const MASK_TYPES = new Set<FigmaMaskType>(["ALPHA", "LUMINANCE", "VECTOR", "OUTL
 
 export interface CaptureFigmaExtrasOptions {
   /** LSML position the per-primitive mapper just emitted (relative to the
-   *  LSML parent). When the source has a flipped transform, the captured
-   *  matrix's translation is in the source's coord system — which differs
-   *  from the LSML parent's after we convert GROUP → FRAME. We rewrite
-   *  the matrix's tx/ty (m02/m12) to match the LSML position so that
+   *  LSML parent). Used as a fallback translation when capturing a flipped
+   *  transform under a coord-system parent (legacy det<0 path) — the
+   *  matrix's translation is rewritten to the LSML position so that
    *  applying `node.relativeTransform = matrix` on import lands the
-   *  visual at the correct local coordinates. */
+   *  visual at the correct local coordinates.
+   *
+   *  Ignored when `parentIsTransparent` is true : in that case the raw
+   *  `relativeTransform` is captured verbatim (frame-ancestor-relative)
+   *  and the importer applies it directly to the flat-then-group path. */
   localPosition?: { x: number; y: number };
+  /** True when the immediate source parent is GROUP / BOOLEAN_OPERATION
+   *  (a non-coord-system "transparent" container). Triggers 2x3
+   *  `relativeTransform` capture composed with `groupChainTransform` so
+   *  the result is expressed in the FRAME ancestor's coord system —
+   *  exactly where the importer will mount the child after `figma.group()`. */
+  parentIsTransparent?: boolean;
+  /** Composed `relativeTransform` of every transparent-Group ancestor
+   *  between the FRAME ancestor (exclusive) and the current node
+   *  (exclusive). Multiplied with the node's own `relativeTransform` so
+   *  the captured matrix is FRAME-ancestor-relative regardless of nesting
+   *  depth. Identity (undefined) when the immediate parent is the FRAME
+   *  ancestor itself. */
+  groupChainTransform?: number[][];
 }
 
 /** Capture every profile-relevant property and merge into prim.metadata.figma.
@@ -120,24 +136,63 @@ export function captureFigmaExtras<T extends { metadata?: Record<string, unknown
 ): T {
   const figma: FigmaMetadata = {};
 
-  // Flip detection : Figma's `node.rotation` getter returns the rotation
-  // magnitude but loses the flip orientation. A flipped node's
-  // relativeTransform has a negative determinant on the linear part. When
-  // detected, stash the 2x3 matrix so the import side can restore the
-  // orientation exactly via `node.relativeTransform = ...`. The matrix's
-  // translation is rewritten to the LSML-local position so the parent's
-  // coord-system change (GROUP source → FRAME on import) doesn't shift
-  // the node off-target.
-  const transform = parseTransform(node.relativeTransform);
-  if (transform) {
-    const det = transform[0]![0]! * transform[1]![1]! - transform[0]![1]! * transform[1]![0]!;
-    if (det < 0) {
-      const tx = opts?.localPosition?.x ?? 0;
-      const ty = opts?.localPosition?.y ?? 0;
+  // Transform capture for transparent-group children.
+  //
+  // Figma's GROUP / BOOLEAN_OPERATION are non-coord-system "transparent"
+  // containers : their direct children's `relativeTransform` is expressed
+  // in the FRAME ancestor's coord system, NOT in the GROUP's local frame.
+  // When the importer turns a GROUP source into a real Figma GroupNode
+  // (flat-then-group path : children built directly under the FRAME
+  // ancestor, then `figma.group()` wraps them), it needs the raw matrix
+  // to set `child.relativeTransform = matrix` and reproduce position +
+  // rotation + flip + skew exactly.
+  //
+  // We capture verbatim — no tx/ty rewriting, no det check. Rotation,
+  // flip, mirroring, skew, all live in the matrix. The child's
+  // `extractUniversal` rotation is suppressed for the same parent
+  // (see universal.ts) so the importer doesn't double-apply.
+  //
+  // Children of FRAME / STACK (coord-system parents) don't need this :
+  // the LSML position + rotation are already lossless for them.
+  if (opts?.parentIsTransparent) {
+    // Verbatim capture. Figma's API returns each node's `relativeTransform`
+    // in the FRAME ancestor's coord system whenever every container above
+    // it (up to the FRAME) is a transparent GROUP / BOOLEAN_OPERATION ;
+    // the same holds for nested groups, since none of them redefine the
+    // origin. Composing with the parent group's `relativeTransform` would
+    // therefore add the group's translation a second time and place the
+    // leaf at twice the intended offset on import (the importer's
+    // flat-then-group path applies this matrix directly under the FRAME
+    // ancestor). `opts.groupChainTransform` is intentionally ignored.
+    const transform = parseTransform(node.relativeTransform);
+    if (transform) {
       figma.transform = [
-        [transform[0]![0]!, transform[0]![1]!, tx],
-        [transform[1]![0]!, transform[1]![1]!, ty],
+        [transform[0]![0]!, transform[0]![1]!, transform[0]![2]!],
+        [transform[1]![0]!, transform[1]![1]!, transform[1]![2]!],
       ];
+    }
+  } else {
+    // Legacy fallback : flipped leaf inside a coord-system parent
+    // (FRAME / STACK). Without this, a flipped Vector inside a regular
+    // Frame loses its mirror on re-import (Figma's `node.rotation`
+    // getter only carries the magnitude, not the flip orientation).
+    // The matrix's translation is rewritten to the LSML-local position
+    // so applying `node.relativeTransform = matrix` on import lands the
+    // leaf at the correct local coordinates relative to its immediate
+    // LSML parent (which equals the source's immediate parent here —
+    // no flat-then-group path involved).
+    const transform = parseTransform(node.relativeTransform);
+    if (transform) {
+      const det =
+        transform[0]![0]! * transform[1]![1]! - transform[0]![1]! * transform[1]![0]!;
+      if (det < 0) {
+        const tx = opts?.localPosition?.x ?? 0;
+        const ty = opts?.localPosition?.y ?? 0;
+        figma.transform = [
+          [transform[0]![0]!, transform[0]![1]!, tx],
+          [transform[1]![0]!, transform[1]![1]!, ty],
+        ];
+      }
     }
   }
 
@@ -496,6 +551,23 @@ function parseEffects(raw: unknown): FigmaEffect[] {
     }
   }
   return out;
+}
+
+/** Compose two 2x3 affine transforms (A * B with implicit `[0,0,1]` last
+ *  row). Returns a fresh matrix. Pass `undefined` for A as identity. */
+function compose2x3(a: number[][] | undefined, b: number[][]): number[][] {
+  if (!a) return [
+    [b[0]![0]!, b[0]![1]!, b[0]![2]!],
+    [b[1]![0]!, b[1]![1]!, b[1]![2]!],
+  ];
+  const a00 = a[0]![0]!, a01 = a[0]![1]!, a02 = a[0]![2]!;
+  const a10 = a[1]![0]!, a11 = a[1]![1]!, a12 = a[1]![2]!;
+  const b00 = b[0]![0]!, b01 = b[0]![1]!, b02 = b[0]![2]!;
+  const b10 = b[1]![0]!, b11 = b[1]![1]!, b12 = b[1]![2]!;
+  return [
+    [a00 * b00 + a01 * b10, a00 * b01 + a01 * b11, a00 * b02 + a01 * b12 + a02],
+    [a10 * b00 + a11 * b10, a10 * b01 + a11 * b11, a10 * b02 + a11 * b12 + a12],
+  ];
 }
 
 /** Coerce `node.relativeTransform` (which may be the figma.mixed Symbol or
