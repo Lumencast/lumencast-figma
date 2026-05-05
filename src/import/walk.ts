@@ -212,13 +212,6 @@ function buildAndAttach(
     ctx.warn("IMPORT_BUILD_FAILED", `Could not build primitive at ${path} : ${msg}`);
     return null;
   }
-  if (markAbsoluteOnAutoLayoutParent && isAutoLayout(parent)) {
-    try {
-      (child as unknown as { layoutPositioning?: string }).layoutPositioning = "ABSOLUTE";
-    } catch {
-      // Tolerate — host node may reject the property.
-    }
-  }
   try {
     parent.appendChild(child);
   } catch (err) {
@@ -231,6 +224,40 @@ function buildAndAttach(
       error: msg,
     });
     return null;
+  }
+  // Auto-layout escape hatch (transient flat-then-group state).
+  //
+  // Figma's `layoutPositioning = "ABSOLUTE"` setter is only valid on a
+  // node that is ALREADY a child of an auto-layout container — assigning
+  // it before `appendChild` is silently dropped by the host. The previous
+  // pre-attach assignment was therefore a no-op : on `appendChild` the
+  // stack arranged the flat children sequentially and overwrote both
+  // `relativeTransform` (set inside the builder via `applyFigmaExtras`)
+  // and any LSML-position-derived x/y. The visible result was siblings
+  // of a soon-to-be-grouped GROUP collapsing to (0, 0) and overlapping
+  // (e.g. `LOGO TXT 1` superposed on `PICTO FINAL 2`).
+  //
+  // Post-attach we (1) flip the child to ABSOLUTE so the stack stops
+  // managing it, then (2) re-apply the captured FRAME-ancestor-relative
+  // matrix from `metadata.figma.transform`. After the outer
+  // `figma.group()` wraps these flat siblings, the resulting GroupNode
+  // becomes the stack's child (with default AUTO positioning) and the
+  // inner siblings live in a non-auto-layout container, where the
+  // ABSOLUTE flag is harmless.
+  if (markAbsoluteOnAutoLayoutParent && isAutoLayout(parent)) {
+    try {
+      (child as unknown as { layoutPositioning?: string }).layoutPositioning = "ABSOLUTE";
+    } catch {
+      // Tolerate — host node may reject the property.
+    }
+    if (figmaMeta.transform && figmaMeta.transform.length === 2) {
+      try {
+        (child as unknown as { relativeTransform?: number[][] }).relativeTransform =
+          figmaMeta.transform;
+      } catch {
+        // Tolerate.
+      }
+    }
   }
   return child;
 }
