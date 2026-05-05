@@ -82,10 +82,14 @@ export function buildImage(
   applyFigmaExtras(node, figmaMeta);
 
   // Position : universal prop (LSML 1.1 §5.4) with v0.1 metadata fallback.
-  const pos = prim.position ?? figmaMeta.position;
-  if (pos) {
-    (node as unknown as { x?: number; y?: number }).x = pos.x;
-    (node as unknown as { x?: number; y?: number }).y = pos.y;
+  // Skip when `meta.transform` is present — applyFigmaExtras' relativeTransform
+  // setter encodes position + linear atomically (FRAME-ancestor-relative).
+  if (!figmaMeta.transform) {
+    const pos = prim.position ?? figmaMeta.position;
+    if (pos) {
+      (node as unknown as { x?: number; y?: number }).x = pos.x;
+      (node as unknown as { x?: number; y?: number }).y = pos.y;
+    }
   }
 
   return node;

@@ -192,11 +192,16 @@ export function buildText(
     }
   }
   // Position : prefer the canonical universal prop (LSML 1.1 §5.4) ;
-  // fall back to `metadata.figma.position` for v0.1 bundles.
-  const pos = prim.position ?? figmaMeta.position;
-  if (pos) {
-    (node as unknown as { x?: number; y?: number }).x = pos.x;
-    (node as unknown as { x?: number; y?: number }).y = pos.y;
+  // fall back to `metadata.figma.position` for v0.1 bundles. Skip when
+  // `meta.transform` is present — the relativeTransform setter inside
+  // applyFigmaExtras encodes position + linear atomically (FRAME-ancestor-
+  // relative), so an x/y override here would corrupt the translation.
+  if (!figmaMeta.transform) {
+    const pos = prim.position ?? figmaMeta.position;
+    if (pos) {
+      (node as unknown as { x?: number; y?: number }).x = pos.x;
+      (node as unknown as { x?: number; y?: number }).y = pos.y;
+    }
   }
 
   // Multi-style ranges : restore per-character styling captured by the

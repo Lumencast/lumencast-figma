@@ -9,7 +9,6 @@ function ctx(over: Partial<BuildContext> = {}): BuildContext {
     defaults: over.defaults ?? {},
     assetMap: over.assetMap ?? {},
     warn: over.warn ?? (() => undefined),
-    groupConversions: over.groupConversions ?? [],
   };
 }
 

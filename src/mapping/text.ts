@@ -69,6 +69,14 @@ export interface TextMapOptions {
   parentRotation?: number;
   parentX?: number;
   parentY?: number;
+  /** True when the immediate source parent is GROUP / BOOLEAN_OPERATION.
+   *  Triggers raw-relativeTransform capture and rotation suppression. */
+  parentIsTransparent?: boolean;
+  /** Composed transform of every transparent-Group ancestor up to the
+   *  FRAME ancestor (exclusive). Multiplied with the node's own
+   *  relativeTransform inside captureFigmaExtras to express the result
+   *  in the FRAME ancestor's coord system. */
+  groupChainTransform?: number[][];
 }
 
 const ALIGN_MAP: Record<string, TextStyle["textAlign"]> = {
@@ -91,7 +99,10 @@ export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResul
   const prim: TextPrimitive = {
     kind: "text",
     bind: parsed.bind ?? { value: litPath },
-    ...extractUniversal(node, { parentRotation: opts?.parentRotation ?? 0 }),
+    ...extractUniversal(node, {
+      parentRotation: opts?.parentRotation ?? 0,
+      parentIsTransparent: opts?.parentIsTransparent === true,
+    }),
   };
   // textCase → style.textTransform (LSML §4.4.1). Figma's UPPER/LOWER/TITLE
   // map directly. SMALL_CAPS / SMALL_CAPS_FORCED have no LSML equivalent
@@ -206,6 +217,8 @@ export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResul
 
   captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
     localPosition: prim.position ?? { x: 0, y: 0 },
+    parentIsTransparent: opts?.parentIsTransparent === true,
+    ...(opts?.groupChainTransform ? { groupChainTransform: opts.groupChainTransform } : {}),
   });
 
   // When no [bind:...] directive is present, the node's `characters` is the

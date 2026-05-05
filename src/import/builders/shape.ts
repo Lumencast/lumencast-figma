@@ -167,10 +167,19 @@ export function buildShape(
   // in `metadata.figma.position` ; we still read that as a fallback.
   // Frame builders append children after they're constructed, so we set
   // x/y on the node before the parent appends — Figma keeps the assignment.
-  const pos = prim.position ?? figmaMeta.position;
-  if (pos) {
-    (node as unknown as { x?: number; y?: number }).x = pos.x;
-    (node as unknown as { x?: number; y?: number }).y = pos.y;
+  //
+  // Skip when `meta.transform` is present : the relativeTransform setter
+  // run by `applyFigmaExtras` already encodes position + linear in one
+  // atomic write (FRAME-ancestor-relative, composed through any
+  // transparent-Group ancestor chain). Setting x/y after would override
+  // the translation parts and re-introduce the GROUP-vs-FRAME coord-
+  // system mismatch we're trying to eliminate.
+  if (!figmaMeta.transform) {
+    const pos = prim.position ?? figmaMeta.position;
+    if (pos) {
+      (node as unknown as { x?: number; y?: number }).x = pos.x;
+      (node as unknown as { x?: number; y?: number }).y = pos.y;
+    }
   }
 
   return node;

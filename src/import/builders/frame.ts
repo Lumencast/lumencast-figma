@@ -105,32 +105,7 @@ export function buildFrame(
   );
 
   applyUniversal(node, prim);
-
-  // For GROUP / BOOLEAN_OPERATION sources : DROP `meta.transform` from
-  // the Frame placeholder. The source GROUP is non-coord-system in
-  // Figma — its children's world transforms are INDEPENDENT (the
-  // Group's transform doesn't propagate to children's effective
-  // rendering ; cf. diagnostic dump 2026-05-04 where source
-  // Group 2087326238.absoluteTransform has det=-1 [flipped] but its
-  // descendant Vector.absoluteTransform has det=+1 [not flipped]).
-  // Our Frame placeholder IS coord-system → applying the source's
-  // flipped relativeTransform on it would COMPOSE with children's
-  // transforms during build, displacing them. Instead : keep
-  // placeholder Frame at identity during build (children at LSML
-  // delta = OUTER coord land at correct world via identity chain),
-  // and re-apply meta.transform on the REAL Group post-figma.group()
-  // (real Group non-coord-system → transform doesn't propagate →
-  // children stay at correct world).
-  let figmaMetaForSetters = figmaMeta;
-  if (
-    figmaMeta.sourceType === "GROUP" ||
-    figmaMeta.sourceType === "BOOLEAN_OPERATION"
-  ) {
-    const { transform: _droppedTransform, ...rest } = figmaMeta;
-    void _droppedTransform;
-    figmaMetaForSetters = rest;
-  }
-  applyFigmaExtras(node, figmaMetaForSetters);
+  applyFigmaExtras(node, figmaMeta);
 
   // Apply size LAST. Some setters in applyFigmaExtras (notably the new
   // layoutSizingHorizontal / Vertical setters captured for fidelity)

@@ -42,6 +42,10 @@ export interface StackMapOptions {
   parentX?: number;
   parentY?: number;
   parentRotation?: number;
+  /** True when the immediate source parent is GROUP / BOOLEAN_OPERATION. */
+  parentIsTransparent?: boolean;
+  /** Composed transparent-Group ancestor chain — see TextMapOptions. */
+  groupChainTransform?: number[][];
 }
 
 const PRIMARY_JUSTIFY: Record<string, StackPrimitive["justify"]> = {
@@ -70,7 +74,10 @@ export function mapStack(
     kind: "stack",
     direction: node.layoutMode === "HORIZONTAL" ? "horizontal" : "vertical",
     children,
-    ...extractUniversal(node, { parentRotation: opts?.parentRotation ?? 0 }),
+    ...extractUniversal(node, {
+      parentRotation: opts?.parentRotation ?? 0,
+      parentIsTransparent: opts?.parentIsTransparent === true,
+    }),
   };
 
   // Universal `position` (LSML §5.4) — auto-layout frames still sit at
@@ -182,6 +189,8 @@ export function mapStack(
 
   captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
     localPosition: prim.position ?? { x: 0, y: 0 },
+    parentIsTransparent: opts?.parentIsTransparent === true,
+    ...(opts?.groupChainTransform ? { groupChainTransform: opts.groupChainTransform } : {}),
   });
 
   const result: MappingResult = { node: prim };

@@ -30,6 +30,14 @@ function modeFromFigma(m: "FIXED" | "HUG" | "FILL" | undefined): SizingMode | nu
 export interface ExtractUniversalOptions {
   /** Cumulative rotation of the closest rotated ancestor (degrees). */
   parentRotation?: number;
+  /** True when the immediate source parent is GROUP / BOOLEAN_OPERATION.
+   *  In that case the rotation is encoded losslessly in the captured raw
+   *  `metadata.figma.transform` matrix — emitting it again as a universal
+   *  `rotation` field would cause double-application on Figma re-import.
+   *  Non-Figma consumers ignore the metadata, so the visual approximation
+   *  for them comes from the position alone (acceptable for transparent
+   *  groups, where the rotation is geometrically tied to the matrix). */
+  parentIsTransparent?: boolean;
 }
 
 export function extractUniversal(
@@ -45,11 +53,15 @@ export function extractUniversal(
   if (opacity !== undefined && opacity !== 1) {
     out.opacity = roundTo3(opacity);
   }
-  const rotation = asNumber(node.rotation);
-  const parentRot = opts?.parentRotation ?? 0;
-  if (rotation !== undefined) {
-    const local = normaliseDegrees(rotation - parentRot);
-    if (local !== 0) out.rotation = roundTo3(local);
+  // Skip rotation under a transparent-group parent — the raw matrix in
+  // metadata.figma.transform owns rotation/flip/skew exactly.
+  if (!opts?.parentIsTransparent) {
+    const rotation = asNumber(node.rotation);
+    const parentRot = opts?.parentRotation ?? 0;
+    if (rotation !== undefined) {
+      const local = normaliseDegrees(rotation - parentRot);
+      if (local !== 0) out.rotation = roundTo3(local);
+    }
   }
 
   const lsH = asString(node.layoutSizingHorizontal) as "FIXED" | "HUG" | "FILL" | undefined;

@@ -40,6 +40,10 @@ export interface ImageMapOptions {
   parentRotation?: number;
   parentX?: number;
   parentY?: number;
+  /** True when the immediate source parent is GROUP / BOOLEAN_OPERATION. */
+  parentIsTransparent?: boolean;
+  /** Composed transparent-Group ancestor chain — see TextMapOptions. */
+  groupChainTransform?: number[][];
 }
 
 export function mapImage(
@@ -86,7 +90,10 @@ export function mapImage(
     bind,
     alt: parsed.displayName || "",
     size: { w: roundTo3(w), h: roundTo3(h) },
-    ...extractUniversal(node, { parentRotation: opts?.parentRotation ?? 0 }),
+    ...extractUniversal(node, {
+      parentRotation: opts?.parentRotation ?? 0,
+      parentIsTransparent: opts?.parentIsTransparent === true,
+    }),
   };
 
   // Map Figma scaleMode → LSML fit. Figma defaults to FILL.
@@ -125,6 +132,8 @@ export function mapImage(
 
   captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
     localPosition: prim.position ?? { x: 0, y: 0 },
+    parentIsTransparent: opts?.parentIsTransparent === true,
+    ...(opts?.groupChainTransform ? { groupChainTransform: opts.groupChainTransform } : {}),
   });
 
   const out: { node: ImagePrimitive; defaults?: Record<string, unknown>; assetRefs: string[] } = {

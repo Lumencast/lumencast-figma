@@ -71,6 +71,19 @@ export interface WalkOptions {
    *  Per-primitive mappers subtract this from `node.rotation` to emit the
    *  local rotation — see `extractUniversal`. */
   parentRotation?: number;
+  /** True iff the immediate parent in the source tree is a GROUP or
+   *  BOOLEAN_OPERATION (i.e. a non-coord-system "transparent" container).
+   *  When set, the per-primitive mapper captures `metadata.figma.transform`
+   *  (frame-ancestor-relative) so the Figma importer can `figma.group()`
+   *  the children flat under the FRAME ancestor. */
+  parentIsTransparent?: boolean;
+  /** Composed 2x3 transform matrix of every transparent-Group ancestor
+   *  between the FRAME ancestor (exclusive) and the current node
+   *  (exclusive). Multiplied with `node.relativeTransform` to express the
+   *  node's transform in the FRAME ancestor's coord system, regardless of
+   *  how deep the GROUP chain is. Identity (undefined) when the immediate
+   *  parent is a coord-system container. */
+  groupChainTransform?: number[][];
   /** Tree depth for the trace recorder (root = 0). Internal — callers don't set it. */
   depth?: number;
 }
@@ -104,10 +117,18 @@ export function walk(
   // Build the parent-coords option block once — every leaf-primitive
   // mapper uses it to compute its `metadata.figma.position` relative to
   // the parent, so non-frame children of absolute layouts roundtrip.
-  const parentOpts: { parentX?: number; parentY?: number; parentRotation?: number } = {};
+  const parentOpts: {
+    parentX?: number;
+    parentY?: number;
+    parentRotation?: number;
+    parentIsTransparent?: boolean;
+    groupChainTransform?: number[][];
+  } = {};
   if (opts.parentX !== undefined) parentOpts.parentX = opts.parentX;
   if (opts.parentY !== undefined) parentOpts.parentY = opts.parentY;
   if (opts.parentRotation !== undefined) parentOpts.parentRotation = opts.parentRotation;
+  if (opts.parentIsTransparent) parentOpts.parentIsTransparent = true;
+  if (opts.groupChainTransform) parentOpts.groupChainTransform = opts.groupChainTransform;
 
   const traceBase = { depth, type: node.type, id: node.id, name: node.name };
   try {
@@ -149,10 +170,14 @@ export function walk(
           parentX?: number;
           parentY?: number;
           parentRotation?: number;
+          parentIsTransparent?: boolean;
+          groupChainTransform?: number[][];
         } = { isRoot: opts.isRoot };
         if (opts.parentX !== undefined) instOpts.parentX = opts.parentX;
         if (opts.parentY !== undefined) instOpts.parentY = opts.parentY;
         if (opts.parentRotation !== undefined) instOpts.parentRotation = opts.parentRotation;
+        if (opts.parentIsTransparent) instOpts.parentIsTransparent = true;
+        if (opts.groupChainTransform) instOpts.groupChainTransform = opts.groupChainTransform;
         const inst = mapInstance(node as never, instOpts, ctx);
         if (inst) {
           ctx.trace?.push({ ...traceBase, action: "map-instance" });
@@ -225,16 +250,41 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
   // AABB inflates. Track the parent's rotation here and pass it to children
   // so `extractUniversal` emits LOCAL rotation (delta from parent's).
   const myRotation = asNumber(node.rotation) ?? 0;
+  const isTransparentGroup = node.type === "GROUP" || node.type === "BOOLEAN_OPERATION";
+
+  // Group chain transform : compose ancestor transparent-Group `relativeTransform`
+  // matrices so that a leaf inside G1→G2→G3→V can express its transform
+  // directly in F's frame (where F is the FRAME ancestor). Children of a
+  // FRAME / STACK / SECTION / COMPONENT / INSTANCE start fresh (the chain
+  // resets) ; children of a GROUP / BOOLEAN_OPERATION inherit our chain
+  // composed with our own relTrans.
+  let childChain: number[][] | undefined;
+  if (isTransparentGroup) {
+    const myMat = parseRelativeTransform((node as { relativeTransform?: unknown }).relativeTransform);
+    if (myMat) {
+      childChain = compose2x3(opts.groupChainTransform, myMat);
+    } else {
+      childChain = opts.groupChainTransform;
+    }
+  } else if (isCoordSystem) {
+    childChain = undefined; // reset
+  } else {
+    childChain = opts.groupChainTransform; // pass through
+  }
+
   const childDepth = (opts.depth ?? 0) + 1;
   const childNodes = asArray<AnyFigmaNode>(node.children) ?? [];
   for (const child of childNodes) {
-    const r = walk(child, ctx, {
+    const childOpts: WalkOptions = {
       isRoot: false,
       parentX: myX,
       parentY: myY,
       parentRotation: myRotation,
       depth: childDepth,
-    });
+    };
+    if (isTransparentGroup) childOpts.parentIsTransparent = true;
+    if (childChain) childOpts.groupChainTransform = childChain;
+    const r = walk(child, ctx, childOpts);
     if (r) childResults.push(r);
   }
   const children = childResults.map((r) => r.node) as PrimitiveNode[];
@@ -259,10 +309,18 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
 
   let result: MappingResult;
   if (isStack) {
-    const stackOpts: { parentX?: number; parentY?: number; parentRotation?: number } = {};
+    const stackOpts: {
+      parentX?: number;
+      parentY?: number;
+      parentRotation?: number;
+      parentIsTransparent?: boolean;
+      groupChainTransform?: number[][];
+    } = {};
     if (opts.parentX !== undefined) stackOpts.parentX = opts.parentX;
     if (opts.parentY !== undefined) stackOpts.parentY = opts.parentY;
     if (opts.parentRotation !== undefined) stackOpts.parentRotation = opts.parentRotation;
+    if (opts.parentIsTransparent) stackOpts.parentIsTransparent = true;
+    if (opts.groupChainTransform) stackOpts.groupChainTransform = opts.groupChainTransform;
     result = mapStack(node as never, children as StackPrimitive["children"], stackOpts, ctx);
   } else {
     const frameOpts: {
@@ -270,10 +328,14 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
       parentX?: number;
       parentY?: number;
       parentRotation?: number;
+      parentIsTransparent?: boolean;
+      groupChainTransform?: number[][];
     } = { isRoot: opts.isRoot };
     if (opts.parentX !== undefined) frameOpts.parentX = opts.parentX;
     if (opts.parentY !== undefined) frameOpts.parentY = opts.parentY;
     if (opts.parentRotation !== undefined) frameOpts.parentRotation = opts.parentRotation;
+    if (opts.parentIsTransparent) frameOpts.parentIsTransparent = true;
+    if (opts.groupChainTransform) frameOpts.groupChainTransform = opts.groupChainTransform;
     result = mapFrame(node as never, frameOpts, children as FramePrimitive["children"], ctx);
   }
 
@@ -322,6 +384,45 @@ function mapBooleanOperationStrokes(node: AnyFigmaNode): Stroke[] {
  *  override values. Used by the BOOLEAN_OPERATION pass to make recursed
  *  operands render with the BO's own fills instead of their decorative
  *  per-operand gradients. */
+/** Coerce a Figma `relativeTransform` (which may carry `figma.mixed`
+ *  Symbol-wrapped numbers via the host bridge) into a clean 2x3 number
+ *  matrix. Returns null when the shape doesn't match. */
+function parseRelativeTransform(raw: unknown): number[][] | null {
+  if (!Array.isArray(raw) || raw.length !== 2) return null;
+  const out: number[][] = [];
+  for (const r of raw) {
+    if (!Array.isArray(r) || r.length !== 3) return null;
+    const row: number[] = [];
+    for (const c of r) {
+      const n = asNumber(c);
+      if (n === undefined) return null;
+      row.push(n);
+    }
+    out.push(row);
+  }
+  return out;
+}
+
+/** Compose two 2x3 affine transforms : returns A * B treating each as a
+ *  3x3 matrix with the implicit `[0,0,1]` last row. Used to flatten a
+ *  chain of transparent-Group `relativeTransform`s when capturing a leaf
+ *  child's frame-ancestor-relative transform. Pass `undefined` for A as
+ *  identity. */
+function compose2x3(a: number[][] | undefined, b: number[][]): number[][] {
+  if (!a) return [
+    [b[0]![0]!, b[0]![1]!, b[0]![2]!],
+    [b[1]![0]!, b[1]![1]!, b[1]![2]!],
+  ];
+  const a00 = a[0]![0]!, a01 = a[0]![1]!, a02 = a[0]![2]!;
+  const a10 = a[1]![0]!, a11 = a[1]![1]!, a12 = a[1]![2]!;
+  const b00 = b[0]![0]!, b01 = b[0]![1]!, b02 = b[0]![2]!;
+  const b10 = b[1]![0]!, b11 = b[1]![1]!, b12 = b[1]![2]!;
+  return [
+    [a00 * b00 + a01 * b10, a00 * b01 + a01 * b11, a00 * b02 + a01 * b12 + a02],
+    [a10 * b00 + a11 * b10, a10 * b01 + a11 * b11, a10 * b02 + a11 * b12 + a12],
+  ];
+}
+
 function overrideShapeFillsStrokes(
   prim: PrimitiveNode,
   fills: Fill[],

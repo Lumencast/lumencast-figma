@@ -45,6 +45,10 @@ export interface FrameMapOptions {
   parentY?: number;
   /** Cumulative rotation of the closest rotated ancestor (degrees). */
   parentRotation?: number;
+  /** True when the immediate source parent is GROUP / BOOLEAN_OPERATION. */
+  parentIsTransparent?: boolean;
+  /** Composed transparent-Group ancestor chain — see TextMapOptions. */
+  groupChainTransform?: number[][];
 }
 
 export function mapFrame(
@@ -58,7 +62,10 @@ export function mapFrame(
   const prim: FramePrimitive = {
     kind: "frame",
     children,
-    ...extractUniversal(node, { parentRotation: opts.parentRotation ?? 0 }),
+    ...extractUniversal(node, {
+      parentRotation: opts.parentRotation ?? 0,
+      parentIsTransparent: opts.parentIsTransparent === true,
+    }),
   };
 
   const w = asNumber(node.width) ?? 0;
@@ -190,6 +197,8 @@ export function mapFrame(
   // overrides). Per-primitive captures above handle frame-specific keys.
   captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
     localPosition: prim.position ?? { x: 0, y: 0 },
+    parentIsTransparent: opts.parentIsTransparent === true,
+    ...(opts.groupChainTransform ? { groupChainTransform: opts.groupChainTransform } : {}),
   });
 
   const result: MappingResult = { node: prim };

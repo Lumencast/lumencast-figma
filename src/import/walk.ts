@@ -1,13 +1,34 @@
 // Walk an LSML primitive tree, dispatching to per-primitive builders, and
 // append child nodes to their parent containers.
 //
-// v0.2 : every build call is wrapped in try/catch. When a primitive trips
+// GROUP / BOOLEAN_OPERATION sources are NOT materialised as Frame
+// placeholders any more. Instead, the iterator detects an LSML frame
+// primitive whose `metadata.figma.sourceType` is GROUP/BOOLEAN_OPERATION
+// and runs an inline "flat-then-group" path :
+//
+//   1. Recursively build the GROUP's descendants flat under the LSML
+//      parent's Figma node (the FRAME ancestor in the source).
+//   2. Each leaf carries `metadata.figma.transform` (composed through
+//      the transparent-Group ancestor chain by `mapping/traverse.ts`),
+//      so its world position lands correctly in the FRAME ancestor's
+//      coord system on the first relativeTransform setter call.
+//   3. Once descendants are appended, call `figma.group(descendants,
+//      parent, index)` to wrap them into a real Figma GroupNode at the
+//      same parent + index. Figma's group() preserves world position
+//      by re-expressing each child's relativeTransform in the new
+//      Group's local frame.
+//
+// This eliminates the previous Frame-placeholder + post-pass conversion
+// machinery (groupConversions, frameResizeQueue, etc.) and gives us
+// 1:1 fidelity with Figma's own group semantics — no cascade
+// compensation, no double-resize, no clipsContent acrobatics.
+//
+// Every build call is wrapped in try/catch. When a primitive trips
 // Figma's API (font not loaded, bad pathData, sizing constraint, etc.),
 // we log the error with the primitive's kind + name + path, surface it
 // as a warning, and continue with the rest of the tree. Without this
 // the whole import bails on the first bad primitive and the user sees
-// only the partial subtree that was already built. The console trace is
-// the diagnostic source — copy-paste it back when fidelity regresses.
+// only the partial subtree that was already built.
 
 import type { PrimitiveNode } from "~shared/lsml-types";
 import type { ImportBaseNode, ImportFigmaApi, ImportFrameNode } from "./figma-api";
@@ -17,7 +38,13 @@ import { buildShape } from "./builders/shape";
 import { buildFrame } from "./builders/frame";
 import { buildStack } from "./builders/stack";
 import { buildInstance } from "./builders/instance";
-import type { BuildContext, PendingGroupConversion } from "./builders/types";
+import { readFigmaMetadata, type FigmaMetadata } from "./figma-metadata";
+import type { BuildContext } from "./builders/types";
+
+type FramishParent = ImportBaseNode & {
+  appendChild(child: ImportBaseNode): void;
+  children?: ImportBaseNode[];
+};
 
 export function buildPrimitive(
   prim: PrimitiveNode,
@@ -30,10 +57,6 @@ export function buildPrimitive(
     (prim as { ariaLabel?: string; alt?: string }).ariaLabel ??
     (prim as { ariaLabel?: string; alt?: string }).alt ??
     "";
-  // No per-node console.warn : `ctx.trace?.push` already records the
-  // same path/kind/action info structurally. On large bundles (8000+
-  // primitives), per-node logging adds 15-20s of pure overhead in
-  // Figma's plugin sandbox. The error path below still logs.
   ctx.trace?.push({
     path,
     kind,
@@ -55,78 +78,39 @@ export function buildPrimitive(
         break;
       case "frame": {
         const node = buildFrame(prim, api, ctx);
-        // Track children references appended here so the post-build
-        // group conversion (when applicable) doesn't depend on a late
-        // `frame.children` read. We collect each successfully-built &
-        // appended child explicitly. `appendSafely` is patched below to
-        // accept this collector via the snapshot parameter — fall back
-        // to no-snapshot when not needed.
-        const childSnapshot: ImportBaseNode[] = [];
+        // GROUP / BOOLEAN_OPERATION sources MUST be intercepted at the
+        // PARENT level (via `buildAndAttach`) so they take the flat-
+        // then-group path. If we land here for such a prim, the caller
+        // dispatched incorrectly — fall back to the regular Frame path
+        // (children appended into the placeholder), which is wrong but
+        // visible (the layer panel will show a Frame instead of a Group).
+        // The trace records the mis-dispatch so we can detect it.
+        const figmaMeta = readFigmaMetadata(prim);
+        if (
+          figmaMeta.sourceType === "GROUP" ||
+          figmaMeta.sourceType === "BOOLEAN_OPERATION"
+        ) {
+          ctx.trace?.push({
+            path,
+            kind,
+            action: "frame-dispatch-warn",
+            error: "GROUP/BOOLEAN_OPERATION primitive built as Frame placeholder ; must be intercepted by buildAndAttach.",
+          });
+        }
         for (let i = 0; i < prim.children.length; i++) {
           const child = prim.children[i]!;
-          appendSafely(
-            node,
-            () => buildPrimitive(child, api, ctx, `${path}.children[${i}]`),
-            ctx,
-            `${path}.children[${i}]`,
-            childSnapshot,
-          );
+          buildAndAttach(child, node as FramishParent, api, ctx, `${path}.children[${i}]`);
         }
-        // Re-resize AFTER children are appended. Some children
-        // (especially absolutely-positioned ones extending outside the
-        // frame's bbox) trigger Figma's auto-grow when clipsContent
-        // wasn't honored on the initial appendChild — even with our
-        // explicit clipsContent setter run before. Re-applying prim.size
-        // here clamps the frame back to its source dimensions. Without
-        // this, frames like `bg-texture` (source 1637×345 with overflow
-        // children) re-import as 2205×858 = children-union bbox.
+        // Re-resize after children are appended : children outside the
+        // declared bbox can trigger Figma's auto-grow even with
+        // clipsContent forced true (the forced flip is for safety ; the
+        // re-resize is the definitive clamp).
         const fp = prim as { size?: { w: number; h: number } };
         if (fp.size) {
           try {
             (node as unknown as { resize(w: number, h: number): void }).resize(fp.size.w, fp.size.h);
           } catch {
             // Tolerate.
-          }
-          // Queue a SECOND resize to run AFTER the post-pass figma.group
-          // conversions, which can re-trigger Figma's auto-grow at
-          // every ancestor frame (the converted Group's bbox propagates
-          // up the chain). Without this, bg-texture gets stretched
-          // from its declared 1637×345 to the children's union bbox
-          // (~2205×858) at import time.
-          if (ctx.frameResizeQueue) {
-            ctx.frameResizeQueue.push({ node, w: fp.size.w, h: fp.size.h });
-          }
-        }
-        // Queue this frame for group conversion AFTER children are
-        // appended — the snapshot is now complete and will be used by
-        // `figma.group()` in the post-pass instead of re-reading
-        // `frame.children` (which has been observed to return empty in
-        // dynamic-page mode for placeholders deep in the import tree,
-        // even after reconcileAppend mounts the root to currentPage).
-        const figmaMeta = ((prim as { metadata?: Record<string, unknown> }).metadata?.["figma"] ??
-          {}) as { sourceType?: string };
-        if (
-          figmaMeta.sourceType === "GROUP" ||
-          figmaMeta.sourceType === "BOOLEAN_OPERATION"
-        ) {
-          const entry: PendingGroupConversion = {
-            frame: node,
-            sourceType: figmaMeta.sourceType,
-            children: childSnapshot,
-          };
-          ctx.groupConversions.push(entry);
-          // Diagnostic : surface zero-children GROUP placeholders into
-          // the trace archive. The user expects 3 vectors per Calque_1-2
-          // ; if the snapshot is empty, the appendChild path silently
-          // failed for every child of this placeholder. Surfacing it as
-          // a structured warning makes the failure visible in
-          // `_debug/import-trace.json` instead of silently disappearing
-          // when the post-pass early-returns on `children.length === 0`.
-          if (childSnapshot.length === 0 && prim.children.length > 0) {
-            ctx.warn(
-              "GROUP_PLACEHOLDER_EMPTY",
-              `GROUP placeholder at ${path} has 0 appended children but the LSML primitive declared ${prim.children.length}. The post-pass will skip its conversion ; the source children are lost.`,
-            );
           }
         }
         result = node;
@@ -136,12 +120,10 @@ export function buildPrimitive(
         const node = buildStack(prim, api, ctx);
         for (let i = 0; i < prim.children.length; i++) {
           const child = prim.children[i]!;
-          appendSafely(node, () => buildPrimitive(child, api, ctx, `${path}.children[${i}]`), ctx, `${path}.children[${i}]`);
+          buildAndAttach(child, node as FramishParent, api, ctx, `${path}.children[${i}]`);
         }
         // Re-resize the stack after children are appended. For HUG axes
-        // this is a no-op (Figma keeps the auto-derived dim) ; for FIXED
-        // axes it re-asserts the captured size in case any child append
-        // triggered an unexpected layout recalculation.
+        // this is a no-op ; for FIXED axes it re-asserts the captured size.
         const sp = prim as { metadata?: Record<string, unknown> };
         const figmaMeta = (sp.metadata?.["figma"] ?? {}) as { size?: { w: number; h: number } };
         if (figmaMeta.size) {
@@ -161,8 +143,8 @@ export function buildPrimitive(
         result = buildInstance(prim, api, ctx);
         break;
       default: {
-        // grid / media / repeat / vendor — Phase 3 v0.1 surfaces them as a warning
-        // and creates an empty placeholder frame so the tree shape survives.
+        // grid / media / repeat / vendor — surfaced as warning + empty
+        // placeholder frame so the tree shape survives.
         ctx.warn(
           "UNSUPPORTED_PRIMITIVE",
           `Primitive "${kind}" is not yet supported on import ; rendered as an empty frame.`,
@@ -176,11 +158,6 @@ export function buildPrimitive(
     if (ctx.counter) ctx.counter.built++;
     return result;
   } catch (err) {
-    // The primitive itself failed to build (not a child). We can't
-    // recover — there's no node to return — so we record the error in
-    // the trace and re-throw. The caller (appendSafely) catches and
-    // pushes an IMPORT_BUILD_FAILED warning into the result archive.
-    // No console output : the trace entry is the persistent record.
     const msg = err instanceof Error ? err.message : String(err);
     const stack = err instanceof Error && err.stack ? err.stack : undefined;
     ctx.trace?.push({
@@ -194,39 +171,56 @@ export function buildPrimitive(
   }
 }
 
-/** Build + append one child, swallowing per-child failures. The parent
- *  keeps the children that succeeded ; the failed one becomes an
- *  IMPORT_BUILD_FAILED warning carrying the path + error message.
- *  When `snapshot` is provided, every successfully-appended child is
- *  pushed onto it — used by GROUP placeholders to remember the children
- *  references at append time so the post-pass `figma.group()` doesn't
- *  rely on a late `frame.children` read. */
-function appendSafely(
-  parent: { appendChild(child: ImportBaseNode): void },
-  build: () => ImportBaseNode,
+/** Build one child primitive and attach it to `parent`. Dispatches to the
+ *  flat-then-group path when the child is a GROUP / BOOLEAN_OPERATION
+ *  source ; otherwise builds the node and appends it normally. Returns
+ *  the resulting node (already in `parent`) or null on failure.
+ *
+ *  When `markAbsoluteOnAutoLayoutParent` is true and `parent` is an
+ *  auto-layout frame (stack), the child is marked
+ *  `layoutPositioning="ABSOLUTE"` BEFORE the appendChild call so the
+ *  stack's auto-layout doesn't disturb the composed `relativeTransform`
+ *  the child carries. Used by `buildGroupInline` only — regular child
+ *  loops want the stack to arrange siblings normally. */
+function buildAndAttach(
+  prim: PrimitiveNode,
+  parent: FramishParent,
+  api: ImportFigmaApi,
   ctx: BuildContext,
   path: string,
-  snapshot?: ImportBaseNode[],
-): void {
+  markAbsoluteOnAutoLayoutParent = false,
+): ImportBaseNode | null {
+  const figmaMeta = readFigmaMetadata(prim);
+  if (
+    (prim as { kind: string }).kind === "frame" &&
+    (figmaMeta.sourceType === "GROUP" || figmaMeta.sourceType === "BOOLEAN_OPERATION")
+  ) {
+    return buildGroupInline(
+      prim as PrimitiveNode & { kind: "frame"; children: PrimitiveNode[] },
+      figmaMeta,
+      parent,
+      api,
+      ctx,
+      path,
+    );
+  }
   let child: ImportBaseNode;
   try {
-    child = build();
+    child = buildPrimitive(prim, api, ctx, path);
   } catch (err) {
-    // The build call already pushed a `build-failed` trace entry for
-    // the child itself ; we just record the warning here so the UI
-    // surfaces a count and the path is preserved in the warnings list.
-    // The full stack trace lives in the trace entry pushed above.
     const msg = err instanceof Error ? err.message : String(err);
     ctx.warn("IMPORT_BUILD_FAILED", `Could not build primitive at ${path} : ${msg}`);
-    return;
+    return null;
+  }
+  if (markAbsoluteOnAutoLayoutParent && isAutoLayout(parent)) {
+    try {
+      (child as unknown as { layoutPositioning?: string }).layoutPositioning = "ABSOLUTE";
+    } catch {
+      // Tolerate — host node may reject the property.
+    }
   }
   try {
     parent.appendChild(child);
-    // Append succeeded — record into the GROUP-placeholder snapshot
-    // when the parent is queued for later group conversion. This sits
-    // INSIDE the success branch so failed appends never pollute the
-    // snapshot with orphan child references.
-    if (snapshot) snapshot.push(child);
   } catch (err) {
     const msg = err instanceof Error ? err.message : String(err);
     ctx.warn("IMPORT_APPEND_FAILED", `Could not append child at ${path} : ${msg}`);
@@ -236,5 +230,237 @@ function appendSafely(
       action: "append-failed",
       error: msg,
     });
+    return null;
+  }
+  return child;
+}
+
+function isAutoLayout(node: ImportBaseNode): boolean {
+  const mode = (node as unknown as { layoutMode?: string }).layoutMode;
+  return mode === "HORIZONTAL" || mode === "VERTICAL";
+}
+
+/** Inline "flat-then-group" path for GROUP / BOOLEAN_OPERATION sources.
+ *
+ *  Recursively attaches the GROUP's descendants to `parent` (the LSML
+ *  parent's Figma node — the FRAME ancestor in the source tree), then
+ *  wraps the freshly-attached siblings in a Figma GroupNode via
+ *  `figma.group()`. Each leaf carries `metadata.figma.transform`
+ *  pre-composed in the FRAME ancestor's coord system, so its world
+ *  position is correct on first attach.
+ *
+ *  Nested GROUPs work naturally : the inner GROUP's invocation also
+ *  goes through this function, attaches its leaves to the same
+ *  `parent`, and groups them — the resulting inner GroupNode is a
+ *  child of `parent` at this point. The outer GROUP's invocation then
+ *  groups [innerGroupNode, ...] into the outer Group, which Figma
+ *  reparents from `parent` to the new outer Group automatically. */
+function buildGroupInline(
+  prim: PrimitiveNode & { kind: "frame"; children: PrimitiveNode[] },
+  meta: FigmaMetadata,
+  parent: FramishParent,
+  api: ImportFigmaApi,
+  ctx: BuildContext,
+  path: string,
+): ImportBaseNode | null {
+  ctx.trace?.push({
+    path,
+    kind: "frame",
+    ...(meta.layerName ? { name: meta.layerName } : {}),
+    action: "group-inline-start",
+  });
+
+  // Build descendants flat under `parent`, keeping track of the
+  // resulting node references in append order.
+  //
+  // When `parent` is an auto-layout stack, leaves and inner Groups
+  // must be marked `layoutPositioning=ABSOLUTE` BEFORE they're
+  // appended — otherwise the stack auto-arranges them and the
+  // composed `relativeTransform` we set on each leaf is reset to a
+  // layout-determined position. After the OUTER `figma.group()` call
+  // wraps everything into a single Group (which becomes the stack's
+  // direct child), THAT Group has default AUTO positioning so the
+  // stack arranges it normally — same behaviour as the source's
+  // GROUP-inside-stack. Internal positions of the Group's children
+  // are preserved through the auto-positioning of the Group.
+  const parentIsAutoLayout = isAutoLayout(parent);
+  const flatChildren: ImportBaseNode[] = [];
+  for (let i = 0; i < prim.children.length; i++) {
+    const child = prim.children[i]!;
+    const childPath = `${path}.children[${i}]`;
+    const node = buildAndAttach(
+      child,
+      parent,
+      api,
+      ctx,
+      childPath,
+      parentIsAutoLayout,
+    );
+    if (node) {
+      // For nested-group recursion: the recursive `buildGroupInline`
+      // call creates an inner GroupNode inside `parent` and returns it.
+      // It needs ABSOLUTE positioning too — the OUTER `figma.group()`
+      // is still in our future and the stack would arrange the inner
+      // Group as a regular stack child between now and then.
+      if (parentIsAutoLayout) {
+        try {
+          (node as unknown as { layoutPositioning?: string }).layoutPositioning = "ABSOLUTE";
+        } catch {
+          // Tolerate.
+        }
+      }
+      flatChildren.push(node);
+    }
+  }
+
+  if (flatChildren.length === 0) {
+    // Empty group — nothing to wrap. Don't emit a phantom GroupNode :
+    // figma.group() throws on empty arrays. Surface as a warning so
+    // the user knows the source group is gone.
+    ctx.warn(
+      "GROUP_EMPTY_SKIPPED",
+      `GROUP placeholder at ${path} has 0 buildable children ; group is skipped.`,
+    );
+    return null;
+  }
+
+  // Compute insertion index : we want the resulting GroupNode to land
+  // where the first flat child currently sits in `parent.children`.
+  // figma.group() removes the children from `parent` and inserts the
+  // new Group at this index.
+  let index: number | undefined;
+  const parentChildren = parent.children;
+  if (parentChildren) {
+    const i = parentChildren.indexOf(flatChildren[0]!);
+    if (i >= 0) index = i;
+  }
+
+  let group: ImportBaseNode;
+  try {
+    group = api.group(flatChildren, parent, index);
+  } catch (err) {
+    const msg = err instanceof Error ? err.message : String(err);
+    ctx.warn(
+      "GROUP_CONVERSION_FAILED",
+      `figma.group() failed at ${path} : ${msg}. The flat children remain in the parent at their world positions.`,
+    );
+    ctx.trace?.push({
+      path,
+      kind: "frame",
+      action: "group-inline-failed",
+      error: msg,
+    });
+    return null;
+  }
+
+  (group as unknown as { name: string }).name = meta.layerName ?? "Group";
+  // Universal props (LSML §5.4) — opacity / visible / rotation come from
+  // the primitive itself, not metadata.figma. `figma.group()` produces a
+  // GroupNode at default state, so we re-apply them here.
+  const universal = prim as { opacity?: number; visible?: boolean; rotation?: number };
+  if (universal.opacity !== undefined) {
+    try {
+      (group as unknown as { opacity?: number }).opacity = universal.opacity;
+    } catch {
+      // Tolerate.
+    }
+  }
+  if (universal.visible === false) {
+    try {
+      (group as unknown as { visible?: boolean }).visible = false;
+    } catch {
+      // Tolerate.
+    }
+  }
+  // Rotation : intentionally NOT applied on the resulting GroupNode.
+  // Each leaf descendant already carries its FRAME-ancestor-relative
+  // transform via `metadata.figma.transform` (composed through the
+  // transparent-Group ancestor chain by `mapping/traverse.ts`), so the
+  // source GROUP's own rotation is already baked into the leaves'
+  // positions. Re-applying it here would double-rotate the visual.
+  // `prim.rotation` is preserved in the LSML universal slot for non-
+  // Figma consumers ; on Figma re-import, we ignore it on the Group.
+  void universal.rotation;
+  applyGroupishProperties(group, meta);
+
+  if (ctx.counter) ctx.counter.built++;
+  ctx.trace?.push({
+    path,
+    kind: "frame",
+    action: "group-inline-done",
+  });
+  return group;
+}
+
+/** Properties that survive the source GROUP → resulting GroupNode
+ *  transfer. `figma.group()` returns a fresh GroupNode whose properties
+ *  are all defaults — we re-apply mask, blendMode, opacity, visible,
+ *  effects, layout-related keys so the layer panel + render fidelity
+ *  match the source. Keys excluded on purpose : `name` (set explicitly
+ *  above), `relativeTransform` / `x` / `y` (figma.group owns the new
+ *  Group's position — derived from children's bbox), `width` / `height`
+ *  (Group sizing is auto), `clipsContent` (Groups don't clip),
+ *  `fills` / `strokes` (Groups don't paint). */
+const GROUPISH_PROPERTY_KEYS = [
+  "isMask",
+  "maskType",
+  "blendMode",
+  "opacity",
+  "visible",
+  "effects",
+  "constraints",
+  "layoutAlign",
+  "layoutGrow",
+  "layoutPositioning",
+  "minWidth",
+  "maxWidth",
+  "minHeight",
+  "maxHeight",
+  "layoutSizingHorizontal",
+  "layoutSizingVertical",
+] as const;
+
+function applyGroupishProperties(group: ImportBaseNode, meta: FigmaMetadata): void {
+  const dst = group as unknown as Record<string, unknown>;
+  // Mask first : without this, a Group whose first child was a mask
+  // comes back as an unmasked group and Figma reports its bbox as the
+  // children-union instead of the masked region.
+  if (meta.isMask !== undefined) trySet(dst, "isMask", meta.isMask);
+  if (meta.maskType) trySet(dst, "maskType", meta.maskType);
+  if (meta.blendMode) trySet(dst, "blendMode", meta.blendMode);
+  // Universal opacity / visible come from prim.opacity / prim.visible —
+  // not from metadata.figma. Read them via the helper below.
+  // Effects + layout-related keys.
+  if (meta.effects && meta.effects.length > 0) {
+    // Effects need normalisation (visible/blendMode required) — defer
+    // to applyFigmaExtras' helper isn't worth the import cycle here ;
+    // groups rarely have effects in practice. Best-effort assignment.
+    trySet(dst, "effects", meta.effects);
+  }
+  if (meta.constraints) trySet(dst, "constraints", meta.constraints);
+  if (meta.layoutAlign && meta.layoutAlign !== "INHERIT" && meta.layoutAlign !== "CENTER") {
+    trySet(dst, "layoutAlign", meta.layoutAlign);
+  }
+  if (meta.layoutGrow === 1) trySet(dst, "layoutGrow", 1);
+  if (meta.layoutPositioning === "ABSOLUTE") trySet(dst, "layoutPositioning", "ABSOLUTE");
+  for (const key of ["minWidth", "maxWidth", "minHeight", "maxHeight"] as const) {
+    const v = (meta as unknown as Record<string, unknown>)[key];
+    if (typeof v === "number") trySet(dst, key, v);
+  }
+  for (const key of ["layoutSizingHorizontal", "layoutSizingVertical"] as const) {
+    const v = (meta as unknown as Record<string, unknown>)[key];
+    if (typeof v === "string") trySet(dst, key, v);
+  }
+  // Silence unused warnings.
+  void GROUPISH_PROPERTY_KEYS;
+}
+
+function trySet(dst: Record<string, unknown>, key: string, value: unknown): void {
+  try {
+    dst[key] = value;
+  } catch {
+    // Real Figma rejects properties that aren't valid for GroupNode.
+    // Silently skip — visual fidelity for that one key is forfeited
+    // but the rest of the transfer succeeds.
   }
 }
