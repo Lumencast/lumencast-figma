@@ -30,8 +30,8 @@
 // the whole import bails on the first bad primitive and the user sees
 // only the partial subtree that was already built.
 
-import type { PrimitiveNode } from "~shared/lsml-types";
-import type { ImportBaseNode, ImportFigmaApi, ImportFrameNode } from "./figma-api";
+import type { Fill, FramePrimitive, PrimitiveNode } from "~shared/lsml-types";
+import type { ImportBaseNode, ImportFigmaApi, ImportFrameNode, ImportPaint } from "./figma-api";
 import { buildText } from "./builders/text";
 import { buildImage } from "./builders/image";
 import { buildShape } from "./builders/shape";
@@ -39,6 +39,8 @@ import { buildFrame } from "./builders/frame";
 import { buildStack } from "./builders/stack";
 import { buildInstance } from "./builders/instance";
 import { readFigmaMetadata, type FigmaMetadata } from "./figma-metadata";
+import { cssToRgb } from "./color";
+import { fillToPaint } from "./fill-to-paint";
 import type { BuildContext } from "./builders/types";
 
 type FramishParent = ImportBaseNode & {
@@ -472,6 +474,18 @@ function buildGroupInline(
   void universal.rotation;
   applyGroupishProperties(group, meta);
 
+  // Real BooleanOperationNodes (figma.union/subtract/intersect/exclude)
+  // paint with their OWN fills + strokes — operands are merely a source
+  // of geometry. The mapping side captured the BO's paint on the LSML
+  // frame primitive's `background` / `backgrounds[]` (and metadata
+  // strokes), but `applyGroupishProperties` skips those keys on purpose
+  // (groups don't paint, but BOs do). Apply them explicitly here when
+  // the wrap actually produced a BooleanOperationNode — without this
+  // every Subtract / Intersect / Exclude renders fully transparent.
+  if (wrap.kind !== "group") {
+    applyBooleanOperationPaint(group, prim);
+  }
+
   if (ctx.counter) ctx.counter.built++;
   ctx.trace?.push({
     path,
@@ -542,6 +556,44 @@ function applyGroupishProperties(group: ImportBaseNode, meta: FigmaMetadata): vo
   }
   // Silence unused warnings.
   void GROUPISH_PROPERTY_KEYS;
+}
+
+/** Apply the captured paint (LSML `background` / `backgrounds[]`) onto a
+ *  freshly-created `BooleanOperationNode`. Mirrors the equivalent block
+ *  in `builders/frame.ts`, but kept inline here because the BO node is
+ *  produced by `figma.union/subtract/intersect/exclude` instead of going
+ *  through `buildFrame`. Strokes / effects / blendMode flow via
+ *  `applyGroupishProperties` which already handles them. */
+function applyBooleanOperationPaint(node: ImportBaseNode, prim: PrimitiveNode): void {
+  if ((prim as { kind: string }).kind !== "frame") return;
+  const frame = prim as FramePrimitive & {
+    background?: string;
+    backgrounds?: Fill[];
+  };
+  const figmaMeta = readFigmaMetadata(prim);
+  const transforms = figmaMeta.gradientTransforms ?? [];
+  const writable = node as unknown as { fills?: ImportPaint[] };
+  if (frame.backgrounds && frame.backgrounds.length > 0) {
+    try {
+      writable.fills = frame.backgrounds
+        .map((f, i) => fillToPaint(f, transforms[i] ?? null))
+        .filter((p): p is ImportPaint => p !== null);
+    } catch {
+      // Tolerate.
+    }
+    return;
+  }
+  if (frame.background !== undefined) {
+    const rgb = cssToRgb(frame.background);
+    if (!rgb) return;
+    const fill: ImportPaint = { type: "SOLID", color: rgb.rgb };
+    if (rgb.opacity !== 1) fill.opacity = rgb.opacity;
+    try {
+      writable.fills = [fill];
+    } catch {
+      // Tolerate.
+    }
+  }
 }
 
 function trySet(dst: Record<string, unknown>, key: string, value: unknown): void {
