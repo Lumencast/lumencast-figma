@@ -252,6 +252,40 @@ function buildAndAttach(
     } catch {
       // Tolerate — host node may reject the property.
     }
+    // Re-assert sizing modes + size : `appendChild` to an auto-layout
+    // stack arranges the flat child according to the parent's layout,
+    // which can shrink the child to its content's natural extent
+    // (e.g. a Vector resized to (20, 25) collapses to its path's
+    // intrinsic bbox once the stack hugs it). Replaying
+    // `layoutSizingHorizontal/Vertical` + `resize(...)` after the
+    // ABSOLUTE flip restores the captured dimensions — without this
+    // the resulting `figma.group()` bbox is the union of shrunken
+    // children and the visible node ends up cropped (the bento stats
+    // icon shrinking from 25 → 15.8 px was the canonical symptom).
+    if (figmaMeta.layoutSizingHorizontal) {
+      const v = figmaMeta.layoutSizingHorizontal;
+      try {
+        (child as unknown as { layoutSizingHorizontal?: string }).layoutSizingHorizontal = v;
+      } catch {
+        // Tolerate.
+      }
+    }
+    if (figmaMeta.layoutSizingVertical) {
+      const v = figmaMeta.layoutSizingVertical;
+      try {
+        (child as unknown as { layoutSizingVertical?: string }).layoutSizingVertical = v;
+      } catch {
+        // Tolerate.
+      }
+    }
+    const size = (prim as { size?: { w: number; h: number } }).size ?? figmaMeta.size;
+    if (size) {
+      try {
+        (child as unknown as { resize(w: number, h: number): void }).resize(size.w, size.h);
+      } catch {
+        // Tolerate — text nodes in HUG mode reject resize on the hugged axis.
+      }
+    }
     if (figmaMeta.transform && figmaMeta.transform.length === 2) {
       try {
         (child as unknown as { relativeTransform?: number[][] }).relativeTransform =
