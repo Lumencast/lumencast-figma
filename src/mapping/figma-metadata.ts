@@ -162,12 +162,100 @@ export interface FigmaPaintMetadata {
   gradientTransform?: number[][];
 }
 
+// ---------- Image backgrounds (frame / stack with IMAGE fills) ----------
+
+/** IMAGE paint stashed on a frame or stack — Figma allows IMAGE fills on
+ *  any container (avatar circles, hero banners, card backgrounds), but
+ *  LSML's `frame.backgrounds` only models SOLID / GRADIENT. We round-trip
+ *  these IMAGE fills via `metadata.figma.imageBackgrounds[]` ; the import
+ *  side reconstructs the IMAGE paint and appends to `node.fills`. */
+export interface FigmaImageBackground {
+  /** Bundle-relative asset path returned by `ctx.registerImageHash`. The
+   *  asset registry rewrites this to `assets/<sha256>.<ext>` after the
+   *  bytes are resolved. */
+  src: string;
+  scaleMode?: "FILL" | "FIT" | "CROP" | "TILE";
+  blendMode?: FigmaBlendMode;
+  opacity?: number;
+  visible?: boolean;
+  scalingFactor?: number;
+  rotation?: number;
+  filters?: {
+    exposure?: number;
+    contrast?: number;
+    saturation?: number;
+    temperature?: number;
+    tint?: number;
+    highlights?: number;
+    shadows?: number;
+  };
+  imageTransform?: number[][];
+}
+
+// ---------- Layout grids + guides (frame-level rulers) ----------
+
+/** Figma `layoutGrid` entry. Three patterns share the surface — `ROWS` and
+ *  `COLUMNS` use alignment + gutter + count + section/offset, `GRID` uses
+ *  only `sectionSize`. Stashed verbatim ; the import side hands the array
+ *  back to `node.layoutGrids = [...]`. */
+export interface FigmaLayoutGrid {
+  pattern: "ROWS" | "COLUMNS" | "GRID";
+  visible?: boolean;
+  color?: { r: number; g: number; b: number; a: number };
+  /** ROWS / COLUMNS only. */
+  alignment?: "MIN" | "MAX" | "CENTER" | "STRETCH";
+  gutterSize?: number;
+  count?: number;
+  sectionSize?: number;
+  offset?: number;
+}
+
+/** Figma `guide` entry — page-level or frame-level ruler. `axis: X` is a
+ *  vertical guide at column `offset` ; `axis: Y` is a horizontal guide at
+ *  row `offset`. */
+export interface FigmaGuide {
+  axis: "X" | "Y";
+  offset: number;
+}
+
 // ---------- Hyperlinks (text) ----------
 
 export interface FigmaHyperlink {
   /** [start, endExclusive] character range. */
   range: [number, number];
   url: string;
+}
+
+// ---------- Multi-style text ranges ----------
+
+/** A contiguous range of characters with non-uniform styling. Captured via
+ *  Figma's `getStyledTextSegments` and re-applied per range on import via
+ *  `setRangeFontName`, `setRangeFills`, `setRangeFontSize`, etc.
+ *
+ *  Without this, multi-style text (e.g. "<bold>+645 LP</bold> <gray>par la
+ *  communauté</gray>") collapses on round-trip : `node.fontName` returns
+ *  the figma.mixed Symbol → our extractStyle drops fontFamily entirely →
+ *  builder falls back to Inter Regular black. Same for fills (multi-color
+ *  text loses every range fill).
+ *
+ *  Only the differences between segments are stored — segments that match
+ *  the node-level style (already captured in `prim.style`) carry only
+ *  `start`/`end`. Cross-cutting fields (textCase, textDecoration,
+ *  letterSpacing, lineHeight) round-trip per range when they vary. */
+export interface FigmaTextSegment {
+  /** Inclusive start index into `text.characters`. */
+  start: number;
+  /** Exclusive end index — `[start, end)` matches Figma's range convention. */
+  end: number;
+  fontName?: { family: string; style: string };
+  fontSize?: number;
+  /** Per-range paint stack (multi-color text). */
+  fills?: FigmaPaintMetadata[];
+  textCase?: "ORIGINAL" | "UPPER" | "LOWER" | "TITLE" | "SMALL_CAPS" | "SMALL_CAPS_FORCED";
+  textDecoration?: "NONE" | "UNDERLINE" | "STRIKETHROUGH";
+  letterSpacing?: { unit: "PIXELS" | "PERCENT"; value: number };
+  lineHeight?: { unit: "PIXELS" | "PERCENT" | "AUTO"; value?: number };
+  hyperlink?: { url: string };
 }
 
 // ---------- Top-level shape ----------
@@ -239,6 +327,14 @@ export interface FigmaMetadata {
     /** Affine transform applied to the image's local UV space (pan/zoom
      *  effect inside the container). 2x3 matrix. */
     imageTransform?: number[][];
+    /** Figma's raw scaleMode. LSML's `image.fit` collapses `CROP` → `cover`
+     *  (same as `FILL`), but Figma honours `imageTransform` ONLY when
+     *  scaleMode is `CROP`. Without round-tripping the raw mode, every
+     *  cropped image (panned/zoomed via imageTransform) re-imports as a
+     *  plain `FILL` and the transform is silently ignored — losing the
+     *  pan/zoom and the visual that depends on it (e.g. a thin colour line
+     *  revealed only by an off-screen image position). */
+    scaleMode?: "FILL" | "FIT" | "CROP" | "TILE";
   };
 
   // --- Geometry / layout fallbacks ---
@@ -280,7 +376,14 @@ export interface FigmaMetadata {
 
   // --- Per-corner radii + smoothing ---
 
-  /** [topLeft, topRight, bottomRight, bottomLeft]. Overrides `cornerRadius`. */
+  /** Uniform corner radius. Only meaningful for frame / stack primitives —
+   *  shape carries its own `cornerRadius` natively (LSML §4.6). Captured
+   *  here so pills (button rounded-full), rounded cards (frame radius
+   *  18px), avatar circles, etc. round-trip on container nodes that
+   *  have no native field. Skipped when zero. */
+  cornerRadius?: number;
+  /** [topLeft, topRight, bottomRight, bottomLeft]. Overrides `cornerRadius`
+   *  when at least one corner differs from the others. */
   cornerRadii?: [number, number, number, number];
   /** 0..1. 0 = pure rounded rectangle, 1 = full Apple squircle. */
   cornerSmoothing?: number;
@@ -300,6 +403,28 @@ export interface FigmaMetadata {
   maxWidth?: number | null;
   minHeight?: number | null;
   maxHeight?: number | null;
+  /** Per-axis sizing mode for auto-layout frames + text nodes. Without
+   *  this, every imported stack defaults to HUG/HUG which collapses
+   *  fixed-size frames (a 880×192 stack containing a 1034×192 text
+   *  re-imports as 100×116, clipping the overflow). Captured from
+   *  `node.layoutSizingHorizontal/Vertical` ; the import builder applies
+   *  it BEFORE `node.resize` so Figma honours the explicit dimensions. */
+  layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
+  layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
+
+  // --- Layout grids + guides (canvas rulers, frame-level) ---
+
+  /** Frame-level layoutGrids — the columns/rows/grid overlays a designer
+   *  configures via *Layout grid* in Figma. Captured verbatim and re-
+   *  applied so re-imports keep the same alignment scaffolding. */
+  layoutGrids?: FigmaLayoutGrid[];
+  /** Frame-level guides — vertical (axis: X) or horizontal (axis: Y)
+   *  ruler guides anchored at integer offsets inside the frame. */
+  guides?: FigmaGuide[];
+
+  /** IMAGE fills used as frame / stack backgrounds. Captured separately
+   *  from `backgrounds` because LSML's Fill type doesn't model IMAGE. */
+  imageBackgrounds?: FigmaImageBackground[];
 
   // --- Gradient extras ---
 
@@ -320,12 +445,23 @@ export interface FigmaMetadata {
   /** Raw Figma `fontName.style` ("Bold Italic", "SemiBold", ...). */
   fontStyle?: string;
   textAutoResize?: "NONE" | "WIDTH_AND_HEIGHT" | "HEIGHT" | "TRUNCATE";
+  /** Vertical alignment of text content within the text node's box.
+   *  Default `TOP` ; the source's `CENTER` / `BOTTOM` is required for
+   *  designs where the text sits inside a fixed-height container with
+   *  the text vertically centered (e.g. a 67×389 box with a single
+   *  centered "Transform" word). Without this the text re-imports as
+   *  TOP-aligned and visually drifts up. */
+  textAlignVertical?: "TOP" | "CENTER" | "BOTTOM";
   paragraphSpacing?: number;
   paragraphIndent?: number;
   textTruncation?: "DISABLED" | "ENDING";
   /** Only meaningful when `textTruncation: ENDING`. */
   maxLines?: number;
   hyperlinks?: FigmaHyperlink[];
+  /** Multi-style text ranges. Populated when the source text node has
+   *  non-uniform fontName / fills / etc. across characters — round-trips
+   *  bold-prefix sentences, multi-color sentences, mixed-size text, etc. */
+  textSegments?: FigmaTextSegment[];
 }
 
 /** Decorate a primitive's `metadata` block with figma-specific keys. Only
@@ -380,6 +516,9 @@ function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
   }
   if (meta.isMask) out.isMask = meta.isMask;
   if (meta.maskType) out.maskType = meta.maskType;
+  if (meta.cornerRadius !== undefined && meta.cornerRadius !== 0) {
+    out.cornerRadius = meta.cornerRadius;
+  }
   if (meta.cornerRadii) out.cornerRadii = meta.cornerRadii;
   if (meta.cornerSmoothing !== undefined && meta.cornerSmoothing !== 0) {
     out.cornerSmoothing = meta.cornerSmoothing;
@@ -399,6 +538,13 @@ function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
   if (meta.maxWidth !== undefined && meta.maxWidth !== null) out.maxWidth = meta.maxWidth;
   if (meta.minHeight !== undefined && meta.minHeight !== null) out.minHeight = meta.minHeight;
   if (meta.maxHeight !== undefined && meta.maxHeight !== null) out.maxHeight = meta.maxHeight;
+  if (meta.layoutSizingHorizontal) out.layoutSizingHorizontal = meta.layoutSizingHorizontal;
+  if (meta.layoutSizingVertical) out.layoutSizingVertical = meta.layoutSizingVertical;
+  if (meta.layoutGrids && meta.layoutGrids.length > 0) out.layoutGrids = meta.layoutGrids;
+  if (meta.guides && meta.guides.length > 0) out.guides = meta.guides;
+  if (meta.imageBackgrounds && meta.imageBackgrounds.length > 0) {
+    out.imageBackgrounds = meta.imageBackgrounds;
+  }
   if (meta.gradientStops && meta.gradientStops.some((s) => s !== null && s.length > 0)) {
     out.gradientStops = meta.gradientStops;
   }
@@ -408,6 +554,9 @@ function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
   if (meta.textCase && meta.textCase !== "ORIGINAL") out.textCase = meta.textCase;
   if (meta.fontStyle) out.fontStyle = meta.fontStyle;
   if (meta.textAutoResize && meta.textAutoResize !== "NONE") out.textAutoResize = meta.textAutoResize;
+  if (meta.textAlignVertical && meta.textAlignVertical !== "TOP") {
+    out.textAlignVertical = meta.textAlignVertical;
+  }
   if (meta.paragraphSpacing !== undefined && meta.paragraphSpacing !== 0) {
     out.paragraphSpacing = meta.paragraphSpacing;
   }
@@ -419,5 +568,6 @@ function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
   }
   if (meta.maxLines !== undefined) out.maxLines = meta.maxLines;
   if (meta.hyperlinks && meta.hyperlinks.length > 0) out.hyperlinks = meta.hyperlinks;
+  if (meta.textSegments && meta.textSegments.length > 0) out.textSegments = meta.textSegments;
   return out;
 }

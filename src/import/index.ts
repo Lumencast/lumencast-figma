@@ -7,7 +7,6 @@
 //   3. Surfaces the resulting ImportResult (root node id, primitives created,
 //      warnings) in the UI.
 
-import type { PrimitiveNode } from "~shared/lsml-types";
 import type { ImportResult, PluginWarning } from "../main/messages";
 import { parseBundle } from "./parse";
 import { embedAssets, type AssetByteSource } from "./assets";
@@ -24,33 +23,41 @@ export interface ImportBundleOptions {
   lsmlBytes: string | Uint8Array;
   /** Per-asset bytes — keyed by the bundle-side path (`assets/<sha256>.<ext>`). */
   assets?: AssetByteSource[];
+  /** Capture per-node trace + emit `debugArtefacts.importTrace` JSON in the
+   *  result. Off by default : on a 8000-primitive bundle the trace push +
+   *  pretty-print add 5-15s of pure overhead and ~10MB of heap. Flip on
+   *  when the user explicitly opts in via the UI (Diagnostics toggle). */
+  captureDebugArtefacts?: boolean;
 }
 
 export async function importBundle(opts: ImportBundleOptions): Promise<ImportResult> {
   const warnings: PluginWarning[] = [];
 
-  console.warn("[lumencast] import step 1/4 — parseBundle");
   const bundle = await parseBundle(opts.lsmlBytes);
-  console.warn("[lumencast] import step 1/4 done — scene_id:", bundle.scene_id);
 
-  console.warn("[lumencast] import step 2/4 — preload fonts");
   const fonts = collectFonts(bundle.layout);
-  console.warn(
-    "[lumencast] import step 2/4 — fonts to load:",
-    fonts.map((f) => `${f.family}/${f.style}`).join(", "),
-  );
   await preloadFonts(opts.api, fonts, (code, message) => {
     warnings.push({ code, message });
   });
-  console.warn("[lumencast] import step 2/4 done");
 
-  console.warn("[lumencast] import step 3/4 — embed assets:", opts.assets?.length ?? 0);
   const { assetMap } = embedAssets(opts.api, opts.assets ?? []);
-  console.warn("[lumencast] import step 3/4 done");
 
-  console.warn("[lumencast] import step 4/4 — build primitive tree");
+  // Trace is ALWAYS created : the per-node push is trivially cheap and
+  // the trace is the only persistent record of warnings + diagnostics
+  // (e.g. VECTOR_PATHS_REJECTED). The user wants every event in the
+  // archive — `_debug/import-trace.json` is that archive. We don't gate
+  // on `captureDebugArtefacts` anymore : the heavy bit was the per-node
+  // console.warn (already removed) + the snapshot (export side, still
+  // opt-in for raw-figma.json).
   const trace = createImportTrace();
   const groupConversions: PendingGroupConversion[] = [];
+  // `built` is incremented by every successful builder dispatch in walk.ts
+  // — saves a second full walk over the tree at the end of the import to
+  // count primitives. `expected` would otherwise be `countPrimitives` (a
+  // recursive scan) ; we now derive it from `built + buildFailures`.
+  const counter = { built: 0, expected: 0 };
+  const frameResizeQueue: { node: ImportBaseNode; w: number; h: number }[] = [];
+  const clipsContentRestoreQueue: { node: ImportBaseNode; clipsContent: boolean }[] = [];
   const ctx = {
     defaults: bundle.defaults ?? {},
     assetMap,
@@ -59,25 +66,27 @@ export async function importBundle(opts: ImportBundleOptions): Promise<ImportRes
     },
     trace,
     groupConversions,
+    counter,
+    frameResizeQueue,
+    clipsContentRestoreQueue,
   };
   const rootNode = buildPrimitive(bundle.layout, opts.api, ctx);
-  reconcileAppend(opts.api, rootNode);
 
-  // Post-pass : convert frames marked `metadata.figma.sourceType=GROUP`
-  // back into real Figma GroupNodes. Walk in REVERSE of build order so
-  // the deepest nested groups convert first — by the time we process an
-  // outer group, its inner groups already exist as GroupNodes within it.
+  // Post-pass : convert placeholder Frames marked
+  // `metadata.figma.sourceType=GROUP` back into real Figma GroupNodes,
+  // BEFORE mounting to currentPage. Running while the tree is still
+  // orphan side-steps a dynamic-page-mode bug where figma.group() on
+  // mounted nodes silently corrupts children. Reverse iteration =
+  // deepest first.
   if (groupConversions.length > 0) {
-    console.warn(
-      `[lumencast] import — converting ${groupConversions.length} placeholder frame(s) → real Figma groups`,
-    );
     for (let i = groupConversions.length - 1; i >= 0; i--) {
       const entry = groupConversions[i]!;
       try {
-        convertFrameToGroup(entry.frame, opts.api);
+        convertFrameToGroup(entry, opts.api, (code, message) => {
+          warnings.push({ code, message });
+        });
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
-        console.error(`[lumencast] group conversion failed: ${msg}`);
         warnings.push({
           code: "GROUP_CONVERSION_FAILED",
           message: `Could not convert placeholder frame to real GroupNode : ${msg}`,
@@ -86,14 +95,48 @@ export async function importBundle(opts: ImportBundleOptions): Promise<ImportRes
     }
   }
 
-  const expected = countPrimitives(bundle.layout);
+  // Re-resize Frames AFTER all group conversions. The figma.group()
+  // calls in the post-pass insert new Group nodes whose bboxes can
+  // propagate up the ancestor chain and trigger Figma's auto-grow on
+  // every Frame ancestor. Walk the queue (built in walk.ts at the
+  // moment each Frame's children loop completed) and re-clamp each
+  // Frame to its declared `prim.size`. The first resize during walk
+  // was correct WHEN it ran — we just need to re-assert after the
+  // group conversions disturbed everything.
+  for (const entry of frameResizeQueue) {
+    try {
+      (entry.node as unknown as { resize(w: number, h: number): void }).resize(
+        entry.w,
+        entry.h,
+      );
+    } catch {
+      // Tolerate — nodes that reject resize stay at whatever size Figma
+      // settled on after the group conversions.
+    }
+  }
+
+  // Restore `clipsContent=false` on Frames whose source had it false.
+  // We forced `true` during build to prevent auto-grow on Frames with
+  // children extending past their bbox ; flipping back to false now
+  // (bbox is locked in) preserves the source's overflow-visible
+  // semantics without re-triggering auto-grow.
+  for (const entry of clipsContentRestoreQueue) {
+    try {
+      (entry.node as unknown as { clipsContent?: boolean }).clipsContent =
+        entry.clipsContent;
+    } catch {
+      // Tolerate.
+    }
+  }
+
+  reconcileAppend(opts.api, rootNode);
+
   const buildFailures = warnings.filter(
     (w) => w.code === "IMPORT_BUILD_FAILED" || w.code === "IMPORT_APPEND_FAILED",
   ).length;
-  const built = expected - buildFailures;
-  console.warn(
-    `[lumencast] import step 4/4 done — root id: ${rootNode.id} ; built ${built}/${expected} primitives, ${buildFailures} failed`,
-  );
+  const vectorPathFailures = warnings.filter((w) => w.code === "VECTOR_PATHS_REJECTED").length;
+  const built = counter.built;
+  const expected = built + buildFailures;
 
   const result: ImportResult = {
     rootNodeId: rootNode.id,
@@ -102,7 +145,12 @@ export async function importBundle(opts: ImportBundleOptions): Promise<ImportRes
     debugArtefacts: {
       importTrace: JSON.stringify(
         {
-          summary: { expected, built, failed: buildFailures },
+          summary: {
+            expected,
+            built,
+            failed: buildFailures,
+            vectorPathRejected: vectorPathFailures,
+          },
           warnings,
           entries: trace.entries,
         },
@@ -112,14 +160,6 @@ export async function importBundle(opts: ImportBundleOptions): Promise<ImportRes
     },
   };
   return result;
-}
-
-function countPrimitives(node: PrimitiveNode): number {
-  let n = 1;
-  if ("children" in node && Array.isArray(node.children)) {
-    for (const c of node.children) n += countPrimitives(c);
-  }
-  return n;
 }
 
 type GroupConversionParent = ImportBaseNode & {
@@ -134,33 +174,119 @@ type GroupConversionFrame = ImportBaseNode & {
   remove?(): void;
 };
 
-/** Replace a placeholder FrameNode with a real Figma GroupNode wrapping the
- *  same children. We rely on `figma.group(children, parent, index)` which
- *  MOVES the children into a fresh group inserted at `index` of `parent`.
- *  Figma's API auto-translates relative coords when nodes change parent,
- *  so the visual result matches the source's group rendering. */
-function convertFrameToGroup(frame: ImportBaseNode, api: ImportFigmaApi): void {
+function convertFrameToGroup(
+  entry: PendingGroupConversion,
+  api: ImportFigmaApi,
+  warn: (code: string, message: string) => void,
+): void {
+  const frame = entry.frame;
   const f = frame as unknown as GroupConversionFrame;
   const parent = f.parent;
   if (!parent || !parent.children) {
     throw new Error("placeholder frame has no parent — cannot convert to GroupNode");
   }
-  const children = f.children ? [...f.children] : [];
-  if (children.length === 0) {
-    // Empty group — leave the frame as-is. (Figma rejects creating an
-    // empty group and a 0-child placeholder is rare in practice.)
-    return;
-  }
+  // Read CURRENT children at conversion time (live, not the build-time
+  // snapshot). Inner conversions in reverse-iteration order replace
+  // child Frame placeholders with new GroupNodes ; the snapshot would
+  // be stale for outer groups.
+  const liveChildren = f.children ? [...f.children] : [];
+  const children = liveChildren.length > 0 ? liveChildren : entry.children;
+  if (children.length === 0) return;
+
   const index = parent.children.indexOf(frame);
+  const expectedChildCount = children.length;
   const group = api.group(children, parent, index >= 0 ? index : undefined);
-  // Restore the source layer name — figma.group() defaults to "Group" + n.
   (group as unknown as { name: string }).name = f.name;
-  // Remove the now-empty placeholder.
+
+  // `figma.group()` returns a fresh GroupNode whose properties are all
+  // defaults — the placeholder Frame's `applyFigmaExtras`-applied state
+  // (isMask, blendMode, opacity, effects, constraints, …) is silently
+  // dropped. Without this transfer, a Group source whose first child
+  // was a mask comes back as an unmasked group : `bg-texture` stops
+  // clipping its texture/Group240 siblings and Figma reports its bbox
+  // as the children-union (~2200×850) instead of the masked region
+  // (1637×345). Mirror the keys `applyFigmaExtras` writes — anything
+  // the host GroupNode rejects is swallowed by the per-key try/catch.
+  // `relativeTransform` is intentionally NOT transferred : we drop it
+  // from the placeholder for GROUP sourceType in `buildFrame` (would
+  // propagate to children at build time), and the new Group's own
+  // transform is set by figma.group() to fit the children-bbox.
+  transferGroupishProperties(frame, group);
+
+  const groupChildrenAfter =
+    (group as unknown as { children?: ImportBaseNode[] }).children?.length ?? 0;
+  if (groupChildrenAfter < expectedChildCount) {
+    const groupAppender = group as unknown as {
+      appendChild?: (child: ImportBaseNode) => void;
+    };
+    if (typeof groupAppender.appendChild === "function") {
+      for (const child of children) {
+        try {
+          groupAppender.appendChild(child);
+        } catch {
+          // Tolerate.
+        }
+      }
+    }
+    const recoveredCount =
+      (group as unknown as { children?: ImportBaseNode[] }).children?.length ?? 0;
+    if (recoveredCount < expectedChildCount) {
+      warn(
+        "GROUP_CONVERSION_LOST_CHILDREN",
+        `figma.group() returned a GroupNode with ${recoveredCount}/${expectedChildCount} children for "${f.name}".`,
+      );
+    }
+  }
+
   if (typeof f.remove === "function") {
     f.remove();
   } else if (parent.children) {
     const i = parent.children.indexOf(frame);
     if (i >= 0) parent.children.splice(i, 1);
+  }
+}
+
+/** Keys that `applyFigmaExtras` (and `applyUniversal`) write onto a
+ *  Frame placeholder during build, and that should survive the
+ *  `figma.group()` conversion onto the resulting GroupNode. Excluded
+ *  on purpose : `name` (transferred above), `relativeTransform` /
+ *  `x` / `y` (figma.group() owns the new Group's position), `width`
+ *  / `height` (Group sizing is auto, derived from children + mask),
+ *  `clipsContent` (Groups don't clip), `fills` / `strokes` (Groups
+ *  don't paint). */
+const GROUPISH_PROPERTY_KEYS = [
+  "isMask",
+  "maskType",
+  "blendMode",
+  "opacity",
+  "visible",
+  "effects",
+  "constraints",
+  "layoutAlign",
+  "layoutGrow",
+  "layoutPositioning",
+  "minWidth",
+  "maxWidth",
+  "minHeight",
+  "maxHeight",
+  "layoutSizingHorizontal",
+  "layoutSizingVertical",
+] as const;
+
+function transferGroupishProperties(from: ImportBaseNode, to: ImportBaseNode): void {
+  const src = from as unknown as Record<string, unknown>;
+  const dst = to as unknown as Record<string, unknown>;
+  for (const key of GROUPISH_PROPERTY_KEYS) {
+    const value = src[key];
+    if (value === undefined) continue;
+    try {
+      dst[key] = value;
+    } catch {
+      // Real Figma rejects properties that aren't valid for GroupNode
+      // (e.g. layoutSizingHorizontal on a Group inside a non-auto-layout
+      // parent). Silently skip — visual fidelity for that one key is
+      // forfeited but the rest of the transfer succeeds.
+    }
   }
 }
 

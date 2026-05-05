@@ -36,9 +36,16 @@ interface AnyFigmaNode {
   mainComponent?: { name: string } | null;
 }
 
-function isOperatorInputComponent(node: AnyFigmaNode): boolean {
+function isOperatorInputComponent(node: AnyFigmaNode, ctx: MappingContext): boolean {
   if (node.type === "COMPONENT") return node.name === OPERATOR_INPUT_COMPONENT_NAME;
-  if (node.type === "INSTANCE") return node.mainComponent?.name === OPERATOR_INPUT_COMPONENT_NAME;
+  if (node.type === "INSTANCE") {
+    // dynamic-page documents : `node.mainComponent` throws, so we read
+    // the value the export pipeline pre-resolved into ctx. Tests / mock
+    // surfaces don't populate the map ; fall through to the sync getter.
+    const map = ctx.mainComponentMap;
+    const mc = map?.has(node.id) ? map.get(node.id) : node.mainComponent;
+    return mc?.name === OPERATOR_INPUT_COMPONENT_NAME;
+  }
   return false;
 }
 
@@ -77,7 +84,11 @@ export function walk(
   opts: WalkOptions,
 ): MappingResult | null {
   const depth = opts.depth ?? 0;
-  console.warn("[lumencast] walk:", node.type, node.id, node.name);
+  // No per-node console output : `ctx.trace?.push(...)` already records
+  // the same information structurally, and 8000+ console.warn calls in
+  // Figma's plugin sandbox add ~15-20s of pure logging overhead on a
+  // medium-size scene. Step-level summaries in bundle.ts remain.
+  //
   // Invisible nodes are NOT skipped — they flow through to the per-
   // primitive mappers, which read `node.visible === false` via
   // `extractUniversal` and emit `visible: false` on the LSML primitive.
@@ -85,8 +96,7 @@ export function walk(
   // user expects the imported tree to contain every node from the
   // source, hidden or not, so they can re-show them by toggling
   // visibility in Figma without re-exporting).
-  if (isOperatorInputComponent(node)) {
-    console.warn("[lumencast]   → operator-input component, skipped from tree");
+  if (isOperatorInputComponent(node, ctx)) {
     ctx.trace?.push({ depth, type: node.type, id: node.id, name: node.name, action: "skip-operator-input" });
     return null;
   }
@@ -103,16 +113,13 @@ export function walk(
   try {
     switch (node.type) {
       case "TEXT":
-        console.warn("[lumencast]   → mapText");
         ctx.trace?.push({ ...traceBase, action: "map-text" });
         return mapText(node as never, parentOpts);
       case "RECTANGLE":
         if (hasImageFill(node)) {
-          console.warn("[lumencast]   → mapImage");
           ctx.trace?.push({ ...traceBase, action: "map-image" });
           return mapImage(node as never, ctx, parentOpts);
         }
-        console.warn("[lumencast]   → mapShape (rect)");
         ctx.trace?.push({ ...traceBase, action: "map-shape", note: "rect" });
         return mapShape(node as never, ctx, parentOpts);
       case "ELLIPSE":
@@ -120,7 +127,6 @@ export function walk(
       case "STAR":
       case "POLYGON":
       case "LINE":
-        console.warn("[lumencast]   → mapShape (", node.type, ")");
         ctx.trace?.push({ ...traceBase, action: "map-shape", note: node.type });
         return mapShape(node as never, ctx, parentOpts);
       case "BOOLEAN_OPERATION":
@@ -134,7 +140,6 @@ export function walk(
         // BO modes (subtract/intersect/exclude) lose the operation but keep
         // structural fidelity ; the visual loss is documented as a 1.1.x
         // limitation in the import logs.
-        console.warn("[lumencast]   → walkContainer (BOOLEAN_OPERATION)");
         ctx.trace?.push({ ...traceBase, action: "walk-container", note: node.type });
         return walkContainer(node, ctx, opts);
       case "INSTANCE":
@@ -148,20 +153,16 @@ export function walk(
         if (opts.parentX !== undefined) instOpts.parentX = opts.parentX;
         if (opts.parentY !== undefined) instOpts.parentY = opts.parentY;
         if (opts.parentRotation !== undefined) instOpts.parentRotation = opts.parentRotation;
-        console.warn("[lumencast]   → mapInstance (try)");
         const inst = mapInstance(node as never, instOpts, ctx);
         if (inst) {
-          console.warn("[lumencast]   → mapInstance (matched §4.9)");
           ctx.trace?.push({ ...traceBase, action: "map-instance" });
           return inst;
         }
-        console.warn("[lumencast]   → walkContainer (frame/stack)");
         ctx.trace?.push({ ...traceBase, action: "walk-container", note: node.type });
         return walkContainer(node, ctx, opts);
       }
       case "COMPONENT":
       case "GROUP":
-        console.warn("[lumencast]   → walkContainer (", node.type, ")");
         ctx.trace?.push({ ...traceBase, action: "walk-container", note: node.type });
         return walkContainer(node, ctx, opts);
       default:
@@ -174,9 +175,16 @@ export function walk(
         return null;
     }
   } catch (err) {
-    ctx.trace?.push({ ...traceBase, action: "error", error: err instanceof Error ? err.message : String(err) });
-    console.error("[lumencast] FAIL inside walk for", node.type, node.id, node.name, "→", err);
-    if (err instanceof Error) console.error("[lumencast]   stack:", err.stack);
+    // Persist failure into the mapping trace so it lands in the export
+    // archive's `_debug/mapping-trace.json`. No console output : the
+    // archive is the authoritative record.
+    const msg = err instanceof Error ? err.message : String(err);
+    const stack = err instanceof Error && err.stack ? err.stack : undefined;
+    ctx.trace?.push({
+      ...traceBase,
+      action: "error",
+      error: stack ? `${msg}\n${stack}` : msg,
+    });
     throw err;
   }
 }
@@ -255,7 +263,7 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
     if (opts.parentX !== undefined) stackOpts.parentX = opts.parentX;
     if (opts.parentY !== undefined) stackOpts.parentY = opts.parentY;
     if (opts.parentRotation !== undefined) stackOpts.parentRotation = opts.parentRotation;
-    result = mapStack(node as never, children as StackPrimitive["children"], stackOpts);
+    result = mapStack(node as never, children as StackPrimitive["children"], stackOpts, ctx);
   } else {
     const frameOpts: {
       isRoot: boolean;

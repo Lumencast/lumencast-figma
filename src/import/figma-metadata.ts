@@ -120,6 +120,55 @@ export interface FigmaHyperlink {
   url: string;
 }
 
+export interface FigmaTextSegment {
+  start: number;
+  end: number;
+  fontName?: { family: string; style: string };
+  fontSize?: number;
+  fills?: FigmaPaintMetadata[];
+  textCase?: "ORIGINAL" | "UPPER" | "LOWER" | "TITLE" | "SMALL_CAPS" | "SMALL_CAPS_FORCED";
+  textDecoration?: "NONE" | "UNDERLINE" | "STRIKETHROUGH";
+  letterSpacing?: { unit: "PIXELS" | "PERCENT"; value: number };
+  lineHeight?: { unit: "PIXELS" | "PERCENT" | "AUTO"; value?: number };
+  hyperlink?: { url: string };
+}
+
+export interface FigmaImageBackground {
+  src: string;
+  scaleMode?: "FILL" | "FIT" | "CROP" | "TILE";
+  blendMode?: FigmaBlendMode;
+  opacity?: number;
+  visible?: boolean;
+  scalingFactor?: number;
+  rotation?: number;
+  filters?: {
+    exposure?: number;
+    contrast?: number;
+    saturation?: number;
+    temperature?: number;
+    tint?: number;
+    highlights?: number;
+    shadows?: number;
+  };
+  imageTransform?: number[][];
+}
+
+export interface FigmaLayoutGrid {
+  pattern: "ROWS" | "COLUMNS" | "GRID";
+  visible?: boolean;
+  color?: { r: number; g: number; b: number; a: number };
+  alignment?: "MIN" | "MAX" | "CENTER" | "STRETCH";
+  gutterSize?: number;
+  count?: number;
+  sectionSize?: number;
+  offset?: number;
+}
+
+export interface FigmaGuide {
+  axis: "X" | "Y";
+  offset: number;
+}
+
 export interface FigmaPaintMetadata {
   type: "SOLID" | "GRADIENT_LINEAR" | "GRADIENT_RADIAL";
   visible?: boolean;
@@ -166,6 +215,7 @@ export interface FigmaMetadata {
       shadows?: number;
     };
     imageTransform?: number[][];
+    scaleMode?: "FILL" | "FIT" | "CROP" | "TILE";
   };
   /** Raw 2x3 affine transform — used to restore flip + rotation atomically
    *  when the source node had a negative-determinant transform. */
@@ -177,6 +227,7 @@ export interface FigmaMetadata {
   blendMode?: FigmaBlendMode;
   isMask?: boolean;
   maskType?: FigmaMaskType;
+  cornerRadius?: number;
   cornerRadii?: [number, number, number, number];
   cornerSmoothing?: number;
   strokeDetails?: FigmaStrokeDetails;
@@ -188,16 +239,23 @@ export interface FigmaMetadata {
   maxWidth?: number | null;
   minHeight?: number | null;
   maxHeight?: number | null;
+  layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
+  layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
   gradientStops?: (FigmaGradientStop[] | null)[];
   gradientTransforms?: (number[][] | null)[];
   textCase?: "ORIGINAL" | "UPPER" | "LOWER" | "TITLE" | "SMALL_CAPS" | "SMALL_CAPS_FORCED";
   fontStyle?: string;
   textAutoResize?: "NONE" | "WIDTH_AND_HEIGHT" | "HEIGHT" | "TRUNCATE";
+  textAlignVertical?: "TOP" | "CENTER" | "BOTTOM";
   paragraphSpacing?: number;
   paragraphIndent?: number;
   textTruncation?: "DISABLED" | "ENDING";
   maxLines?: number;
   hyperlinks?: FigmaHyperlink[];
+  textSegments?: FigmaTextSegment[];
+  layoutGrids?: FigmaLayoutGrid[];
+  guides?: FigmaGuide[];
+  imageBackgrounds?: FigmaImageBackground[];
 }
 
 export function readFigmaMetadata(prim: { metadata?: Record<string, unknown> }): FigmaMetadata {

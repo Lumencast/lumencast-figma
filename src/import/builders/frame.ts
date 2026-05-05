@@ -2,12 +2,14 @@
 // orchestrator after each builder has produced its node ; this builder owns
 // only the frame itself.
 
-import type { Fill, FramePrimitive } from "~shared/lsml-types";
+import type { FramePrimitive } from "~shared/lsml-types";
 import type { ImportFigmaApi, ImportFrameNode, ImportPaint } from "../figma-api";
-import { cssToRgb, cssToRgba } from "../color";
+import { cssToRgb } from "../color";
 import { applyUniversal } from "../universal";
 import { readFigmaMetadata } from "../figma-metadata";
 import { applyFigmaExtras } from "../figma-extras";
+import { fillToPaint } from "../fill-to-paint";
+import { applyImageBackgrounds } from "../image-backgrounds";
 import type { BuildContext } from "./types";
 
 export function buildFrame(
@@ -19,16 +21,28 @@ export function buildFrame(
   const figmaMeta = readFigmaMetadata(prim);
   node.name = figmaMeta.layerName ?? "Frame";
 
-  // When the source was a GROUP or BOOLEAN_OPERATION, queue this frame
-  // for post-build conversion. We can't call `figma.group()` here — the
-  // children aren't built yet AND the frame isn't appended to a parent
-  // yet. The pipeline iterates `ctx.groupConversions` after the tree is
-  // mounted and replaces each placeholder frame with a real GroupNode.
-  if (figmaMeta.sourceType === "GROUP" || figmaMeta.sourceType === "BOOLEAN_OPERATION") {
-    ctx.groupConversions.push({ frame: node, sourceType: figmaMeta.sourceType });
-  }
-  if (prim.size) node.resize(prim.size.w, prim.size.h);
+  // GROUP / BOOLEAN_OPERATION sources are queued by walk.ts AFTER its
+  // children loop runs — that's when we can snapshot the children
+  // references that will be passed to `figma.group()` in the post-pass.
+  // Pushing here (before children exist) loses the snapshot; pushing
+  // here AND in walk.ts duplicates the conversion. We push from one
+  // place only : walk.ts.
   node.layoutMode = "NONE";
+
+  // Apply size early : a fresh `figma.createFrame()` is 100×100, and we
+  // want the source's dimensions on the node BEFORE any background /
+  // child setters run, in case some of them depend on the bbox. Belt
+  // -and-braces : we resize again at the end after applyFigmaExtras to
+  // catch any intermediate setter that might have reset dimensions
+  // (e.g. layoutSizingHorizontal/Vertical setters on root frames have
+  // been observed to silently reset width to default 100).
+  if (prim.size) {
+    try {
+      node.resize(prim.size.w, prim.size.h);
+    } catch {
+      // Tolerate — late resize below will retry.
+    }
+  }
 
   // `figma.createFrame()` returns a node with default white solid fill
   // and a black 1px stroke. The LSML model assumes transparent unless
@@ -39,12 +53,19 @@ export function buildFrame(
   (node as unknown as { fills?: ImportPaint[] }).fills = [];
   (node as unknown as { strokes?: unknown[] }).strokes = [];
 
-  // `clipsContent` : prefer the canonical first-class field (LSML 1.1
-  // §4.3). Fall back to `metadata.figma.clipsContent` for v0.1 bundles.
-  // Default true matches the Figma frame default — without this, child
-  // layouts that extend past the declared `size` trigger auto-grow.
-  (node as unknown as { clipsContent?: boolean }).clipsContent =
-    prim.clipsContent ?? figmaMeta.clipsContent ?? true;
+  // `clipsContent` : ALWAYS set to true during build, regardless of what
+  // the bundle says. Children that extend beyond the placeholder's bbox
+  // trigger Figma's auto-grow when clipsContent=false — bg-texture
+  // (declared 1637x345 with Group 240 children spanning 857x1602)
+  // ends up at ~2205x858 = the children-union bbox. Setting
+  // clipsContent=true here PREVENTS the auto-grow entirely. We restore
+  // the bundle's intended clipsContent value in the post-pass, after
+  // all children + figma.group conversions have settled.
+  const intendedClipsContent = prim.clipsContent ?? figmaMeta.clipsContent ?? true;
+  (node as unknown as { clipsContent?: boolean }).clipsContent = true;
+  if (intendedClipsContent !== true && ctx.clipsContentRestoreQueue) {
+    ctx.clipsContentRestoreQueue.push({ node, clipsContent: intendedClipsContent });
+  }
 
   // Position : universal prop (LSML 1.1 §5.4). v0.1 bundles stashed it
   // in `metadata.figma.position` ; we still read that as a fallback.
@@ -71,51 +92,61 @@ export function buildFrame(
     }
   }
 
+  // IMAGE backgrounds (avatar circles, hero banners, card images). Frames
+  // can carry IMAGE fills that LSML's Fill type doesn't model — the
+  // mapping side stashes them under `metadata.figma.imageBackgrounds[]`
+  // with the asset path. Re-apply them as IMAGE paints, looked up via
+  // ctx.assetMap. Stacked AFTER the LSML solid/gradient backgrounds so
+  // the image paint sits on top (matches Figma's fills array semantics).
+  applyImageBackgrounds(
+    node as unknown as { fills?: ImportPaint[] },
+    figmaMeta.imageBackgrounds,
+    ctx.assetMap,
+  );
+
   applyUniversal(node, prim);
-  applyFigmaExtras(node, figmaMeta);
+
+  // For GROUP / BOOLEAN_OPERATION sources : DROP `meta.transform` from
+  // the Frame placeholder. The source GROUP is non-coord-system in
+  // Figma — its children's world transforms are INDEPENDENT (the
+  // Group's transform doesn't propagate to children's effective
+  // rendering ; cf. diagnostic dump 2026-05-04 where source
+  // Group 2087326238.absoluteTransform has det=-1 [flipped] but its
+  // descendant Vector.absoluteTransform has det=+1 [not flipped]).
+  // Our Frame placeholder IS coord-system → applying the source's
+  // flipped relativeTransform on it would COMPOSE with children's
+  // transforms during build, displacing them. Instead : keep
+  // placeholder Frame at identity during build (children at LSML
+  // delta = OUTER coord land at correct world via identity chain),
+  // and re-apply meta.transform on the REAL Group post-figma.group()
+  // (real Group non-coord-system → transform doesn't propagate →
+  // children stay at correct world).
+  let figmaMetaForSetters = figmaMeta;
+  if (
+    figmaMeta.sourceType === "GROUP" ||
+    figmaMeta.sourceType === "BOOLEAN_OPERATION"
+  ) {
+    const { transform: _droppedTransform, ...rest } = figmaMeta;
+    void _droppedTransform;
+    figmaMetaForSetters = rest;
+  }
+  applyFigmaExtras(node, figmaMetaForSetters);
+
+  // Apply size LAST. Some setters in applyFigmaExtras (notably the new
+  // layoutSizingHorizontal / Vertical setters captured for fidelity)
+  // confuse Figma's sizing system on non-auto-layout frames and reset
+  // width/height to the createFrame default 100×100. Re-applying the
+  // declared size at the very end guarantees the imported frame ends up
+  // at source dimensions regardless of intermediate setter side-effects.
+  if (prim.size) {
+    try {
+      node.resize(prim.size.w, prim.size.h);
+    } catch {
+      // Some node types or constraints reject resize ; tolerate so the
+      // rest of the import succeeds.
+    }
+  }
+
   return node;
 }
 
-function fillToPaint(fill: Fill, rawTransform: number[][] | null): ImportPaint | null {
-  if (fill.kind === "solid") {
-    const rgb = cssToRgb(fill.color);
-    if (!rgb) return null;
-    const out: ImportPaint = { type: "SOLID", color: rgb.rgb };
-    if (fill.opacity !== undefined && fill.opacity !== 1) out.opacity = fill.opacity;
-    else if (rgb.opacity !== 1) out.opacity = rgb.opacity;
-    return out;
-  }
-  if (fill.kind === "linear-gradient" || fill.kind === "radial-gradient") {
-    const stops = fill.stops
-      .map((s) => {
-        const c = cssToRgba(s.color);
-        if (!c) return null;
-        const a = s.opacity !== undefined ? s.opacity : c.a;
-        return { position: s.offset, color: { r: c.r, g: c.g, b: c.b, a } };
-      })
-      .filter(
-        (s): s is { position: number; color: { r: number; g: number; b: number; a: number } } =>
-          s !== null,
-      );
-    if (stops.length < 2) return null;
-    let transform: number[][];
-    if (rawTransform) {
-      transform = rawTransform;
-    } else {
-      const angle = fill.kind === "linear-gradient" ? (fill.angle_deg ?? 0) : 0;
-      const rad = (angle * Math.PI) / 180;
-      transform = [
-        [Math.cos(rad), Math.sin(rad), 0],
-        [-Math.sin(rad), Math.cos(rad), 0],
-      ];
-    }
-    const out: ImportPaint = {
-      type: fill.kind === "linear-gradient" ? "GRADIENT_LINEAR" : "GRADIENT_RADIAL",
-      gradientStops: stops,
-      gradientTransform: transform,
-    };
-    if (fill.opacity !== undefined && fill.opacity !== 1) out.opacity = fill.opacity;
-    return out;
-  }
-  return null;
-}

@@ -28,11 +28,7 @@ function modeFromFigma(m: "FIXED" | "HUG" | "FILL" | undefined): SizingMode | nu
 }
 
 export interface ExtractUniversalOptions {
-  /** Cumulative rotation of the closest rotated ancestor (degrees). When
-   *  the current node's `rotation` matches the parent's, we emit `rotation: 0`
-   *  — Figma's rotation hierarchy is multiplicative on the visual side, so
-   *  re-applying the same rotation to a child of an already-rotated parent
-   *  doubles it. The fix : emit the LOCAL rotation (delta from parent's). */
+  /** Cumulative rotation of the closest rotated ancestor (degrees). */
   parentRotation?: number;
 }
 
@@ -41,19 +37,6 @@ export function extractUniversal(
   opts?: ExtractUniversalOptions,
 ): UniversalProps {
   const out: UniversalProps = {};
-
-  console.warn(
-    "[lumencast]     extractUniversal — visible:",
-    typeof node.visible,
-    "opacity:",
-    typeof node.opacity,
-    "rotation:",
-    typeof node.rotation,
-    "layoutSizingH:",
-    node.layoutSizingHorizontal,
-    "layoutSizingV:",
-    node.layoutSizingVertical,
-  );
 
   if (asBoolean(node.visible) === false) {
     out.visible = false;
@@ -79,8 +62,7 @@ export function extractUniversal(
   return out;
 }
 
-/** Normalise a degree value to (-180, 180] so deltas like 96 - 96 = 0
- *  but 270 - 0 = 270 → -90 (closest equivalent). */
+/** Normalise a degree value to (-180, 180]. */
 function normaliseDegrees(d: number): number {
   const n = ((d % 360) + 540) % 360 - 180;
   return Math.abs(n) < 1e-6 ? 0 : n;

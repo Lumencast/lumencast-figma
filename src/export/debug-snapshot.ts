@@ -273,11 +273,20 @@ export function snapshotFigmaNode(node: AnyNode, depth = 0): SnapshotNode {
   copyString(node, dst, "textTruncation");
   copyNumber(node, dst, "maxLines");
 
-  // Instance
-  const mainComponent = asObject<{ id?: unknown; name?: unknown }>(node["mainComponent"]);
-  if (mainComponent) {
-    out.mainComponentId = asString(mainComponent.id) ?? null;
-    out.mainComponentName = asString(mainComponent.name) ?? null;
+  // Instance — `node.mainComponent` is a synchronous getter that throws
+  // in `documentAccess: "dynamic-page"` mode (the API requires
+  // `getMainComponentAsync` instead). The debug snapshot is best-effort
+  // and is captured before any async pre-pass runs, so we tolerate the
+  // throw and leave the field undefined rather than aborting the whole
+  // snapshot. Mocks / non-dynamic-page surfaces still populate it.
+  try {
+    const mainComponent = asObject<{ id?: unknown; name?: unknown }>(node["mainComponent"]);
+    if (mainComponent) {
+      out.mainComponentId = asString(mainComponent.id) ?? null;
+      out.mainComponentName = asString(mainComponent.name) ?? null;
+    }
+  } catch {
+    // dynamic-page : skip silently.
   }
 
   // Children (only for known container types, and only when we have a real

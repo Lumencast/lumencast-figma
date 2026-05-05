@@ -7,8 +7,9 @@
 
 import type { Bind, Fill, FramePrimitive } from "~shared/lsml-types";
 import { paintToFill, rawGradientTransform, type FigmaPaint, paintToSolidCss } from "./color";
-import { withFigmaMetadata } from "./figma-metadata";
+import { withFigmaMetadata, type FigmaImageBackground } from "./figma-metadata";
 import { captureFigmaExtras } from "./figma-extras";
+import { capturePaintExtras } from "./image";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { resolveVariable } from "./variables";
@@ -76,11 +77,39 @@ export function mapFrame(
   }
 
   // Backgrounds : single solid → `background`, multi/gradient → `backgrounds[]`.
+  // IMAGE fills are NOT representable in LSML's Fill type — capture them
+  // separately under `metadata.figma.imageBackgrounds[]` with the asset
+  // path + paint extras (blendMode, scaleMode, opacity, imageTransform,
+  // …) so avatar circles, hero banners, card image backgrounds round-trip.
+  //
+  // We collect `fills` and `gradientTransforms` in lockstep : if any paint
+  // returns null from `paintToFill` (invisible, unsupported), it's skipped
+  // from BOTH arrays so transforms[i] always lines up with fills[i] /
+  // backgrounds[i]. Earlier two-pass filter+map produced length mismatches
+  // when an invisible paint sat between two visible ones.
   const fillsArr = asArray<FigmaPaint>(node.fills) ?? [];
-  const fills = fillsArr
-    .filter((p) => p.type !== "IMAGE")
-    .map((p) => paintToFill(p))
-    .filter((f): f is Fill => f !== null);
+  const fills: Fill[] = [];
+  const gradientTransformsAligned: (number[][] | null)[] = [];
+  for (const paint of fillsArr) {
+    if (paint.type === "IMAGE") continue;
+    const fill = paintToFill(paint);
+    if (fill === null) continue;
+    fills.push(fill);
+    gradientTransformsAligned.push(rawGradientTransform(paint));
+  }
+  const imageAssetRefs: string[] = [];
+  const imageBackgrounds: FigmaImageBackground[] = [];
+  if (ctx?.registerImageHash) {
+    for (const paint of fillsArr) {
+      if (paint.type !== "IMAGE") continue;
+      const hash = (paint as unknown as { imageHash?: unknown }).imageHash;
+      if (typeof hash !== "string" || hash === "") continue;
+      const src = ctx.registerImageHash(hash);
+      const extras = capturePaintExtras(paint) ?? {};
+      imageBackgrounds.push({ ...extras, src });
+      imageAssetRefs.push(hash);
+    }
+  }
   if (fills.length === 1 && fills[0]?.kind === "solid" && fills[0].opacity === undefined) {
     const single = fillsArr.find((p) => p.type === "SOLID");
     if (single) {
@@ -94,11 +123,8 @@ export function mapFrame(
   // Preserve raw gradient matrices parallel-indexed with the emitted fills
   // for byte-stable round-trip. Helper drops the array when every entry is
   // null, so plain solid backgrounds carry no metadata noise.
-  if (fills.length > 0) {
-    const transforms = fillsArr
-      .filter((p) => p.type !== "IMAGE")
-      .map((p) => rawGradientTransform(p));
-    withFigmaMetadata(prim, { gradientTransforms: transforms });
+  if (fills.length > 0 && gradientTransformsAligned.some((t) => t !== null)) {
+    withFigmaMetadata(prim, { gradientTransforms: gradientTransformsAligned });
   }
 
   if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
@@ -152,6 +178,13 @@ export function mapFrame(
     withFigmaMetadata(prim, { sourceType: node.type });
   }
 
+  // Stash any IMAGE fills captured above. Done here (after sourceType)
+  // so the merge helper sees both keys in one withFigmaMetadata call
+  // pattern.
+  if (imageBackgrounds.length > 0) {
+    withFigmaMetadata(prim, { imageBackgrounds });
+  }
+
   // Universal x-figma.authoring/1 extras (effects, blendMode, mask flags,
   // per-corner radii + smoothing, stroke details, constraints, layout
   // overrides). Per-primitive captures above handle frame-specific keys.
@@ -159,8 +192,10 @@ export function mapFrame(
     localPosition: prim.position ?? { x: 0, y: 0 },
   });
 
-  if (defaults) return { node: prim, defaults };
-  return { node: prim };
+  const result: MappingResult = { node: prim };
+  if (defaults) result.defaults = defaults;
+  if (imageAssetRefs.length > 0) result.assetRefs = imageAssetRefs;
+  return result;
 }
 
 function roundTo3(n: number): number {

@@ -12,6 +12,8 @@ import type { ImportBaseNode } from "./figma-api";
 import type {
   FigmaConstraints,
   FigmaEffect,
+  FigmaGuide,
+  FigmaLayoutGrid,
   FigmaMetadata,
   FigmaPaintMetadata,
   FigmaStrokeDetails,
@@ -25,6 +27,7 @@ interface MaybeFigmaWritable {
   blendMode?: string;
   isMask?: boolean;
   maskType?: string;
+  cornerRadius?: number;
   topLeftRadius?: number;
   topRightRadius?: number;
   bottomLeftRadius?: number;
@@ -47,6 +50,10 @@ interface MaybeFigmaWritable {
   maxWidth?: number | null;
   minHeight?: number | null;
   maxHeight?: number | null;
+  layoutSizingHorizontal?: string;
+  layoutSizingVertical?: string;
+  layoutGrids?: FigmaLayoutGrid[];
+  guides?: FigmaGuide[];
 }
 
 export function applyFigmaExtras(node: ImportBaseNode, meta: FigmaMetadata): void {
@@ -83,6 +90,16 @@ export function applyFigmaExtras(node: ImportBaseNode, meta: FigmaMetadata): voi
       safeSet(() => (w.maskType = v));
     }
   }
+  // Uniform cornerRadius — applied first so per-corner overrides below
+  // take precedence when both are present (cornerRadii sets each corner
+  // individually). Frame and stack primitives have no native LSML
+  // cornerRadius field, so this is the only path that brings their
+  // pill / rounded-rect shape back. safeSet swallows the rejection
+  // when the host node type doesn't accept the property (rare).
+  if (meta.cornerRadius !== undefined && meta.cornerRadius !== 0) {
+    const v = meta.cornerRadius;
+    safeSet(() => (w.cornerRadius = v));
+  }
   if (meta.cornerRadii) {
     const [tl, tr, br, bl] = meta.cornerRadii;
     safeSet(() => (w.topLeftRadius = tl));
@@ -99,7 +116,11 @@ export function applyFigmaExtras(node: ImportBaseNode, meta: FigmaMetadata): voi
     const v = meta.constraints;
     safeSet(() => (w.constraints = v));
   }
-  if (meta.layoutAlign && meta.layoutAlign !== "INHERIT") {
+  // Figma deprecated `layoutAlign: "CENTER"` — the setter rejects it
+  // with a noisy warning. Mapping side already filters CENTER, but
+  // legacy bundles produced before the filter may still carry it ;
+  // skip on import for back-compat.
+  if (meta.layoutAlign && meta.layoutAlign !== "INHERIT" && meta.layoutAlign !== "CENTER") {
     const v = meta.layoutAlign;
     safeSet(() => (w.layoutAlign = v));
   }
@@ -122,6 +143,30 @@ export function applyFigmaExtras(node: ImportBaseNode, meta: FigmaMetadata): voi
   if (meta.maxHeight !== undefined && meta.maxHeight !== null) {
     const v = meta.maxHeight;
     safeSet(() => (w.maxHeight = v));
+  }
+
+  // Per-axis sizing mode. Must be applied BEFORE any caller-driven
+  // resize — Figma rejects resize() while in WIDTH_AND_HEIGHT (text) or
+  // when the mode is HUG (auto-layout frame), so the builders rely on
+  // these being set first.
+  if (meta.layoutSizingHorizontal) {
+    const v = meta.layoutSizingHorizontal;
+    safeSet(() => (w.layoutSizingHorizontal = v));
+  }
+  if (meta.layoutSizingVertical) {
+    const v = meta.layoutSizingVertical;
+    safeSet(() => (w.layoutSizingVertical = v));
+  }
+
+  // Layout grids + guides — frame-only properties. safeSet swallows the
+  // setter rejection on shape/text/image nodes that don't accept them.
+  if (meta.layoutGrids && meta.layoutGrids.length > 0) {
+    const v = meta.layoutGrids;
+    safeSet(() => (w.layoutGrids = v));
+  }
+  if (meta.guides && meta.guides.length > 0) {
+    const v = meta.guides;
+    safeSet(() => (w.guides = v));
   }
 
   // Apply the flip-preserving transform LAST when present : Figma's
@@ -197,10 +242,16 @@ function normaliseEffectForFigma(e: FigmaEffect): unknown {
       color: e.color,
       offset: e.offset,
       radius: e.radius,
-      spread: e.spread ?? 0,
       visible: e.visible ?? true,
       blendMode: e.blendMode ?? "NORMAL",
     };
+    // `spread` is rejected by Figma when the host frame/component has
+    // no visible fills ("The 'spread' parameter is not supported when
+    // frames or components have no visible fills"). Only emit it when
+    // the source actually carried a non-zero spread — otherwise the
+    // setter logs a noisy warning per shadow and the whole effects
+    // assignment may be partially dropped.
+    if (e.spread !== undefined && e.spread !== 0) out["spread"] = e.spread;
     if (e.type === "DROP_SHADOW") {
       out["showShadowBehindNode"] =
         (e as { showShadowBehindNode?: boolean }).showShadowBehindNode ?? false;

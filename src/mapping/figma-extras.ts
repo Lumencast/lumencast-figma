@@ -17,7 +17,9 @@ import {
   type FigmaBlendMode,
   type FigmaConstraint,
   type FigmaEffect,
+  type FigmaGuide,
   type FigmaLayoutAlign,
+  type FigmaLayoutGrid,
   type FigmaMaskType,
   type FigmaMetadata,
   type FigmaStrokeDetails,
@@ -31,6 +33,7 @@ interface MaybeFigmaNode {
   blendMode?: unknown;
   isMask?: unknown;
   maskType?: unknown;
+  cornerRadius?: unknown;
   topLeftRadius?: unknown;
   topRightRadius?: unknown;
   bottomLeftRadius?: unknown;
@@ -53,6 +56,10 @@ interface MaybeFigmaNode {
   maxWidth?: unknown;
   minHeight?: unknown;
   maxHeight?: unknown;
+  layoutSizingHorizontal?: unknown;
+  layoutSizingVertical?: unknown;
+  layoutGrids?: unknown;
+  guides?: unknown;
 }
 
 const SHADOW_TYPES = new Set(["DROP_SHADOW", "INNER_SHADOW"]);
@@ -162,8 +169,19 @@ export function captureFigmaExtras<T extends { metadata?: Record<string, unknown
     if (mt && MASK_TYPES.has(mt as FigmaMaskType)) figma.maskType = mt as FigmaMaskType;
   }
 
+  // Uniform cornerRadius — frame and stack primitives have no native
+  // LSML field for this (only shape's `cornerRadius` is first-class), so
+  // round-trip via metadata.figma.cornerRadius. Without this, button
+  // pills (`cornerRadius: 33554400` for max curvature), rounded card
+  // headers (`cornerRadius: 18`), avatar circles, etc. lose their
+  // shape on re-import. Shape primitives also pass through here ; the
+  // doublon with shape's native `cornerRadius` is harmless (~few bytes,
+  // applyFigmaExtras becomes a no-op idempotent setter).
+  const cr = asNumber(node.cornerRadius);
+  if (cr !== undefined && cr !== 0) figma.cornerRadius = cr;
+
   // Per-corner radii — only emit when at least one corner differs from the
-  // others (otherwise the LSML uniform `cornerRadius` covers it).
+  // others (otherwise the uniform `cornerRadius` capture above covers it).
   const tl = asNumber(node.topLeftRadius);
   const tr = asNumber(node.topRightRadius);
   const br = asNumber(node.bottomRightRadius);
@@ -176,40 +194,49 @@ export function captureFigmaExtras<T extends { metadata?: Record<string, unknown
   const smoothing = asNumber(node.cornerSmoothing);
   if (smoothing !== undefined && smoothing !== 0) figma.cornerSmoothing = smoothing;
 
-  // Stroke details — only emit when at least one extra-key is set.
-  const strokeDetails: FigmaStrokeDetails = {};
-  const dashPattern = parseNumberArray(node.dashPattern);
-  if (dashPattern.length > 0) strokeDetails.dashPattern = dashPattern;
-  const sj = asString(node.strokeJoin);
-  if (sj === "MITER" || sj === "BEVEL" || sj === "ROUND") strokeDetails.strokeJoin = sj;
-  const sc = asString(node.strokeCap);
-  if (
-    sc === "NONE" ||
-    sc === "ROUND" ||
-    sc === "SQUARE" ||
-    sc === "ARROW_LINES" ||
-    sc === "ARROW_EQUILATERAL"
-  ) {
-    strokeDetails.strokeCap = sc;
-  }
-  const sml = asNumber(node.strokeMiterLimit);
-  if (sml !== undefined && sml !== 4) strokeDetails.strokeMiterLimit = sml;
-  const sa = asString(node.strokeAlign);
-  if (sa === "INSIDE" || sa === "OUTSIDE" || sa === "CENTER") strokeDetails.strokeAlign = sa;
-  const stw = asNumber(node.strokeTopWeight);
-  const srw = asNumber(node.strokeRightWeight);
-  const sbw = asNumber(node.strokeBottomWeight);
-  const slw = asNumber(node.strokeLeftWeight);
-  if (stw !== undefined && srw !== undefined && sbw !== undefined && slw !== undefined) {
-    // Per-side weights only meaningful when not all equal.
-    if (!(stw === srw && srw === sbw && sbw === slw)) {
-      strokeDetails.strokeTopWeight = stw;
-      strokeDetails.strokeRightWeight = srw;
-      strokeDetails.strokeBottomWeight = sbw;
-      strokeDetails.strokeLeftWeight = slw;
+  // Stroke details — only emit when the node has actual strokes. Figma
+  // exposes strokeAlign/Join/Cap/MiterLimit/per-side weights as defaults
+  // on every node regardless of whether it paints any stroke ; capturing
+  // them when `strokes` is empty pollutes the bundle and triggers a
+  // phantom 1px stroke on import (the import side's defaults + the
+  // metadata-restored alignment combine into a visible stroke). Gating on
+  // `strokes.length > 0` mirrors the `figma.strokes` / `strokeWeight`
+  // capture above and keeps stroke metadata consistent.
+  if (strokes.length > 0) {
+    const strokeDetails: FigmaStrokeDetails = {};
+    const dashPattern = parseNumberArray(node.dashPattern);
+    if (dashPattern.length > 0) strokeDetails.dashPattern = dashPattern;
+    const sj = asString(node.strokeJoin);
+    if (sj === "MITER" || sj === "BEVEL" || sj === "ROUND") strokeDetails.strokeJoin = sj;
+    const sc = asString(node.strokeCap);
+    if (
+      sc === "NONE" ||
+      sc === "ROUND" ||
+      sc === "SQUARE" ||
+      sc === "ARROW_LINES" ||
+      sc === "ARROW_EQUILATERAL"
+    ) {
+      strokeDetails.strokeCap = sc;
     }
+    const sml = asNumber(node.strokeMiterLimit);
+    if (sml !== undefined && sml !== 4) strokeDetails.strokeMiterLimit = sml;
+    const sa = asString(node.strokeAlign);
+    if (sa === "INSIDE" || sa === "OUTSIDE" || sa === "CENTER") strokeDetails.strokeAlign = sa;
+    const stw = asNumber(node.strokeTopWeight);
+    const srw = asNumber(node.strokeRightWeight);
+    const sbw = asNumber(node.strokeBottomWeight);
+    const slw = asNumber(node.strokeLeftWeight);
+    if (stw !== undefined && srw !== undefined && sbw !== undefined && slw !== undefined) {
+      // Per-side weights only meaningful when not all equal.
+      if (!(stw === srw && srw === sbw && sbw === slw)) {
+        strokeDetails.strokeTopWeight = stw;
+        strokeDetails.strokeRightWeight = srw;
+        strokeDetails.strokeBottomWeight = sbw;
+        strokeDetails.strokeLeftWeight = slw;
+      }
+    }
+    if (Object.keys(strokeDetails).length > 0) figma.strokeDetails = strokeDetails;
   }
-  if (Object.keys(strokeDetails).length > 0) figma.strokeDetails = strokeDetails;
 
   // Constraints
   const c = asObject<{ horizontal?: unknown; vertical?: unknown }>(node.constraints);
@@ -227,9 +254,18 @@ export function captureFigmaExtras<T extends { metadata?: Record<string, unknown
     }
   }
 
-  // Layout overrides
+  // Layout overrides. Note : Figma deprecated `layoutAlign: "CENTER"` —
+  // the modern API rejects it ("CENTER is no longer a supported value
+  // for layoutAlign"). The equivalent is `counterAxisAlignItems` on the
+  // parent ; without a backref we can't translate it, so we drop CENTER
+  // at capture time to avoid noisy import warnings + lost setter writes.
   const la = asString(node.layoutAlign);
-  if (la && LAYOUT_ALIGN_VALUES.has(la as FigmaLayoutAlign) && la !== "INHERIT") {
+  if (
+    la &&
+    LAYOUT_ALIGN_VALUES.has(la as FigmaLayoutAlign) &&
+    la !== "INHERIT" &&
+    la !== "CENTER"
+  ) {
     figma.layoutAlign = la as FigmaLayoutAlign;
   }
   const lg = asNumber(node.layoutGrow);
@@ -245,8 +281,96 @@ export function captureFigmaExtras<T extends { metadata?: Record<string, unknown
   const maxH = asNumber(node.maxHeight);
   if (maxH !== undefined) figma.maxHeight = maxH;
 
+  // Per-axis sizing modes (FIXED / HUG / FILL). Captured for any node
+  // that exposes them — frame, stack, text. Critical for stacks whose
+  // dimensions are explicit (FIXED) : without restoring the mode, the
+  // import collapses to HUG and the frame shrinks to its content.
+  const lsh = asString(node.layoutSizingHorizontal);
+  if (lsh === "FIXED" || lsh === "HUG" || lsh === "FILL") figma.layoutSizingHorizontal = lsh;
+  const lsv = asString(node.layoutSizingVertical);
+  if (lsv === "FIXED" || lsv === "HUG" || lsv === "FILL") figma.layoutSizingVertical = lsv;
+
+  // Layout grids (frame-level rulers) — columns / rows / pixel grid that
+  // designers configure via Figma's *Layout grid* panel. Captured verbatim
+  // and re-applied so re-imports keep the same alignment scaffolding.
+  const grids = parseLayoutGrids(node.layoutGrids);
+  if (grids.length > 0) figma.layoutGrids = grids;
+
+  // Guides — frame-level vertical (X) / horizontal (Y) ruler markers.
+  // Anchored at integer offsets ; round-tripped as-is.
+  const guides = parseGuides(node.guides);
+  if (guides.length > 0) figma.guides = guides;
+
   if (Object.keys(figma).length > 0) withFigmaMetadata(prim, figma);
   return prim;
+}
+
+/** Parse `node.layoutGrids` into the metadata shape. Skips invisible
+ *  default entries with no useful keys. */
+function parseLayoutGrids(raw: unknown): FigmaLayoutGrid[] {
+  const arr = asArray<unknown>(raw);
+  if (!arr) return [];
+  const out: FigmaLayoutGrid[] = [];
+  for (const g of arr) {
+    if (!g || typeof g !== "object") continue;
+    const obj = g as Record<string, unknown>;
+    const pattern = asString(obj["pattern"]);
+    if (pattern !== "ROWS" && pattern !== "COLUMNS" && pattern !== "GRID") continue;
+    const entry: FigmaLayoutGrid = { pattern };
+    const visible = asBoolean(obj["visible"]);
+    if (visible === false) entry.visible = false;
+    const color = asObject<{ r: unknown; g: unknown; b: unknown; a: unknown }>(obj["color"]);
+    if (color) {
+      entry.color = {
+        r: asNumber(color.r) ?? 0,
+        g: asNumber(color.g) ?? 0,
+        b: asNumber(color.b) ?? 0,
+        a: asNumber(color.a) ?? 1,
+      };
+    }
+    if (pattern === "ROWS" || pattern === "COLUMNS") {
+      const alignment = asString(obj["alignment"]);
+      if (
+        alignment === "MIN" ||
+        alignment === "MAX" ||
+        alignment === "CENTER" ||
+        alignment === "STRETCH"
+      ) {
+        entry.alignment = alignment;
+      }
+      const gutter = asNumber(obj["gutterSize"]);
+      if (gutter !== undefined) entry.gutterSize = gutter;
+      const count = asNumber(obj["count"]);
+      if (count !== undefined) entry.count = count;
+      const section = asNumber(obj["sectionSize"]);
+      if (section !== undefined) entry.sectionSize = section;
+      const offset = asNumber(obj["offset"]);
+      if (offset !== undefined) entry.offset = offset;
+    } else {
+      // GRID — only sectionSize is meaningful.
+      const section = asNumber(obj["sectionSize"]);
+      if (section !== undefined) entry.sectionSize = section;
+    }
+    out.push(entry);
+  }
+  return out;
+}
+
+/** Parse `node.guides` (frame-level ruler guides). Each entry is `{ axis,
+ *  offset }` with `axis: "X"` for vertical guides and `"Y"` for horizontal. */
+function parseGuides(raw: unknown): FigmaGuide[] {
+  const arr = asArray<unknown>(raw);
+  if (!arr) return [];
+  const out: FigmaGuide[] = [];
+  for (const g of arr) {
+    if (!g || typeof g !== "object") continue;
+    const obj = g as Record<string, unknown>;
+    const axis = asString(obj["axis"]);
+    const offset = asNumber(obj["offset"]);
+    if ((axis !== "X" && axis !== "Y") || offset === undefined) continue;
+    out.push({ axis, offset });
+  }
+  return out;
 }
 
 function parseEffects(raw: unknown): FigmaEffect[] {

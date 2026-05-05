@@ -18,6 +18,13 @@ export function buildImage(
   node.name = figmaMeta.layerName ?? deriveName(prim);
   node.resize(prim.size.w, prim.size.h);
 
+  // figma.createRectangle returns with a default black 1px stroke and no
+  // effects ; clear them defensively so the IMAGE paint we install below
+  // isn't visually polluted by a phantom border. Fills are replaced
+  // wholesale a few lines down so we don't need to clear those.
+  (node as unknown as { strokes?: unknown[] }).strokes = [];
+  (node as unknown as { effects?: unknown[] }).effects = [];
+
   // Resolve the asset path. The bind.src LeafPath usually starts with
   // `__lit.image.*` (synthesised) and points at `assets/<sha256>.<ext>` in
   // defaults. We then look up the Figma image hash in ctx.assetMap.
@@ -34,10 +41,16 @@ export function buildImage(
   }
 
   if (assetPath !== null && ctx.assetMap[assetPath] !== undefined) {
+    // metadata.figma.imagePaint.scaleMode wins over the LSML fit-derived
+    // default — Figma honours `imageTransform` ONLY in CROP mode, so a
+    // panned/zoomed source paint must round-trip with scaleMode=CROP or
+    // its transform is silently ignored at re-import.
+    const metaScaleMode = readFigmaMetadata(prim).imagePaint?.scaleMode;
+    const scaleMode = metaScaleMode ?? (prim.fit === "contain" ? "FIT" : "FILL");
     const fill: ImportPaint = {
       type: "IMAGE",
       imageHash: ctx.assetMap[assetPath]!,
-      scaleMode: prim.fit === "contain" ? "FIT" : "FILL",
+      scaleMode,
     };
     // Splice per-paint extras from `metadata.figma.imagePaint` (LSML 1.1
     // §17.4 / x-figma.authoring/1) so blendMode + scalingFactor + rotation

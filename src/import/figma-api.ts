@@ -30,7 +30,7 @@ export type ImportPaint =
       visible?: boolean;
       opacity?: number;
       imageHash: string;
-      scaleMode: "FILL" | "FIT";
+      scaleMode: "FILL" | "FIT" | "CROP" | "TILE";
     };
 
 export interface ImportStroke {
@@ -58,6 +58,18 @@ export interface ImportTextNode extends ImportBaseNode {
   fills?: ImportPaint[];
   textAlignHorizontal?: "LEFT" | "CENTER" | "RIGHT" | "JUSTIFIED";
   resize(w: number, h: number): void;
+  /** Range-styling setters used to restore multi-style / multi-color text
+   *  captured under `metadata.figma.textSegments[]`. Marked optional so
+   *  the legacy mock surface (which doesn't implement them) still compiles
+   *  — the builder calls them defensively via `try { ... } catch {}`. */
+  setRangeFontName?(start: number, end: number, fontName: { family: string; style: string }): void;
+  setRangeFontSize?(start: number, end: number, value: number): void;
+  setRangeFills?(start: number, end: number, paints: ImportPaint[]): void;
+  setRangeTextCase?(start: number, end: number, value: string): void;
+  setRangeTextDecoration?(start: number, end: number, value: string): void;
+  setRangeLetterSpacing?(start: number, end: number, value: { unit: string; value: number }): void;
+  setRangeLineHeight?(start: number, end: number, value: { unit: string; value?: number }): void;
+  setRangeHyperlink?(start: number, end: number, value: { type: "URL"; value: string } | null): void;
 }
 
 export interface ImportShapeNode extends ImportBaseNode {

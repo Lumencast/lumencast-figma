@@ -166,8 +166,14 @@ function roundTo3(n: number): number {
 
 /** Extract the non-default fields of an IMAGE paint into the import-friendly
  *  shape stashed under `metadata.figma.imagePaint`. Skips defaults so plain
- *  images don't carry noise. Returns null when nothing is worth preserving. */
-function capturePaintExtras(
+ *  images don't carry noise. Returns null when nothing is worth preserving.
+ *
+ *  Also reused by `mapFrame` / `mapStack` to capture IMAGE fills used as
+ *  frame/stack backgrounds (avatar circles, hero banners, etc.). LSML's
+ *  frame `backgrounds` field doesn't model image paints — we round-trip
+ *  them via `metadata.figma.imageBackgrounds[]` which carries `src` plus
+ *  the same surface as the image-primitive imagePaint metadata. */
+export function capturePaintExtras(
   paint: FigmaPaint,
 ): NonNullable<FigmaMetadata["imagePaint"]> | null {
   const out: NonNullable<FigmaMetadata["imagePaint"]> = {};
@@ -199,6 +205,18 @@ function capturePaintExtras(
       if (typeof v === "number" && v !== 0) f[key] = v;
     }
     if (Object.keys(f).length > 0) out.filters = f;
+  }
+  // scaleMode : LSML's image.fit collapses CROP → cover (same as FILL),
+  // but Figma honours imageTransform ONLY in CROP mode. Capture the raw
+  // mode whenever it isn't the default FILL so the import side can
+  // restore CROP and let the imageTransform actually take effect.
+  const scaleMode = (paint as unknown as { scaleMode?: unknown }).scaleMode;
+  if (
+    typeof scaleMode === "string" &&
+    (scaleMode === "FILL" || scaleMode === "FIT" || scaleMode === "CROP" || scaleMode === "TILE") &&
+    scaleMode !== "FILL"
+  ) {
+    out.scaleMode = scaleMode;
   }
   const imageTransform = (paint as unknown as { imageTransform?: unknown }).imageTransform;
   if (Array.isArray(imageTransform) && imageTransform.length === 2) {

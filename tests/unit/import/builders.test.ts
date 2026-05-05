@@ -1,5 +1,6 @@
 import { describe, it, expect } from "vitest";
 import { buildPrimitive } from "../../../src/import/walk";
+import { importBundle } from "../../../src/import";
 import type { BuildContext } from "../../../src/import/builders/types";
 import { createImportMock } from "../../fixtures/figma/import-mock";
 
@@ -208,5 +209,78 @@ describe("import builders", () => {
     );
     expect(warns).toContain("UNSUPPORTED_PRIMITIVE");
     expect(node.type).toBe("FRAME");
+  });
+
+  it("group conversion — preserves isMask + maskType + blendMode + opacity from placeholder", async () => {
+    // Mirror of the bg-texture / mask composition that broke at re-import :
+    // the source GROUP carries a child GROUP marked `isMask=true` whose
+    // bounds clip the group's reported bbox in Figma. Before the fix,
+    // figma.group() returned a fresh GroupNode with all defaults — the
+    // isMask flag was silently dropped, so the parent's bbox grew to
+    // children-union (much wider than the masked region).
+    const { sealBundle } = await import("../../../src/export/canonicalize");
+    const api = createImportMock();
+    const draft = {
+      $schema: "https://lumencast.dev/schema/lsml/1.1/schema.json",
+      lsml: "1.1" as const,
+      scene_id: "test-mask-group",
+      scene_version: "sha256:" + "0".repeat(64),
+      defaults: {},
+      layout: {
+        kind: "frame" as const,
+        size: { w: 200, h: 200 },
+        children: [
+          {
+            kind: "frame" as const,
+            size: { w: 100, h: 100 },
+            metadata: {
+              figma: { sourceType: "GROUP", layerName: "outer" },
+            },
+            children: [
+              {
+                kind: "frame" as const,
+                size: { w: 100, h: 100 },
+                opacity: 0.5,
+                metadata: {
+                  figma: {
+                    sourceType: "GROUP",
+                    layerName: "mask",
+                    isMask: true,
+                    maskType: "ALPHA",
+                    blendMode: "MULTIPLY",
+                  },
+                },
+                children: [
+                  {
+                    kind: "shape" as const,
+                    geometry: "rect" as const,
+                    size: { w: 100, h: 100 },
+                    fill: "#ff0000",
+                  },
+                ],
+              },
+            ],
+          },
+        ],
+      },
+    };
+    const sealed = await sealBundle(draft);
+    await importBundle({ api, lsmlBytes: sealed.canonical });
+    const root = api.appended()[0]!;
+    expect(root.type).toBe("FRAME");
+    const outerGroup = root.children[0]!;
+    expect(outerGroup.type).toBe("GROUP");
+    const mask = outerGroup.children[0]!;
+    expect(mask.type).toBe("GROUP");
+    const m = mask as unknown as {
+      isMask?: boolean;
+      maskType?: string;
+      blendMode?: string;
+      opacity?: number;
+    };
+    expect(m.isMask).toBe(true);
+    expect(m.maskType).toBe("ALPHA");
+    expect(m.blendMode).toBe("MULTIPLY");
+    expect(m.opacity).toBe(0.5);
   });
 });
