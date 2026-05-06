@@ -51,7 +51,12 @@ export function buildPrimitive(
         const node = buildFrame(prim, api, ctx);
         for (let i = 0; i < prim.children.length; i++) {
           const child = prim.children[i]!;
-          appendSafely(node, () => buildPrimitive(child, api, ctx, `${path}.children[${i}]`), ctx, `${path}.children[${i}]`);
+          appendSafely(
+            node,
+            () => buildPrimitive(child, api, ctx, `${path}.children[${i}]`),
+            ctx,
+            `${path}.children[${i}]`,
+          );
         }
         return node;
       }
@@ -59,7 +64,12 @@ export function buildPrimitive(
         const node = buildStack(prim, api, ctx);
         for (let i = 0; i < prim.children.length; i++) {
           const child = prim.children[i]!;
-          appendSafely(node, () => buildPrimitive(child, api, ctx, `${path}.children[${i}]`), ctx, `${path}.children[${i}]`);
+          appendSafely(
+            node,
+            () => buildPrimitive(child, api, ctx, `${path}.children[${i}]`),
+            ctx,
+            `${path}.children[${i}]`,
+          );
         }
         return node;
       }

@@ -86,7 +86,8 @@ export function readFigmaMetadata(prim: { metadata?: Record<string, unknown> }):
 function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
   const out: FigmaMetadata = {};
   if (meta.textCase) out.textCase = meta.textCase;
-  if (meta.textAutoResize && meta.textAutoResize !== "NONE") out.textAutoResize = meta.textAutoResize;
+  if (meta.textAutoResize && meta.textAutoResize !== "NONE")
+    out.textAutoResize = meta.textAutoResize;
   if (meta.fontStyle) out.fontStyle = meta.fontStyle;
   if (meta.gradientTransforms && meta.gradientTransforms.length > 0) {
     // Drop the array if every entry is null (no gradients had transforms

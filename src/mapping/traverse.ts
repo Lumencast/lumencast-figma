@@ -72,12 +72,24 @@ export function walk(
   const depth = opts.depth ?? 0;
   console.warn("[lumencast] walk:", node.type, node.id, node.name);
   if (node.visible === false) {
-    ctx.trace?.push({ depth, type: node.type, id: node.id, name: node.name, action: "skip-invisible" });
+    ctx.trace?.push({
+      depth,
+      type: node.type,
+      id: node.id,
+      name: node.name,
+      action: "skip-invisible",
+    });
     return null;
   }
   if (isOperatorInputComponent(node)) {
     console.warn("[lumencast]   → operator-input component, skipped from tree");
-    ctx.trace?.push({ depth, type: node.type, id: node.id, name: node.name, action: "skip-operator-input" });
+    ctx.trace?.push({
+      depth,
+      type: node.type,
+      id: node.id,
+      name: node.name,
+      action: "skip-operator-input",
+    });
     return null;
   }
 
@@ -159,7 +171,11 @@ export function walk(
         return null;
     }
   } catch (err) {
-    ctx.trace?.push({ ...traceBase, action: "error", error: err instanceof Error ? err.message : String(err) });
+    ctx.trace?.push({
+      ...traceBase,
+      action: "error",
+      error: err instanceof Error ? err.message : String(err),
+    });
     console.error("[lumencast] FAIL inside walk for", node.type, node.id, node.name, "→", err);
     if (err instanceof Error) console.error("[lumencast]   stack:", err.stack);
     throw err;
@@ -194,8 +210,8 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
     "COMPONENT_SET",
   ]);
   const isCoordSystem = COORD_SYSTEM_TYPES.has(node.type);
-  const myX = isCoordSystem ? 0 : asNumber(node.x) ?? 0;
-  const myY = isCoordSystem ? 0 : asNumber(node.y) ?? 0;
+  const myX = isCoordSystem ? 0 : (asNumber(node.x) ?? 0);
+  const myY = isCoordSystem ? 0 : (asNumber(node.y) ?? 0);
   const childDepth = (opts.depth ?? 0) + 1;
   const childNodes = asArray<AnyFigmaNode>(node.children) ?? [];
   for (const child of childNodes) {

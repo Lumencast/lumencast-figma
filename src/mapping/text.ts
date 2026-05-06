@@ -137,9 +137,7 @@ function roundTo3(n: number): number {
   return Math.round(n * 1000) / 1000;
 }
 
-function textCaseToTransform(
-  tc: string,
-): "uppercase" | "lowercase" | "capitalize" | undefined {
+function textCaseToTransform(tc: string): "uppercase" | "lowercase" | "capitalize" | undefined {
   if (tc === "UPPER") return "uppercase";
   if (tc === "LOWER") return "lowercase";
   if (tc === "TITLE") return "capitalize";

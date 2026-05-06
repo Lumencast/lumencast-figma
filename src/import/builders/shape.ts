@@ -48,9 +48,7 @@ export function buildShape(
         windingRule: p.windingRule ?? "NONZERO",
       }));
     } else if (prim.pathData) {
-      node.vectorPaths = [
-        { data: normalizeSvgPath(prim.pathData), windingRule: "NONZERO" },
-      ];
+      node.vectorPaths = [{ data: normalizeSvgPath(prim.pathData), windingRule: "NONZERO" }];
     }
   }
 
@@ -125,9 +123,7 @@ function fillToPaint(fill: Fill, rawTransform: number[][] | null): ImportPaint |
     if (stops.length < 2) return null;
     const transform =
       rawTransform ??
-      gradientTransformFromAngle(
-        fill.kind === "linear-gradient" ? (fill.angle_deg ?? 0) : 0,
-      );
+      gradientTransformFromAngle(fill.kind === "linear-gradient" ? (fill.angle_deg ?? 0) : 0);
     const out: ImportPaint = {
       type: fill.kind === "linear-gradient" ? "GRADIENT_LINEAR" : "GRADIENT_RADIAL",
       gradientStops: stops,
@@ -175,18 +171,20 @@ function gradientTransformFromAngle(deg: number): number[][] {
  *
  *  No-op for already-spaced inputs (round-trip stable). */
 function normalizeSvgPath(raw: string): string {
-  return raw
-    // 1. Space BEFORE a command letter that sticks to a digit/dot
-    //    (`0L1` → `0 L1`). Run before pass 2 so the inserted space
-    //    becomes visible to it.
-    .replace(/([0-9.])([MmLlHhVvCcSsQqTtAaZz])/g, "$1 $2")
-    // 2. Space AFTER a command letter that sticks to its first coord
-    //    (`M13.16` → `M 13.16`).
-    .replace(/([MmLlHhVvCcSsQqTtAaZz])(?=[^\s,])/g, "$1 ")
-    // 3. Space before `-` that follows a digit or dot (`7.18-3.5` →
-    //    `7.18 -3.5`). Exponents stay intact because the char before
-    //    `-` in `e-3` is `e`, not `[0-9.]`.
-    .replace(/([0-9.])(?=-)/g, "$1 ")
-    .replace(/\s+/g, " ")
-    .trim();
+  return (
+    raw
+      // 1. Space BEFORE a command letter that sticks to a digit/dot
+      //    (`0L1` → `0 L1`). Run before pass 2 so the inserted space
+      //    becomes visible to it.
+      .replace(/([0-9.])([MmLlHhVvCcSsQqTtAaZz])/g, "$1 $2")
+      // 2. Space AFTER a command letter that sticks to its first coord
+      //    (`M13.16` → `M 13.16`).
+      .replace(/([MmLlHhVvCcSsQqTtAaZz])(?=[^\s,])/g, "$1 ")
+      // 3. Space before `-` that follows a digit or dot (`7.18-3.5` →
+      //    `7.18 -3.5`). Exponents stay intact because the char before
+      //    `-` in `e-3` is `e`, not `[0-9.]`.
+      .replace(/([0-9.])(?=-)/g, "$1 ")
+      .replace(/\s+/g, " ")
+      .trim()
+  );
 }

@@ -171,11 +171,7 @@ export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundle
   if (opts.captureDebugArtefacts) {
     result.debugArtefacts = {
       rawFigma: rawFigmaSnapshot ?? "{}",
-      mappingTrace: JSON.stringify(
-        { entries: trace?.entries ?? [], warnings },
-        null,
-        2,
-      ),
+      mappingTrace: JSON.stringify({ entries: trace?.entries ?? [], warnings }, null, 2),
     };
   }
   return result;

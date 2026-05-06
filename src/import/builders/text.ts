@@ -33,10 +33,12 @@ export function buildText(
   // so we restore it as-is when present. Falls back to a fontWeight →
   // style approximation otherwise (700 → Bold, etc.).
   if (prim.style?.fontFamily !== undefined) {
-    const style = figmaMeta.fontStyle ?? styleFromWeightAndItalic(
-      typeof prim.style?.fontWeight === "number" ? prim.style.fontWeight : undefined,
-      prim.style?.fontStyle === "italic",
-    );
+    const style =
+      figmaMeta.fontStyle ??
+      styleFromWeightAndItalic(
+        typeof prim.style?.fontWeight === "number" ? prim.style.fontWeight : undefined,
+        prim.style?.fontStyle === "italic",
+      );
     (node as unknown as { fontName: { family: string; style: string } }).fontName = {
       family: prim.style.fontFamily,
       style,
@@ -98,8 +100,7 @@ export function buildText(
   // textCase : LSML 1.1 §4.4.1 `style.textTransform` covers UPPER /
   // LOWER / TITLE. SMALL_CAPS / SMALL_CAPS_FORCED have no spec
   // equivalent and ride in `metadata.figma.textCase`.
-  const textCase =
-    transformToTextCase(prim.style?.textTransform) ?? figmaMeta.textCase;
+  const textCase = transformToTextCase(prim.style?.textTransform) ?? figmaMeta.textCase;
   if (textCase) {
     (node as unknown as { textCase?: string }).textCase = textCase;
   }
@@ -120,9 +121,7 @@ export function buildText(
 /** Map LSML `style.textTransform` (LSML §4.4.1) back to Figma's `textCase`.
  *  Returns undefined when no transform is declared, leaving the caller to
  *  fall back to `metadata.figma.textCase` for the SMALL_CAPS variants. */
-function transformToTextCase(
-  tt: string | undefined,
-): "UPPER" | "LOWER" | "TITLE" | undefined {
+function transformToTextCase(tt: string | undefined): "UPPER" | "LOWER" | "TITLE" | undefined {
   if (tt === "uppercase") return "UPPER";
   if (tt === "lowercase") return "LOWER";
   if (tt === "capitalize") return "TITLE";
