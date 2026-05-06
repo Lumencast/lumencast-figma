@@ -37,6 +37,15 @@ export interface ExportInput {
   canonical: string;
   /** Asset payloads emitted by the export pipeline. */
   assets: { name: string; mimeType: string; bytes: Uint8Array }[];
+  /** Optional diagnostic artefacts. When present, written under
+   *  `_debug/` inside the archive. Runtimes / re-importers MUST ignore
+   *  the `_debug/` prefix (it's not part of the LSML 1.1 bundle spec). */
+  debugArtefacts?: {
+    /** Recursive snapshot of the source SceneNode tree. */
+    rawFigma: string;
+    /** Per-node decision trace from the walker. */
+    mappingTrace: string;
+  };
 }
 
 /** Pack an export into a single `.lsmlz` ZIP archive. Returns a Blob ready
@@ -49,6 +58,10 @@ export function packArchive(input: ExportInput): Blob {
     // asset.name already starts with `assets/` — keep as-is so the bundle's
     // relative refs resolve unchanged after unpack.
     entries[asset.name] = asset.bytes;
+  }
+  if (input.debugArtefacts) {
+    entries["_debug/raw-figma.json"] = strToU8(input.debugArtefacts.rawFigma);
+    entries["_debug/mapping-trace.json"] = strToU8(input.debugArtefacts.mappingTrace);
   }
   const zipped = zipSync(entries, { level: 6 });
   // Wrap in a fresh Uint8Array (with a plain ArrayBuffer backing) so the

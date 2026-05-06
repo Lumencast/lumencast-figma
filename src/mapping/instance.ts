@@ -20,6 +20,7 @@
 import type { InstancePrimitive, LeafPath } from "~shared/lsml-types";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
+import { withFigmaMetadata } from "./figma-metadata";
 import type { MappingContext, MappingResult } from "./types";
 import { PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 
@@ -127,6 +128,10 @@ export function mapInstance(
   }
 
   if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
+
+  if (node.name && node.name.trim().length > 0) {
+    withFigmaMetadata(prim, { layerName: node.name });
+  }
 
   return { node: prim };
 }

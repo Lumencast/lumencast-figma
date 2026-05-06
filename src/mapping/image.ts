@@ -94,16 +94,20 @@ export function mapImage(
   if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
   if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
 
-  // metadata.figma.position — same rationale as in shape.ts. LSML `image`
-  // has no native position field but Figma layouts depend on absolute x/y
-  // for non-auto-layout parents.
+  // Universal `position` (LSML §5.4) — relative to parent's coordinate
+  // origin. Honoured by frame parents in absolute mode.
   const px = asNumber(node.x) ?? 0;
   const py = asNumber(node.y) ?? 0;
   const parentX = opts?.parentX ?? 0;
   const parentY = opts?.parentY ?? 0;
   const relX = roundTo3(px - parentX);
   const relY = roundTo3(py - parentY);
-  withFigmaMetadata(prim, { position: { x: relX, y: relY } });
+  if (relX !== 0 || relY !== 0) prim.position = { x: relX, y: relY };
+
+  // Stash the source layer name so the import side can restore it verbatim.
+  if (node.name && node.name.trim().length > 0) {
+    withFigmaMetadata(prim, { layerName: node.name });
+  }
 
   const out: { node: ImagePrimitive; defaults?: Record<string, unknown>; assetRefs: string[] } = {
     node: prim,

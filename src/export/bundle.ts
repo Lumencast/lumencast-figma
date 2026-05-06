@@ -17,10 +17,12 @@ import type { OperatorInputSpec, SceneBundle } from "~shared/lsml-types";
 import { LSML_VERSION } from "~shared/constants";
 import { DEFAULT_SCHEMA_URL } from "~shared/lsml-schema";
 import { mapTree, type MappingContext } from "../mapping";
+import { createMappingTrace } from "../mapping/trace";
 import type { VariableResolverApi } from "../mapping/variables";
 import { extractOperatorInputs } from "./operator-inputs";
 import { applyAssetPathRewrites, createAssetRegistry } from "./assets";
 import { sealBundle } from "./canonicalize";
+import { snapshotFigmaNode } from "./debug-snapshot";
 
 interface FigmaApiSurface {
   getImageByHash(hash: string): { hash: string; getBytesAsync(): Promise<Uint8Array> } | null;
@@ -47,6 +49,11 @@ export interface BuildBundleOptions {
    *  tests pass an in-memory mock. When omitted, variable bindings are NOT
    *  emitted (existing behaviour is preserved). */
   variables?: VariableResolverApi;
+  /** When true, the export captures `_debug/raw-figma.json` (snapshot of
+   *  the source SceneNode tree) and `_debug/mapping-trace.json` (per-node
+   *  walker decisions) into `result.debugArtefacts`. The caller bundles
+   *  them into the .lsmlz archive for offline diagnosis. */
+  captureDebugArtefacts?: boolean;
 }
 
 export interface BuildBundleResult {
@@ -58,11 +65,22 @@ export interface BuildBundleResult {
   warnings: PluginWarning[];
   /** scene_version (sha256 hash). Convenience — same as `bundle.scene_version`. */
   sceneVersion: string;
+  /** Diagnostic artefacts captured during the run. The caller writes them
+   *  into `_debug/` inside the .lsmlz archive so the user can ship them
+   *  back for offline analysis. Empty in production once we're confident
+   *  in the mapping (kept opt-in via `opts.captureDebugArtefacts`). */
+  debugArtefacts?: {
+    /** Recursive snapshot of the source SceneNode subtree. */
+    rawFigma: string;
+    /** Per-node decision trace from the walker. */
+    mappingTrace: string;
+  };
 }
 
 export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundleResult> {
   const warnings: PluginWarning[] = [];
   const registry = createAssetRegistry({ api: opts.api });
+  const trace = opts.captureDebugArtefacts ? createMappingTrace() : undefined;
   const ctx: MappingContext = {
     warn(code, message, nodeId) {
       const w: PluginWarning = { code, message };
@@ -71,7 +89,26 @@ export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundle
     },
     registerImageHash: (hash) => registry.registerImageHash(hash),
     ...(opts.variables ? { variables: opts.variables } : {}),
+    ...(trace ? { trace } : {}),
   };
+
+  // 0. Optional pre-mapping snapshot. Captured before mapTree mutates
+  // anything so `_debug/raw-figma.json` matches what the host fed in.
+  let rawFigmaSnapshot: string | undefined;
+  if (opts.captureDebugArtefacts) {
+    try {
+      rawFigmaSnapshot = JSON.stringify(
+        snapshotFigmaNode(opts.root as unknown as Parameters<typeof snapshotFigmaNode>[0]),
+        null,
+        2,
+      );
+    } catch (err) {
+      console.error("[lumencast] debug snapshot failed:", err);
+      rawFigmaSnapshot = JSON.stringify({
+        error: err instanceof Error ? err.message : String(err),
+      });
+    }
+  }
 
   // 1. Map the tree.
   console.warn("[lumencast] step 1/5 — mapTree");
@@ -124,13 +161,20 @@ export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundle
   console.warn("[lumencast] step 5/5 — sealBundle (canonicalize + sha256)");
   const sealed = await sealBundle(draft);
   console.warn("[lumencast] step 5/5 done — scene_version:", sealed.sceneVersion);
-  return {
+  const result: BuildBundleResult = {
     bundle: sealed.bundle,
     canonical: sealed.canonical,
     assets,
     warnings,
     sceneVersion: sealed.sceneVersion,
   };
+  if (opts.captureDebugArtefacts) {
+    result.debugArtefacts = {
+      rawFigma: rawFigmaSnapshot ?? "{}",
+      mappingTrace: JSON.stringify({ entries: trace?.entries ?? [], warnings }, null, 2),
+    };
+  }
+  return result;
 }
 
 function mergeOperatorInputs(

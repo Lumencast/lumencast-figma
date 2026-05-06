@@ -57,6 +57,8 @@ export interface WalkOptions {
   isRoot: boolean;
   parentX?: number;
   parentY?: number;
+  /** Tree depth for the trace recorder (root = 0). Internal — callers don't set it. */
+  depth?: number;
 }
 
 /** Map a single Figma node + its descendants. Returns null when the node
@@ -67,12 +69,27 @@ export function walk(
   ctx: MappingContext,
   opts: WalkOptions,
 ): MappingResult | null {
+  const depth = opts.depth ?? 0;
   console.warn("[lumencast] walk:", node.type, node.id, node.name);
   if (node.visible === false) {
+    ctx.trace?.push({
+      depth,
+      type: node.type,
+      id: node.id,
+      name: node.name,
+      action: "skip-invisible",
+    });
     return null;
   }
   if (isOperatorInputComponent(node)) {
     console.warn("[lumencast]   → operator-input component, skipped from tree");
+    ctx.trace?.push({
+      depth,
+      type: node.type,
+      id: node.id,
+      name: node.name,
+      action: "skip-operator-input",
+    });
     return null;
   }
 
@@ -83,22 +100,44 @@ export function walk(
   if (opts.parentX !== undefined) parentOpts.parentX = opts.parentX;
   if (opts.parentY !== undefined) parentOpts.parentY = opts.parentY;
 
+  const traceBase = { depth, type: node.type, id: node.id, name: node.name };
   try {
     switch (node.type) {
       case "TEXT":
         console.warn("[lumencast]   → mapText");
+        ctx.trace?.push({ ...traceBase, action: "map-text" });
         return mapText(node as never, parentOpts);
       case "RECTANGLE":
         if (hasImageFill(node)) {
           console.warn("[lumencast]   → mapImage");
+          ctx.trace?.push({ ...traceBase, action: "map-image" });
           return mapImage(node as never, ctx, parentOpts);
         }
         console.warn("[lumencast]   → mapShape (rect)");
+        ctx.trace?.push({ ...traceBase, action: "map-shape", note: "rect" });
         return mapShape(node as never, ctx, parentOpts);
       case "ELLIPSE":
       case "VECTOR":
+      case "STAR":
+      case "POLYGON":
+      case "LINE":
         console.warn("[lumencast]   → mapShape (", node.type, ")");
+        ctx.trace?.push({ ...traceBase, action: "map-shape", note: node.type });
         return mapShape(node as never, ctx, parentOpts);
+      case "BOOLEAN_OPERATION":
+        // BOOLEAN_OPERATION has its operand vectors as children. Treating it
+        // as a single shape via `mapShape` + `fillGeometry` would visually
+        // flatten the union but DROP the operand nodes from the LSML tree
+        // (the user expects a 1:1 node count with the source). Route it
+        // through walkContainer so the operands round-trip as siblings —
+        // for UNION (the common case) the rendered result is identical to
+        // the boolean output since same-colour overlaps sum visually. Other
+        // BO modes (subtract/intersect/exclude) lose the operation but keep
+        // structural fidelity ; the visual loss is documented as a 1.1.x
+        // limitation in the import logs.
+        console.warn("[lumencast]   → walkContainer (BOOLEAN_OPERATION)");
+        ctx.trace?.push({ ...traceBase, action: "walk-container", note: node.type });
+        return walkContainer(node, ctx, opts);
       case "INSTANCE":
       case "FRAME": {
         const instOpts: { isRoot: boolean; parentX?: number; parentY?: number } = {
@@ -110,14 +149,17 @@ export function walk(
         const inst = mapInstance(node as never, instOpts, ctx);
         if (inst) {
           console.warn("[lumencast]   → mapInstance (matched §4.9)");
+          ctx.trace?.push({ ...traceBase, action: "map-instance" });
           return inst;
         }
         console.warn("[lumencast]   → walkContainer (frame/stack)");
+        ctx.trace?.push({ ...traceBase, action: "walk-container", note: node.type });
         return walkContainer(node, ctx, opts);
       }
       case "COMPONENT":
       case "GROUP":
         console.warn("[lumencast]   → walkContainer (", node.type, ")");
+        ctx.trace?.push({ ...traceBase, action: "walk-container", note: node.type });
         return walkContainer(node, ctx, opts);
       default:
         ctx.warn(
@@ -125,9 +167,15 @@ export function walk(
           `Node type ${node.type} has no LSML 1.1 mapping ; skipped.`,
           node.id,
         );
+        ctx.trace?.push({ ...traceBase, action: "skip-unsupported" });
         return null;
     }
   } catch (err) {
+    ctx.trace?.push({
+      ...traceBase,
+      action: "error",
+      error: err instanceof Error ? err.message : String(err),
+    });
     console.error("[lumencast] FAIL inside walk for", node.type, node.id, node.name, "→", err);
     if (err instanceof Error) console.error("[lumencast]   stack:", err.stack);
     throw err;
@@ -141,18 +189,43 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
     node.layoutMode !== "NONE";
 
   const childResults: MappingResult[] = [];
-  const myX = asNumber(node.x) ?? 0;
-  const myY = asNumber(node.y) ?? 0;
+  // Figma coordinate semantics : a node's `x/y` is relative to the closest
+  // *coord-system* ancestor — FRAME/COMPONENT/INSTANCE/SECTION redefine the
+  // origin, GROUP/BOOLEAN_OPERATION do NOT (their children's x/y stay in
+  // the outer frame's coord system). When dispatching to per-primitive
+  // mappers, opts.parentX/Y is the offset they'll subtract from the
+  // child's x/y to compute its LSML position relative to its LSML parent.
+  //
+  //   - Coord-system parent (FRAME/etc.) : children's x is already local
+  //     to this frame → pass parentX = 0.
+  //   - Non-coord-system parent (GROUP/BOOLEAN_OPERATION) : children's x
+  //     is in the outer frame's coord → pass parentX = node.x so the
+  //     child's relX = child.x - group.x lands in the LSML group-frame's
+  //     local coord system.
+  const COORD_SYSTEM_TYPES = new Set([
+    "FRAME",
+    "COMPONENT",
+    "INSTANCE",
+    "SECTION",
+    "COMPONENT_SET",
+  ]);
+  const isCoordSystem = COORD_SYSTEM_TYPES.has(node.type);
+  const myX = isCoordSystem ? 0 : (asNumber(node.x) ?? 0);
+  const myY = isCoordSystem ? 0 : (asNumber(node.y) ?? 0);
+  const childDepth = (opts.depth ?? 0) + 1;
   const childNodes = asArray<AnyFigmaNode>(node.children) ?? [];
   for (const child of childNodes) {
-    const r = walk(child, ctx, { isRoot: false, parentX: myX, parentY: myY });
+    const r = walk(child, ctx, { isRoot: false, parentX: myX, parentY: myY, depth: childDepth });
     if (r) childResults.push(r);
   }
   const children = childResults.map((r) => r.node) as PrimitiveNode[];
 
   let result: MappingResult;
   if (isStack) {
-    result = mapStack(node as never, children as StackPrimitive["children"]);
+    const stackOpts: { parentX?: number; parentY?: number } = {};
+    if (opts.parentX !== undefined) stackOpts.parentX = opts.parentX;
+    if (opts.parentY !== undefined) stackOpts.parentY = opts.parentY;
+    result = mapStack(node as never, children as StackPrimitive["children"], stackOpts);
   } else {
     const frameOpts: { isRoot: boolean; parentX?: number; parentY?: number } = {
       isRoot: opts.isRoot,

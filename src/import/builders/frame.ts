@@ -15,31 +15,31 @@ export function buildFrame(
   _ctx: BuildContext,
 ): ImportFrameNode {
   const node = api.createFrame();
-  node.name = "Frame";
   const figmaMeta = readFigmaMetadata(prim);
+  node.name = figmaMeta.layerName ?? "Frame";
   if (prim.size) node.resize(prim.size.w, prim.size.h);
   node.layoutMode = "NONE";
 
-  // `clipsContent: true` keeps the frame at its declared size even when
-  // children's bounds extend outside (e.g. Figma masked compositions
-  // where the inner content is intentionally larger). Without this,
-  // certain child layouts trigger Figma's auto-grow and the frame ends
-  // up bigger than the bundle's `size`. Default to true unless metadata
-  // says otherwise.
-  (node as unknown as { clipsContent?: boolean }).clipsContent =
-    figmaMeta.clipsContent ?? true;
+  // `clipsContent` is the canonical first-class field (LSML 1.1 §4.3).
+  // Default true matches the Figma frame default — without this, child
+  // layouts that extend past the declared `size` trigger auto-grow.
+  (node as unknown as { clipsContent?: boolean }).clipsContent = prim.clipsContent ?? true;
 
-  // Position : LSML's native `frame.position` is the canonical source.
-  // Fall back to `metadata.figma.position` when the bundle was authored
-  // by a tool that doesn't carry it natively.
-  const pos = prim.position ?? figmaMeta.position;
+  // Position : universal prop (LSML 1.1 §5.4).
+  const pos = prim.position;
   if (pos) {
     node.x = pos.x;
     node.y = pos.y;
   }
 
+  // Backgrounds. When the source captured raw gradient matrices in
+  // `metadata.figma.gradientTransforms[]` (v0.2+), use those instead of
+  // reconstructing from `angle_deg`.
+  const transforms = figmaMeta.gradientTransforms ?? [];
   if (prim.backgrounds && prim.backgrounds.length > 0) {
-    node.fills = prim.backgrounds.map(fillToPaint).filter((p): p is ImportPaint => p !== null);
+    node.fills = prim.backgrounds
+      .map((f, i) => fillToPaint(f, transforms[i] ?? null))
+      .filter((p): p is ImportPaint => p !== null);
   } else if (prim.background !== undefined) {
     const rgb = cssToRgb(prim.background);
     if (rgb) {
@@ -53,7 +53,7 @@ export function buildFrame(
   return node;
 }
 
-function fillToPaint(fill: Fill): ImportPaint | null {
+function fillToPaint(fill: Fill, rawTransform: number[][] | null): ImportPaint | null {
   if (fill.kind === "solid") {
     const rgb = cssToRgb(fill.color);
     if (!rgb) return null;
@@ -75,15 +75,21 @@ function fillToPaint(fill: Fill): ImportPaint | null {
           s !== null,
       );
     if (stops.length < 2) return null;
-    const angle = fill.kind === "linear-gradient" ? (fill.angle_deg ?? 0) : 0;
-    const rad = (angle * Math.PI) / 180;
+    let transform: number[][];
+    if (rawTransform) {
+      transform = rawTransform;
+    } else {
+      const angle = fill.kind === "linear-gradient" ? (fill.angle_deg ?? 0) : 0;
+      const rad = (angle * Math.PI) / 180;
+      transform = [
+        [Math.cos(rad), Math.sin(rad), 0],
+        [-Math.sin(rad), Math.cos(rad), 0],
+      ];
+    }
     const out: ImportPaint = {
       type: fill.kind === "linear-gradient" ? "GRADIENT_LINEAR" : "GRADIENT_RADIAL",
       gradientStops: stops,
-      gradientTransform: [
-        [Math.cos(rad), Math.sin(rad), 0],
-        [-Math.sin(rad), Math.cos(rad), 0],
-      ],
+      gradientTransform: transform,
     };
     if (fill.opacity !== undefined && fill.opacity !== 1) out.opacity = fill.opacity;
     return out;

@@ -93,6 +93,11 @@ async function handleExportRequest(sceneIdOverride?: string): Promise<void> {
       root: root as never,
       ...(sceneIdOverride ? { sceneId: sceneIdOverride } : {}),
       ...(variables ? { variables } : {}),
+      // v0.2 : always capture debug artefacts. They land in the .lsmlz
+      // under `_debug/` so users can ship diagnostics back without
+      // copy-pasting console output. Cheap (~few KB JSON) and only
+      // computed at export time, not on every keystroke.
+      captureDebugArtefacts: true,
     });
     console.warn(
       "[lumencast] export ok — scene_version:",
@@ -109,6 +114,7 @@ async function handleExportRequest(sceneIdOverride?: string): Promise<void> {
         assets: result.assets,
         warnings: result.warnings,
         hash: result.hash,
+        ...(result.debugArtefacts ? { debugArtefacts: result.debugArtefacts } : {}),
       },
     });
   } catch (err) {

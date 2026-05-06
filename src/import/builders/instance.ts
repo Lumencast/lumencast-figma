@@ -10,6 +10,7 @@ import type { InstancePrimitive } from "~shared/lsml-types";
 import { PLUGIN_DATA_NAMESPACE, PLUGIN_DATA_KEYS } from "~shared/constants";
 import type { ImportFigmaApi, ImportInstanceNode } from "../figma-api";
 import { applyUniversal } from "../universal";
+import { readFigmaMetadata } from "../figma-metadata";
 import type { BuildContext } from "./types";
 
 export function buildInstance(
@@ -18,7 +19,8 @@ export function buildInstance(
   _ctx: BuildContext,
 ): ImportInstanceNode {
   const node = api.createInstancePlaceholder();
-  node.name = `Instance: ${prim.scene_id}`;
+  const figmaMeta = readFigmaMetadata(prim);
+  node.name = figmaMeta.layerName ?? `Instance: ${prim.scene_id}`;
 
   if (prim.size) node.resize(prim.size.w, prim.size.h);
   if (prim.position) {

@@ -19,9 +19,8 @@ export function buildText(
   ctx: BuildContext,
 ): ImportTextNode {
   const node = api.createText();
-  node.name = deriveName(prim);
-
   const figmaMeta = readFigmaMetadata(prim);
+  node.name = figmaMeta.layerName ?? deriveName(prim);
 
   // CRITICAL : set the font BEFORE assigning `characters`. Figma applies
   // the font currently on `fontName` to characters at write time, so the
@@ -34,10 +33,12 @@ export function buildText(
   // so we restore it as-is when present. Falls back to a fontWeight →
   // style approximation otherwise (700 → Bold, etc.).
   if (prim.style?.fontFamily !== undefined) {
-    const style = figmaMeta.fontStyle ?? styleFromWeightAndItalic(
-      typeof prim.style?.fontWeight === "number" ? prim.style.fontWeight : undefined,
-      prim.style?.fontStyle === "italic",
-    );
+    const style =
+      figmaMeta.fontStyle ??
+      styleFromWeightAndItalic(
+        typeof prim.style?.fontWeight === "number" ? prim.style.fontWeight : undefined,
+        prim.style?.fontStyle === "italic",
+      );
     (node as unknown as { fontName: { family: string; style: string } }).fontName = {
       family: prim.style.fontFamily,
       style,
@@ -66,13 +67,20 @@ export function buildText(
   }
 
   if (prim.style?.fontSize !== undefined) node.fontSize = prim.style.fontSize;
-  // Real Figma derives `fontWeight` (read-only getter) from `fontName.style`,
-  // so assigning to it is a no-op there. We still write it for mock parity
-  // — the export-side mappers read `node.fontWeight` to populate
-  // `style.fontWeight`, and a fresh mock node has no fontName→fontWeight
-  // resolver. The cast keeps the production code path unaware of the field.
+  // `fontWeight` on a real Figma TextNode is a read-only getter derived
+  // from `fontName.style` ; assigning to it throws `no setter for property
+  // fontWeight`. The mock-side test API DOES accept the assignment (and
+  // relies on it for byte-stable roundtrip — there's no fontName→weight
+  // resolver in the mock). We try the assignment defensively : in
+  // production it harmlessly throws and we ignore ; in the mock it
+  // takes effect as before.
   if (typeof prim.style?.fontWeight === "number") {
-    (node as unknown as { fontWeight?: number }).fontWeight = prim.style.fontWeight;
+    try {
+      (node as unknown as { fontWeight?: number }).fontWeight = prim.style.fontWeight;
+    } catch {
+      // Real Figma — read-only setter. Visual weight is already controlled
+      // by `fontName.style` set above.
+    }
   }
   if (prim.style?.color !== undefined) {
     const rgb = cssToRgb(prim.style.color);
@@ -89,22 +97,35 @@ export function buildText(
     }
   }
 
-  // Re-apply Figma-only props from metadata.figma : textCase (uppercase
-  // visual transform), textAutoResize (frame-fit behaviour), and the
-  // absolute position for non-auto-layout parents.
-  if (figmaMeta.textCase) {
-    (node as unknown as { textCase?: string }).textCase = figmaMeta.textCase;
+  // textCase : LSML 1.1 §4.4.1 `style.textTransform` covers UPPER /
+  // LOWER / TITLE. SMALL_CAPS / SMALL_CAPS_FORCED have no spec
+  // equivalent and ride in `metadata.figma.textCase`.
+  const textCase = transformToTextCase(prim.style?.textTransform) ?? figmaMeta.textCase;
+  if (textCase) {
+    (node as unknown as { textCase?: string }).textCase = textCase;
   }
   if (figmaMeta.textAutoResize) {
     (node as unknown as { textAutoResize?: string }).textAutoResize = figmaMeta.textAutoResize;
   }
-  if (figmaMeta.position) {
-    (node as unknown as { x?: number; y?: number }).x = figmaMeta.position.x;
-    (node as unknown as { x?: number; y?: number }).y = figmaMeta.position.y;
+  // Position : universal prop (LSML 1.1 §5.4).
+  const pos = prim.position;
+  if (pos) {
+    (node as unknown as { x?: number; y?: number }).x = pos.x;
+    (node as unknown as { x?: number; y?: number }).y = pos.y;
   }
 
   applyUniversal(node, prim);
   return node;
+}
+
+/** Map LSML `style.textTransform` (LSML §4.4.1) back to Figma's `textCase`.
+ *  Returns undefined when no transform is declared, leaving the caller to
+ *  fall back to `metadata.figma.textCase` for the SMALL_CAPS variants. */
+function transformToTextCase(tt: string | undefined): "UPPER" | "LOWER" | "TITLE" | undefined {
+  if (tt === "uppercase") return "UPPER";
+  if (tt === "lowercase") return "LOWER";
+  if (tt === "capitalize") return "TITLE";
+  return undefined;
 }
 
 /** Derive a Figma `fontName.style` string from LSML's numeric `fontWeight`

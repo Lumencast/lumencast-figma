@@ -5,6 +5,7 @@ import { paintToFill, type FigmaPaint } from "./color";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { asArray, asNumber, asString } from "./figma-mixed";
+import { withFigmaMetadata } from "./figma-metadata";
 import type { MappingResult } from "./types";
 
 export interface StackMapInput {
@@ -13,6 +14,10 @@ export interface StackMapInput {
   name: string;
   width: number;
   height: number;
+  /** Position relative to the parent's coordinate origin. Resolved against
+   *  `opts.parentX/parentY` to produce the LSML `position` universal prop. */
+  x?: number;
+  y?: number;
   fills?: FigmaPaint[];
   layoutMode: "HORIZONTAL" | "VERTICAL";
   itemSpacing?: number;
@@ -31,6 +36,11 @@ export interface StackMapInput {
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
 }
 
+export interface StackMapOptions {
+  parentX?: number;
+  parentY?: number;
+}
+
 const PRIMARY_JUSTIFY: Record<string, StackPrimitive["justify"]> = {
   MIN: "start",
   CENTER: "center",
@@ -45,7 +55,11 @@ const COUNTER_ALIGN: Record<string, StackPrimitive["align"]> = {
   BASELINE: "start", // Approximation — LSML 1.1 has no baseline.
 };
 
-export function mapStack(node: StackMapInput, children: StackPrimitive["children"]): MappingResult {
+export function mapStack(
+  node: StackMapInput,
+  children: StackPrimitive["children"],
+  opts?: StackMapOptions,
+): MappingResult {
   const parsed = parseLayerName(node.name, { primitiveKind: "stack" });
 
   const prim: StackPrimitive = {
@@ -54,6 +68,17 @@ export function mapStack(node: StackMapInput, children: StackPrimitive["children
     children,
     ...extractUniversal(node),
   };
+
+  // Universal `position` (LSML §5.4) — auto-layout frames still sit at
+  // an absolute position inside their parent. Compute relative to the
+  // closest coord-system ancestor's origin (passed in via opts).
+  const px = asNumber(node.x) ?? 0;
+  const py = asNumber(node.y) ?? 0;
+  const parentX = opts?.parentX ?? 0;
+  const parentY = opts?.parentY ?? 0;
+  const relX = roundTo3(px - parentX);
+  const relY = roundTo3(py - parentY);
+  if (relX !== 0 || relY !== 0) prim.position = { x: relX, y: relY };
 
   const itemSpacing = asNumber(node.itemSpacing);
   if (itemSpacing !== undefined && itemSpacing !== 0) {
@@ -95,6 +120,10 @@ export function mapStack(node: StackMapInput, children: StackPrimitive["children
   if (parsed.bind) prim.bind = parsed.bind;
   if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
   if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
+
+  if (node.name && node.name.trim().length > 0) {
+    withFigmaMetadata(prim, { layerName: node.name });
+  }
 
   return { node: prim };
 }

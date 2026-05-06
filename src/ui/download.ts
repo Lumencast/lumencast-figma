@@ -17,6 +17,7 @@ export interface DownloadOptions {
   /** UTF-8 canonical bytes of the sealed bundle. */
   bundleBytes: string;
   assets: ExportResult["assets"];
+  debugArtefacts?: ExportResult["debugArtefacts"];
 }
 
 export function downloadExport(opts: DownloadOptions): void {
@@ -30,8 +31,18 @@ export function downloadExport(opts: DownloadOptions): void {
       // copy so fflate sees a plain ArrayBuffer-backed view.
       bytes: new Uint8Array(a.bytes),
     })),
+    ...(opts.debugArtefacts ? { debugArtefacts: opts.debugArtefacts } : {}),
   });
   triggerBlobDownload(archive, `${opts.sceneId}${LSML_ARCHIVE_EXTENSION}`);
+}
+
+/** Download an arbitrary text payload — used for the post-import trace
+ *  artefact (`<scene>-import-trace.json`). Same anchor-click pattern as
+ *  the .lsmlz download ; the iframe owns DOM affordances the plugin
+ *  sandbox lacks. */
+export function downloadText(filename: string, text: string, mimeType: string): void {
+  const blob = new Blob([text], { type: mimeType });
+  triggerBlobDownload(blob, filename);
 }
 
 function triggerBlobDownload(blob: Blob, filename: string): void {
