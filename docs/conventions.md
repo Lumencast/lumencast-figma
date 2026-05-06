@@ -98,55 +98,41 @@ for the bare bundle, `application/lsml+zip` (proposed) for the archive.
 
 ## `.lsmlz` archive format (single-file distribution)
 
-A `.lsmlz` is a standard ZIP archive carrying a `.lsml` bundle plus its
-sibling `assets/` directory in one file. The plugin emits this format on
-export from v0.1.2 onwards ; the import picker accepts it natively.
+The plugin emits a `.lsmlz` archive on export from v0.1.2 onwards ; the
+import picker accepts it natively. The format is the **LSMLZ/1**
+container — a standard ZIP carrying the canonical `.lsml` bundle plus
+its content-addressed `assets/` directory in one file. Spec :
+[lumencast-protocol/spec/LSMLZ-1.md](https://github.com/Lumencast/lumencast-protocol/blob/main/spec/LSMLZ-1.md).
 
-### Structure
+### Structure (per LSMLZ-1 §3)
 
 ```
-<scene_id>.lsmlz                ← ZIP container, top-level
-├── <scene_id>.lsml             ← canonical bundle JSON (UTF-8, no BOM)
-└── assets/                     ← optional ; one entry per referenced image
-    ├── <figma-imageHash>.png
-    ├── <figma-imageHash>.jpg
-    └── …
+<scene_id>.lsmlz                  ← ZIP container, magic PK\x03\x04
+├── <scene_id>.lsml               ← canonical bundle (UTF-8, no BOM, JCS per LSML §3.1)
+├── assets/                       ← content-addressed image entries
+│   ├── <sha256>.<ext>
+│   └── …
+└── _debug/                       ← OPTIONAL — readers MUST ignore (LSMLZ §3.3)
+    ├── raw-figma.json            ← plugin-side authoring diagnostics
+    └── mapping-trace.json
 ```
 
-- The `.lsml` filename inside the archive matches `bundle.scene_id`.
-  The picker is permissive : any `*.lsml` / `*.lsml.json` / `*.json`
-  entry **outside** of `assets/` is treated as the bundle.
-- Asset paths inside the archive match the bundle's relative
-  `bind.src` references (`assets/<hash>.<ext>`) bit-for-bit, so a
-  runtime that reads from the archive resolves images directly without
-  any path rewriting.
-- No manifest is added — the bundle is fully self-describing
-  (`scene_id`, `scene_version`, `assets.allowedHosts`, the layout tree
-  with bindings).
+Plugin-specific behaviour on top of the spec :
 
-### Compression
+- The plugin's archive writer always emits the bundle entry FIRST, then
+  assets in stable order (LSMLZ §5.1 SHOULD).
+- DEFLATE level 6 (fflate default).
+- `_debug/raw-figma.json` + `_debug/mapping-trace.json` are emitted only
+  when the plugin's `--debug` UI flag is on. Re-import skips them ; LSMLZ
+  readers ignore the prefix per §3.3.
 
-DEFLATE at level 6 (fflate default). JSON compresses 3–5×, PNGs are
-already compressed but pay a small DEFLATE overhead — the typical
-`.lsmlz` is smaller than the `.lsml + assets/` total even on
-asset-heavy scenes.
+Media type : `application/lsml+zip` (LSMLZ §2.3). File extension :
+`.lsmlz` preferred (LSMLZ §2.2 ; `.zip` accepted by the picker as a
+hint-only fallback).
 
-### Detection
-
-The picker sniffs the magic-byte header (`50 4B 03 04`, the standard ZIP
-signature) and routes between the archive flow and the loose-file
-flow ; the file extension is hint-only. `.lsmlz` files mis-renamed to
-`.lsml` are still recognised as archives.
-
-### Why a custom extension
-
-`.zip` would lose semantic meaning ; the OS preview / file manager
-would treat it as a generic archive instead of a Lumencast scene.
-`.lsmlz` is short, unambiguous, and natural to associate with editors
-or pickers that already register `.lsml`. The format is a proposed
-addition to LSML — see
-[Lumencast/lumencast-protocol#26](https://github.com/Lumencast/lumencast-protocol/issues/26)
-for the standardisation discussion.
+The plugin's import picker also accepts the loose `.lsml` + sibling
+`assets/` form (LSML §18) for compatibility with hand-authored bundles
+and pre-v0.1.2 plugin output.
 
 ## `$schema` field
 
