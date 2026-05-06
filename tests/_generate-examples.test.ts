@@ -8,7 +8,7 @@ import { describe, it } from "vitest";
 import { mkdirSync, writeFileSync, rmSync, existsSync } from "node:fs";
 import { dirname, resolve } from "node:path";
 import { fileURLToPath } from "node:url";
-import { zipSync, strToU8 } from "fflate";
+import { packArchive } from "@lumencast/archive";
 import { runExport } from "../src/export";
 import { createMockFigma } from "./fixtures/figma/mock";
 import { buildScoreboardFixture } from "./fixtures/figma/scoreboard";
@@ -29,10 +29,11 @@ function writeArchive(
   canonical: string,
   assets: { name: string; bytes: Uint8Array }[],
 ): number {
-  const entries: Record<string, Uint8Array> = {};
-  entries[`${sceneId}.lsml`] = strToU8(canonical);
-  for (const a of assets) entries[a.name] = a.bytes;
-  const zipped = zipSync(entries, { level: 6 });
+  const zipped = packArchive({
+    sceneId,
+    canonical,
+    assets: assets.map((a) => ({ path: a.name, bytes: a.bytes })),
+  });
   writeFileSync(resolve(dir, `${sceneId}.lsmlz`), zipped);
   return zipped.length;
 }
