@@ -243,6 +243,57 @@ function buildAndAttach(
     });
     return null;
   }
+  // Universal post-attach replay of `layoutPositioning="ABSOLUTE"`
+  // and the captured position.
+  //
+  // Figma silently drops `layoutPositioning="ABSOLUTE"` when set on an
+  // off-tree node — the property is only honoured once the node has
+  // an auto-layout parent. `applyFigmaExtras` runs inside the builder
+  // (pre-attach), so the flag never sticks. Worse, on `appendChild`
+  // to an auto-layout stack the host overwrites `x/y` with the
+  // layout-determined slot (e.g. MAX/CENTER alignment yields x=71 on a
+  // 110-wide parent for a 36-wide rect with paddingRight=3). Setting
+  // ABSOLUTE after that point freezes those WRONG coordinates — the
+  // captured `position.x/y` from the bundle is already lost.
+  //
+  // Fix : after attach, flip ABSOLUTE first, then re-apply the
+  // position (`x/y`, or `relativeTransform` when present). Symptom this
+  // resolves : a "ignore auto layout" sibling (Background+Shadow
+  // indicator, free-positioned content frame) snaps to the stack's
+  // align slot at the wrong coordinates after import.
+  if (
+    figmaMeta.layoutPositioning === "ABSOLUTE" &&
+    isAutoLayout(parent)
+  ) {
+    try {
+      (child as unknown as { layoutPositioning?: string }).layoutPositioning = "ABSOLUTE";
+    } catch {
+      // Tolerate — host node may reject the property.
+    }
+    // Re-apply position after the flip — the appendChild step will have
+    // reset x/y to the auto-layout slot. Prefer relativeTransform when
+    // the metadata carries one (atomic position + linear), fall back to
+    // x/y from the primitive's universal position or v0.1 metadata.
+    if (figmaMeta.transform && figmaMeta.transform.length === 2) {
+      try {
+        (child as unknown as { relativeTransform?: number[][] }).relativeTransform =
+          figmaMeta.transform;
+      } catch {
+        // Tolerate.
+      }
+    } else {
+      const pos =
+        (prim as { position?: { x: number; y: number } }).position ?? figmaMeta.position;
+      if (pos) {
+        try {
+          (child as unknown as { x?: number }).x = pos.x;
+          (child as unknown as { y?: number }).y = pos.y;
+        } catch {
+          // Tolerate.
+        }
+      }
+    }
+  }
   // Flat-then-group post-attach replay.
   //
   // Two distinct host quirks this block compensates for, both visible
@@ -258,18 +309,15 @@ function buildAndAttach(
   //      2087326240` coming back at 27×15 with the 4 sub-groups
   //      visually missing on the steps stats card was the symptom).
   //
-  //   2. `layoutPositioning = "ABSOLUTE"` is only valid on a node
-  //      already in an auto-layout parent — pre-attach assignment is
-  //      silently dropped. On `appendChild` to an auto-layout stack
-  //      the flat siblings then get arranged sequentially and shrunk
-  //      to content's natural extent (`LOGO TXT 1` superposing
-  //      `PICTO FINAL 2`, bento stats icon collapsing 25 → 15.8 px).
-  //
-  // For (1) we always replay `metadata.figma.transform`. For (2),
-  // additionally only when the parent is auto-layout, we flip
-  // ABSOLUTE + replay `layoutSizingHorizontal/Vertical` + `resize()`
-  // so the stack stops managing the child and its captured
-  // dimensions are honoured before the wrap.
+  //   2. Flat-then-group leaves are TRANSIENT siblings under an
+  //      auto-layout FRAME ancestor — they need ABSOLUTE positioning
+  //      regardless of the original metadata flag (their original
+  //      parent was a Group, not the auto-layout stack). The universal
+  //      replay above only fires when metadata says ABSOLUTE ; here we
+  //      force it for the transient siblings, then replay
+  //      `layoutSizingHorizontal/Vertical` + `resize()` so the stack
+  //      stops managing the child and its captured dimensions are
+  //      honoured before the wrap.
   if (inFlatGroupPath) {
     if (isAutoLayout(parent)) {
       try {

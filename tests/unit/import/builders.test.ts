@@ -282,4 +282,67 @@ describe("import builders", () => {
     expect(m.blendMode).toBe("MULTIPLY");
     expect(m.opacity).toBe(0.5);
   });
+
+  it("layoutPositioning ABSOLUTE — replayed post-attach when parent is auto-layout", async () => {
+    // Mirrors the bento `Overlay+Border` regression : an auto-layout
+    // parent contains two children flagged "ignore auto layout"
+    // (layoutPositioning="ABSOLUTE" in metadata). Pre-attach assignment
+    // by applyFigmaExtras is silently dropped by Figma — without the
+    // post-attach replay in walk.ts, the stack packs the children at
+    // the wrong x/y and the captured positions are lost.
+    const { sealBundle } = await import("../../../src/export/canonicalize");
+    const api = createImportMock();
+    const draft = {
+      $schema: "https://lumencast.dev/schema/lsml/1.1/schema.json",
+      lsml: "1.1" as const,
+      scene_id: "test-abs-positioning",
+      scene_version: "sha256:" + "0".repeat(64),
+      defaults: {},
+      layout: {
+        kind: "stack" as const,
+        direction: "horizontal" as const,
+        size: { w: 110, h: 100 },
+        children: [
+          {
+            kind: "frame" as const,
+            size: { w: 64, h: 64 },
+            position: { x: 23, y: 18 },
+            metadata: {
+              figma: { layerName: "Frame 2147238884", layoutPositioning: "ABSOLUTE" },
+            },
+            children: [],
+          },
+          {
+            kind: "shape" as const,
+            geometry: "rect" as const,
+            size: { w: 36, h: 3 },
+            fill: "#000000",
+            position: { x: 35, y: 96 },
+            metadata: {
+              figma: { layerName: "Background+Shadow", layoutPositioning: "ABSOLUTE" },
+            },
+          },
+        ],
+      },
+    };
+    const sealed = await sealBundle(draft);
+    await importBundle({ api, lsmlBytes: sealed.canonical });
+    const root = api.appended()[0]!;
+    expect(root.type).toBe("FRAME");
+    expect(root.children).toHaveLength(2);
+    const [frameChild, shapeChild] = root.children;
+    expect(
+      (frameChild as unknown as { layoutPositioning?: string }).layoutPositioning,
+    ).toBe("ABSOLUTE");
+    expect(
+      (shapeChild as unknown as { layoutPositioning?: string }).layoutPositioning,
+    ).toBe("ABSOLUTE");
+    // Position must survive the auto-layout x/y reset on appendChild —
+    // the post-attach replay in walk.ts re-applies the captured position
+    // after flipping the ABSOLUTE flag.
+    expect((frameChild as { x?: number }).x).toBe(23);
+    expect((frameChild as { y?: number }).y).toBe(18);
+    expect((shapeChild as { x?: number }).x).toBe(35);
+    expect((shapeChild as { y?: number }).y).toBe(96);
+  });
 });

@@ -83,6 +83,39 @@ export interface ImportMock extends ImportFigmaApi {
   appended(): BuiltNode[];
 }
 
+/** Mirror Figma's silent-drop quirk on `layoutPositioning="ABSOLUTE"` :
+ *  the setter is a no-op when the node has no parent yet, or when its
+ *  parent is not an auto-layout stack (`layoutMode` not HORIZONTAL or
+ *  VERTICAL). The real Figma plugin runtime swallows the assignment
+ *  without throwing, so importers that set the property pre-attach
+ *  silently lose it. The mock reproduces the quirk so regression tests
+ *  for the post-attach replay (walk.ts) can fail when the replay is
+ *  removed. */
+function installLayoutPositioningQuirk(n: BuiltNode): void {
+  let stored: string | undefined;
+  Object.defineProperty(n, "layoutPositioning", {
+    configurable: true,
+    enumerable: true,
+    get() {
+      return stored;
+    },
+    set(v: string | undefined) {
+      if (v !== "ABSOLUTE") {
+        stored = v;
+        return;
+      }
+      const parent = n.parent;
+      const parentMode = parent
+        ? (parent as unknown as { layoutMode?: string }).layoutMode
+        : undefined;
+      if (parentMode === "HORIZONTAL" || parentMode === "VERTICAL") {
+        stored = v;
+      }
+      // else : silent drop, mirroring Figma.
+    },
+  });
+}
+
 function attachPluginData<T extends BuiltNode>(node: T): T {
   // The builders write plugin data via setSharedPluginData. We back that
   // with the same equipPluginData helper used on export-side mocks so the
@@ -111,6 +144,7 @@ export function createImportMock(): ImportMock {
       n.width = w;
       n.height = h;
     };
+    installLayoutPositioningQuirk(n);
     return text;
   };
 
@@ -120,6 +154,7 @@ export function createImportMock(): ImportMock {
       n.width = w;
       n.height = h;
     };
+    installLayoutPositioningQuirk(n);
     return shape;
   };
 
@@ -139,7 +174,22 @@ export function createImportMock(): ImportMock {
       }
       n.children.push(c);
       c.parent = n;
+      // Mirror Figma's auto-layout x/y reset : on appendChild to an
+      // auto-layout stack, a child whose layoutPositioning is not yet
+      // ABSOLUTE has its x/y overwritten by the layout-determined slot.
+      // We don't compute the actual slot (would require simulating the
+      // full alignment algorithm) — we set x/y to NaN to signal "lost",
+      // which makes regression tests fail when the post-attach
+      // replay in walk.ts forgets to re-apply the captured position.
+      if (n.layoutMode === "HORIZONTAL" || n.layoutMode === "VERTICAL") {
+        const lp = (c as unknown as { layoutPositioning?: string }).layoutPositioning;
+        if (lp !== "ABSOLUTE") {
+          c.x = NaN;
+          c.y = NaN;
+        }
+      }
     };
+    installLayoutPositioningQuirk(n);
     n.remove = () => {
       if (n.parent && n.parent.children) {
         const i = n.parent.children.indexOf(n);
@@ -156,6 +206,7 @@ export function createImportMock(): ImportMock {
       n.width = w;
       n.height = h;
     };
+    installLayoutPositioningQuirk(n);
     return inst;
   };
 
