@@ -6,11 +6,7 @@
 // `.lsmlz` ZIP archive (LSMLZ/1 spec — `lumencast-protocol/spec/LSMLZ-1.md`).
 // One file = one drag, one re-import, one signed artefact.
 
-import {
-  packArchive,
-  LSMLZ_FILE_EXTENSION,
-  LSMLZ_MEDIA_TYPE,
-} from "@lumencast/archive";
+import { packArchive, LSMLZ_FILE_EXTENSION, LSMLZ_MEDIA_TYPE } from "@lumencast/archive";
 import type { ExportResult } from "../main/messages";
 
 export interface DownloadOptions {
