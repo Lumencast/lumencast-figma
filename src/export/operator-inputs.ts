@@ -123,9 +123,7 @@ function isOperatorInput(
     // we read the value the export pipeline pre-resolved into the map.
     // Mock surfaces (vitest) leave the map undefined and fall through to
     // the synchronous accessor.
-    const mc = mainComponentMap?.has(node.id)
-      ? mainComponentMap.get(node.id)
-      : node.mainComponent;
+    const mc = mainComponentMap?.has(node.id) ? mainComponentMap.get(node.id) : node.mainComponent;
     return mc?.name === OPERATOR_INPUT_COMPONENT_NAME;
   }
   return false;

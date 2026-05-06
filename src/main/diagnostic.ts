@@ -86,11 +86,7 @@ function readMatrix(node: unknown, key: string): number[][] | string | undefined
   }
 }
 
-function describeNode(
-  node: SceneNode,
-  depth: number,
-  parent: BaseNode | null,
-): DiagnosticEntry {
+function describeNode(node: SceneNode, depth: number, parent: BaseNode | null): DiagnosticEntry {
   const entry: DiagnosticEntry = {
     id: node.id,
     name: node.name,

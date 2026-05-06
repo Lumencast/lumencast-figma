@@ -69,7 +69,11 @@ export interface ImportTextNode extends ImportBaseNode {
   setRangeTextDecoration?(start: number, end: number, value: string): void;
   setRangeLetterSpacing?(start: number, end: number, value: { unit: string; value: number }): void;
   setRangeLineHeight?(start: number, end: number, value: { unit: string; value?: number }): void;
-  setRangeHyperlink?(start: number, end: number, value: { type: "URL"; value: string } | null): void;
+  setRangeHyperlink?(
+    start: number,
+    end: number,
+    value: { type: "URL"; value: string } | null,
+  ): void;
 }
 
 export interface ImportShapeNode extends ImportBaseNode {

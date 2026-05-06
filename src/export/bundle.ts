@@ -179,7 +179,7 @@ export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundle
   // `rawFigma` (the deep snapshot) is opt-in because it's expensive on
   // big scenes — controlled by `captureDebugArtefacts`.
   result.debugArtefacts = {
-    rawFigma: opts.captureDebugArtefacts ? rawFigmaSnapshot ?? "{}" : "{}",
+    rawFigma: opts.captureDebugArtefacts ? (rawFigmaSnapshot ?? "{}") : "{}",
     mappingTrace: JSON.stringify({ entries: trace.entries, warnings }, null, 2),
   };
   return result;

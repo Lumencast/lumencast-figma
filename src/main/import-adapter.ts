@@ -88,8 +88,6 @@ function wrapBoolean(
   const sceneParent = parent as unknown as BaseNode & ChildrenMixin;
   const fn = figma[op];
   const result =
-    index !== undefined
-      ? fn(sceneNodes, sceneParent, index)
-      : fn(sceneNodes, sceneParent);
+    index !== undefined ? fn(sceneNodes, sceneParent, index) : fn(sceneNodes, sceneParent);
   return result as unknown as ImportBaseNode;
 }

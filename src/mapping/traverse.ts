@@ -112,7 +112,13 @@ export function walk(
   // source, hidden or not, so they can re-show them by toggling
   // visibility in Figma without re-exporting).
   if (isOperatorInputComponent(node, ctx)) {
-    ctx.trace?.push({ depth, type: node.type, id: node.id, name: node.name, action: "skip-operator-input" });
+    ctx.trace?.push({
+      depth,
+      type: node.type,
+      id: node.id,
+      name: node.name,
+      action: "skip-operator-input",
+    });
     return null;
   }
 
@@ -244,8 +250,8 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
     "COMPONENT_SET",
   ]);
   const isCoordSystem = COORD_SYSTEM_TYPES.has(node.type);
-  const myX = isCoordSystem ? 0 : asNumber(node.x) ?? 0;
-  const myY = isCoordSystem ? 0 : asNumber(node.y) ?? 0;
+  const myX = isCoordSystem ? 0 : (asNumber(node.x) ?? 0);
+  const myY = isCoordSystem ? 0 : (asNumber(node.y) ?? 0);
   // Rotation hierarchy : Figma reports each node's `rotation` independently
   // (the parent's rotation isn't subtracted). When we re-apply rotation on
   // every nested level on import, the visual rotation compounds and the
@@ -262,7 +268,9 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
   // composed with our own relTrans.
   let childChain: number[][] | undefined;
   if (isTransparentGroup) {
-    const myMat = parseRelativeTransform((node as { relativeTransform?: unknown }).relativeTransform);
+    const myMat = parseRelativeTransform(
+      (node as { relativeTransform?: unknown }).relativeTransform,
+    );
     if (myMat) {
       childChain = compose2x3(opts.groupChainTransform, myMat);
     } else {
@@ -371,9 +379,7 @@ interface FigmaSolidStroke {
 }
 
 function mapBooleanOperationStrokes(node: AnyFigmaNode): Stroke[] {
-  const strokesArr = asArray<FigmaSolidStroke>(
-    (node as unknown as { strokes?: unknown }).strokes,
-  );
+  const strokesArr = asArray<FigmaSolidStroke>((node as unknown as { strokes?: unknown }).strokes);
   if (!strokesArr) return [];
   const weight = asNumber((node as unknown as { strokeWeight?: unknown }).strokeWeight) ?? 1;
   const out: Stroke[] = [];
@@ -418,34 +424,35 @@ function parseRelativeTransform(raw: unknown): number[][] | null {
  *  child's frame-ancestor-relative transform. Pass `undefined` for A as
  *  identity. */
 function compose2x3(a: number[][] | undefined, b: number[][]): number[][] {
-  if (!a) return [
-    [b[0]![0]!, b[0]![1]!, b[0]![2]!],
-    [b[1]![0]!, b[1]![1]!, b[1]![2]!],
-  ];
-  const a00 = a[0]![0]!, a01 = a[0]![1]!, a02 = a[0]![2]!;
-  const a10 = a[1]![0]!, a11 = a[1]![1]!, a12 = a[1]![2]!;
-  const b00 = b[0]![0]!, b01 = b[0]![1]!, b02 = b[0]![2]!;
-  const b10 = b[1]![0]!, b11 = b[1]![1]!, b12 = b[1]![2]!;
+  if (!a)
+    return [
+      [b[0]![0]!, b[0]![1]!, b[0]![2]!],
+      [b[1]![0]!, b[1]![1]!, b[1]![2]!],
+    ];
+  const a00 = a[0]![0]!,
+    a01 = a[0]![1]!,
+    a02 = a[0]![2]!;
+  const a10 = a[1]![0]!,
+    a11 = a[1]![1]!,
+    a12 = a[1]![2]!;
+  const b00 = b[0]![0]!,
+    b01 = b[0]![1]!,
+    b02 = b[0]![2]!;
+  const b10 = b[1]![0]!,
+    b11 = b[1]![1]!,
+    b12 = b[1]![2]!;
   return [
     [a00 * b00 + a01 * b10, a00 * b01 + a01 * b11, a00 * b02 + a01 * b12 + a02],
     [a10 * b00 + a11 * b10, a10 * b01 + a11 * b11, a10 * b02 + a11 * b12 + a12],
   ];
 }
 
-function overrideShapeFillsStrokes(
-  prim: PrimitiveNode,
-  fills: Fill[],
-  strokes: Stroke[],
-): void {
+function overrideShapeFillsStrokes(prim: PrimitiveNode, fills: Fill[], strokes: Stroke[]): void {
   if ((prim as { kind: string }).kind !== "shape") return;
   const shape = prim as { fill?: string; fills?: Fill[]; stroke?: Stroke; strokes?: Stroke[] };
   delete shape.fill;
   delete shape.fills;
-  if (
-    fills.length === 1 &&
-    fills[0]?.kind === "solid" &&
-    fills[0].opacity === undefined
-  ) {
+  if (fills.length === 1 && fills[0]?.kind === "solid" && fills[0].opacity === undefined) {
     shape.fill = fills[0].color;
   } else if (fills.length > 0) {
     shape.fills = fills;

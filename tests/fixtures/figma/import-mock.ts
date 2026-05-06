@@ -229,8 +229,7 @@ export function createImportMock(): ImportMock {
     containerNode.name = name;
     const containerBuilt = containerNode as unknown as BuiltNode;
     if (booleanOperation) {
-      (containerBuilt as { booleanOperation?: string }).booleanOperation =
-        booleanOperation;
+      (containerBuilt as { booleanOperation?: string }).booleanOperation = booleanOperation;
     }
     const parentNode = parent as unknown as BuiltNode;
     for (const child of nodes) {
@@ -285,8 +284,7 @@ export function createImportMock(): ImportMock {
     appendToPage: (node) => {
       store.appended.push(node as unknown as BuiltNode);
     },
-    group: (nodes, parent, index) =>
-      wrapAsContainer("GROUP", "Group", nodes, parent, index),
+    group: (nodes, parent, index) => wrapAsContainer("GROUP", "Group", nodes, parent, index),
     union: (nodes, parent, index) =>
       wrapAsContainer("BOOLEAN_OPERATION", "Union", nodes, parent, index, "UNION"),
     subtract: (nodes, parent, index) =>

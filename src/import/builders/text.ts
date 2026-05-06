@@ -34,10 +34,12 @@ export function buildText(
   // so we restore it as-is when present. Falls back to a fontWeight →
   // style approximation otherwise (700 → Bold, etc.).
   if (prim.style?.fontFamily !== undefined) {
-    const style = figmaMeta.fontStyle ?? styleFromWeightAndItalic(
-      typeof prim.style?.fontWeight === "number" ? prim.style.fontWeight : undefined,
-      prim.style?.fontStyle === "italic",
-    );
+    const style =
+      figmaMeta.fontStyle ??
+      styleFromWeightAndItalic(
+        typeof prim.style?.fontWeight === "number" ? prim.style.fontWeight : undefined,
+        prim.style?.fontStyle === "italic",
+      );
     (node as unknown as { fontName: { family: string; style: string } }).fontName = {
       family: prim.style.fontFamily,
       style,
@@ -166,8 +168,7 @@ export function buildText(
   // textCase : prefer the canonical `style.textTransform` (LSML 1.1
   // §4.4.1). Fall back to `metadata.figma.textCase` for v0.1 bundles
   // produced before the spec change.
-  const textCase =
-    transformToTextCase(prim.style?.textTransform) ?? figmaMeta.textCase;
+  const textCase = transformToTextCase(prim.style?.textTransform) ?? figmaMeta.textCase;
   if (textCase) {
     (node as unknown as { textCase?: string }).textCase = textCase;
   }
@@ -296,9 +297,7 @@ function applyTextSegments(
 /** Map LSML `style.textTransform` (LSML §4.4.1) back to Figma's `textCase`.
  *  Returns undefined when no transform is declared, leaving the caller to
  *  fall back to `metadata.figma.textCase` for v0.1 bundles. */
-function transformToTextCase(
-  tt: string | undefined,
-): "UPPER" | "LOWER" | "TITLE" | undefined {
+function transformToTextCase(tt: string | undefined): "UPPER" | "LOWER" | "TITLE" | undefined {
   if (tt === "uppercase") return "UPPER";
   if (tt === "lowercase") return "LOWER";
   if (tt === "capitalize") return "TITLE";
