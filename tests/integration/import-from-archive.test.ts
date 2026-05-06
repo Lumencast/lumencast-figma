@@ -146,7 +146,9 @@ describe.skipIf(!HAS_ARCHIVE)("Headless import replay : examples/template-stats.
       const rot = s.rotation ? ` rot=${s.rotation.toFixed(1)}°` : "";
       return `  [${s.index}] ${s.type.padEnd(10)} pos=(${x.toFixed(1)},${y.toFixed(1)}) size=${w.toFixed(1)}x${h.toFixed(1)}${rot} children=${s.childCount} ${inView ? "in-view" : "off-canvas"}`;
     });
-    console.log(`\n[import replay] root ${root.type} ${rootSize.w}x${rootSize.h}\n${lines.join("\n")}`);
+    console.log(
+      `\n[import replay] root ${root.type} ${rootSize.w}x${rootSize.h}\n${lines.join("\n")}`,
+    );
 
     // No structural assertion here — the goal is the snapshot. The next test
     // checks specific known-good positions.

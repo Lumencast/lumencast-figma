@@ -144,7 +144,8 @@ export async function runDiagGroupTransform(): Promise<void> {
       timeout: 4000,
     });
   } catch (err) {
-    const msg = err instanceof Error ? `${err.name}: ${err.message}\n${err.stack ?? ""}` : String(err);
+    const msg =
+      err instanceof Error ? `${err.name}: ${err.message}\n${err.stack ?? ""}` : String(err);
     console.error("[diag] crash:", msg);
     figma.notify(`DIAG crashed: ${msg.slice(0, 120)}`, { error: true, timeout: 6000 });
     // Best-effort dump of whatever we collected so far.

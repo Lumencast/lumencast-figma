@@ -19,11 +19,7 @@ import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import { asArray, asNumber, asObject, asString } from "./figma-mixed";
-import {
-  withFigmaMetadata,
-  type FigmaMetadata,
-  type FigmaTextSegment,
-} from "./figma-metadata";
+import { withFigmaMetadata, type FigmaMetadata, type FigmaTextSegment } from "./figma-metadata";
 import { captureFigmaExtras } from "./figma-extras";
 import type { MappingResult } from "./types";
 
@@ -370,18 +366,13 @@ function paintToFigmaMetadata(
       color: { r: s.color.r, g: s.color.g, b: s.color.b, a: s.color.a },
     }));
     if (paint.gradientTransform && paint.gradientTransform.length === 2) {
-      out.gradientTransform = [
-        [...paint.gradientTransform[0]!],
-        [...paint.gradientTransform[1]!],
-      ];
+      out.gradientTransform = [[...paint.gradientTransform[0]!], [...paint.gradientTransform[1]!]];
     }
   }
   return out;
 }
 
-function textCaseToTransform(
-  tc: string,
-): "uppercase" | "lowercase" | "capitalize" | undefined {
+function textCaseToTransform(tc: string): "uppercase" | "lowercase" | "capitalize" | undefined {
   if (tc === "UPPER") return "uppercase";
   if (tc === "LOWER") return "lowercase";
   if (tc === "TITLE") return "capitalize";

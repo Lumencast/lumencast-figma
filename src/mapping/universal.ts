@@ -76,7 +76,7 @@ export function extractUniversal(
 
 /** Normalise a degree value to (-180, 180]. */
 function normaliseDegrees(d: number): number {
-  const n = ((d % 360) + 540) % 360 - 180;
+  const n = (((d % 360) + 540) % 360) - 180;
   return Math.abs(n) < 1e-6 ? 0 : n;
 }
 

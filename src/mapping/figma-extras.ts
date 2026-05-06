@@ -183,8 +183,7 @@ export function captureFigmaExtras<T extends { metadata?: Record<string, unknown
     // no flat-then-group path involved).
     const transform = parseTransform(node.relativeTransform);
     if (transform) {
-      const det =
-        transform[0]![0]! * transform[1]![1]! - transform[0]![1]! * transform[1]![0]!;
+      const det = transform[0]![0]! * transform[1]![1]! - transform[0]![1]! * transform[1]![0]!;
       if (det < 0) {
         const tx = opts?.localPosition?.x ?? 0;
         const ty = opts?.localPosition?.y ?? 0;
@@ -213,7 +212,12 @@ export function captureFigmaExtras<T extends { metadata?: Record<string, unknown
 
   // Blend mode (skip default)
   const blend = asString(node.blendMode);
-  if (blend && BLEND_MODES.has(blend as FigmaBlendMode) && blend !== "PASS_THROUGH" && blend !== "NORMAL") {
+  if (
+    blend &&
+    BLEND_MODES.has(blend as FigmaBlendMode) &&
+    blend !== "PASS_THROUGH" &&
+    blend !== "NORMAL"
+  ) {
     figma.blendMode = blend as FigmaBlendMode;
   }
 
@@ -477,7 +481,13 @@ function parseEffects(raw: unknown): FigmaEffect[] {
       const noiseSize = asNumber(obj["noiseSize"]);
       const noiseType = asString(obj["noiseType"]);
       const density = asNumber(obj["density"]);
-      if (noiseSize === undefined || !noiseType || !NOISE_TYPES.has(noiseType) || density === undefined) continue;
+      if (
+        noiseSize === undefined ||
+        !noiseType ||
+        !NOISE_TYPES.has(noiseType) ||
+        density === undefined
+      )
+        continue;
       const e: FigmaEffect = {
         type: "NOISE",
         noiseSize,
@@ -488,7 +498,8 @@ function parseEffects(raw: unknown): FigmaEffect[] {
       if (v) {
         const x = asNumber(v.x);
         const y = asNumber(v.y);
-        if (x !== undefined && y !== undefined) (e as { noiseSizeVector?: { x: number; y: number } }).noiseSizeVector = { x, y };
+        if (x !== undefined && y !== undefined)
+          (e as { noiseSizeVector?: { x: number; y: number } }).noiseSizeVector = { x, y };
       }
       const color = asObject<{ r: unknown; g: unknown; b: unknown; a: unknown }>(obj["color"]);
       if (color) {
@@ -498,13 +509,16 @@ function parseEffects(raw: unknown): FigmaEffect[] {
         const a = asNumber(color.a) ?? 1;
         (e as { color?: { r: number; g: number; b: number; a: number } }).color = { r, g, b, a };
       }
-      const sc = asObject<{ r: unknown; g: unknown; b: unknown; a: unknown }>(obj["secondaryColor"]);
+      const sc = asObject<{ r: unknown; g: unknown; b: unknown; a: unknown }>(
+        obj["secondaryColor"],
+      );
       if (sc) {
         const r = asNumber(sc.r) ?? 0;
         const g = asNumber(sc.g) ?? 0;
         const b = asNumber(sc.b) ?? 0;
         const a = asNumber(sc.a) ?? 1;
-        (e as { secondaryColor?: { r: number; g: number; b: number; a: number } }).secondaryColor = { r, g, b, a };
+        (e as { secondaryColor?: { r: number; g: number; b: number; a: number } }).secondaryColor =
+          { r, g, b, a };
       }
       out.push(e);
     } else if (type === "TEXTURE") {
@@ -516,7 +530,8 @@ function parseEffects(raw: unknown): FigmaEffect[] {
       if (v) {
         const x = asNumber(v.x);
         const y = asNumber(v.y);
-        if (x !== undefined && y !== undefined) (e as { noiseSizeVector?: { x: number; y: number } }).noiseSizeVector = { x, y };
+        if (x !== undefined && y !== undefined)
+          (e as { noiseSizeVector?: { x: number; y: number } }).noiseSizeVector = { x, y };
       }
       const clip = asBoolean(obj["clipToShape"]);
       if (clip !== undefined) (e as { clipToShape?: boolean }).clipToShape = clip;
@@ -537,7 +552,8 @@ function parseEffects(raw: unknown): FigmaEffect[] {
         lightIntensity === undefined ||
         dispersion === undefined ||
         splay === undefined
-      ) continue;
+      )
+        continue;
       out.push({
         type: "GLASS",
         radius,
@@ -556,14 +572,23 @@ function parseEffects(raw: unknown): FigmaEffect[] {
 /** Compose two 2x3 affine transforms (A * B with implicit `[0,0,1]` last
  *  row). Returns a fresh matrix. Pass `undefined` for A as identity. */
 function compose2x3(a: number[][] | undefined, b: number[][]): number[][] {
-  if (!a) return [
-    [b[0]![0]!, b[0]![1]!, b[0]![2]!],
-    [b[1]![0]!, b[1]![1]!, b[1]![2]!],
-  ];
-  const a00 = a[0]![0]!, a01 = a[0]![1]!, a02 = a[0]![2]!;
-  const a10 = a[1]![0]!, a11 = a[1]![1]!, a12 = a[1]![2]!;
-  const b00 = b[0]![0]!, b01 = b[0]![1]!, b02 = b[0]![2]!;
-  const b10 = b[1]![0]!, b11 = b[1]![1]!, b12 = b[1]![2]!;
+  if (!a)
+    return [
+      [b[0]![0]!, b[0]![1]!, b[0]![2]!],
+      [b[1]![0]!, b[1]![1]!, b[1]![2]!],
+    ];
+  const a00 = a[0]![0]!,
+    a01 = a[0]![1]!,
+    a02 = a[0]![2]!;
+  const a10 = a[1]![0]!,
+    a11 = a[1]![1]!,
+    a12 = a[1]![2]!;
+  const b00 = b[0]![0]!,
+    b01 = b[0]![1]!,
+    b02 = b[0]![2]!;
+  const b10 = b[1]![0]!,
+    b11 = b[1]![1]!,
+    b12 = b[1]![2]!;
   return [
     [a00 * b00 + a01 * b10, a00 * b01 + a01 * b11, a00 * b02 + a01 * b12 + a02],
     [a10 * b00 + a11 * b10, a10 * b01 + a11 * b11, a10 * b02 + a11 * b12 + a12],
@@ -609,7 +634,12 @@ function parseStrokePaints(raw: unknown): NonNullable<FigmaMetadata["strokes"]> 
     const op = asNumber(obj["opacity"]);
     if (op !== undefined && op !== 1) entry.opacity = op;
     const blend = asString(obj["blendMode"]);
-    if (blend && BLEND_MODES.has(blend as FigmaBlendMode) && blend !== "NORMAL" && blend !== "PASS_THROUGH") {
+    if (
+      blend &&
+      BLEND_MODES.has(blend as FigmaBlendMode) &&
+      blend !== "NORMAL" &&
+      blend !== "PASS_THROUGH"
+    ) {
       entry.blendMode = blend as FigmaBlendMode;
     }
     if (type === "SOLID") {

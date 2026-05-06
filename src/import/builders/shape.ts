@@ -92,9 +92,7 @@ export function buildShape(
       }
     } else if (prim.pathData) {
       try {
-        node.vectorPaths = [
-          { data: normalizeSvgPath(prim.pathData), windingRule: "NONZERO" },
-        ];
+        node.vectorPaths = [{ data: normalizeSvgPath(prim.pathData), windingRule: "NONZERO" }];
       } catch (err) {
         const msg = err instanceof Error ? err.message : String(err);
         const sample = prim.pathData.slice(0, 200);

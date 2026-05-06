@@ -510,7 +510,8 @@ function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
   if (meta.imagePaint && Object.keys(meta.imagePaint).length > 0) out.imagePaint = meta.imagePaint;
   if (meta.textFills && meta.textFills.length > 0) out.textFills = meta.textFills;
   if (meta.strokes && meta.strokes.length > 0) out.strokes = meta.strokes;
-  if (meta.strokeWeight !== undefined && meta.strokeWeight !== 1) out.strokeWeight = meta.strokeWeight;
+  if (meta.strokeWeight !== undefined && meta.strokeWeight !== 1)
+    out.strokeWeight = meta.strokeWeight;
   if (meta.transform && meta.transform.length === 2) out.transform = meta.transform;
   if (meta.position && (meta.position.x !== 0 || meta.position.y !== 0)) {
     out.position = meta.position;
@@ -562,7 +563,8 @@ function pruneEmpty(meta: FigmaMetadata): FigmaMetadata {
   }
   if (meta.textCase && meta.textCase !== "ORIGINAL") out.textCase = meta.textCase;
   if (meta.fontStyle) out.fontStyle = meta.fontStyle;
-  if (meta.textAutoResize && meta.textAutoResize !== "NONE") out.textAutoResize = meta.textAutoResize;
+  if (meta.textAutoResize && meta.textAutoResize !== "NONE")
+    out.textAutoResize = meta.textAutoResize;
   if (meta.textAlignVertical && meta.textAlignVertical !== "TOP") {
     out.textAlignVertical = meta.textAlignVertical;
   }

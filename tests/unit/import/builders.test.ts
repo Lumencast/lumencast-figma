@@ -331,12 +331,12 @@ describe("import builders", () => {
     expect(root.type).toBe("FRAME");
     expect(root.children).toHaveLength(2);
     const [frameChild, shapeChild] = root.children;
-    expect(
-      (frameChild as unknown as { layoutPositioning?: string }).layoutPositioning,
-    ).toBe("ABSOLUTE");
-    expect(
-      (shapeChild as unknown as { layoutPositioning?: string }).layoutPositioning,
-    ).toBe("ABSOLUTE");
+    expect((frameChild as unknown as { layoutPositioning?: string }).layoutPositioning).toBe(
+      "ABSOLUTE",
+    );
+    expect((shapeChild as unknown as { layoutPositioning?: string }).layoutPositioning).toBe(
+      "ABSOLUTE",
+    );
     // Position must survive the auto-layout x/y reset on appendChild —
     // the post-attach replay in walk.ts re-applies the captured position
     // after flipping the ABSOLUTE flag.

@@ -88,15 +88,13 @@ export function buildPrimitive(
         // visible (the layer panel will show a Frame instead of a Group).
         // The trace records the mis-dispatch so we can detect it.
         const figmaMeta = readFigmaMetadata(prim);
-        if (
-          figmaMeta.sourceType === "GROUP" ||
-          figmaMeta.sourceType === "BOOLEAN_OPERATION"
-        ) {
+        if (figmaMeta.sourceType === "GROUP" || figmaMeta.sourceType === "BOOLEAN_OPERATION") {
           ctx.trace?.push({
             path,
             kind,
             action: "frame-dispatch-warn",
-            error: "GROUP/BOOLEAN_OPERATION primitive built as Frame placeholder ; must be intercepted by buildAndAttach.",
+            error:
+              "GROUP/BOOLEAN_OPERATION primitive built as Frame placeholder ; must be intercepted by buildAndAttach.",
           });
         }
         for (let i = 0; i < prim.children.length; i++) {
@@ -110,7 +108,10 @@ export function buildPrimitive(
         const fp = prim as { size?: { w: number; h: number } };
         if (fp.size) {
           try {
-            (node as unknown as { resize(w: number, h: number): void }).resize(fp.size.w, fp.size.h);
+            (node as unknown as { resize(w: number, h: number): void }).resize(
+              fp.size.w,
+              fp.size.h,
+            );
           } catch {
             // Tolerate.
           }
@@ -261,10 +262,7 @@ function buildAndAttach(
   // resolves : a "ignore auto layout" sibling (Background+Shadow
   // indicator, free-positioned content frame) snaps to the stack's
   // align slot at the wrong coordinates after import.
-  if (
-    figmaMeta.layoutPositioning === "ABSOLUTE" &&
-    isAutoLayout(parent)
-  ) {
+  if (figmaMeta.layoutPositioning === "ABSOLUTE" && isAutoLayout(parent)) {
     try {
       (child as unknown as { layoutPositioning?: string }).layoutPositioning = "ABSOLUTE";
     } catch {
@@ -282,8 +280,7 @@ function buildAndAttach(
         // Tolerate.
       }
     } else {
-      const pos =
-        (prim as { position?: { x: number; y: number } }).position ?? figmaMeta.position;
+      const pos = (prim as { position?: { x: number; y: number } }).position ?? figmaMeta.position;
       if (pos) {
         try {
           (child as unknown as { x?: number }).x = pos.x;
@@ -331,8 +328,8 @@ function buildAndAttach(
           (child as unknown as { layoutSizingHorizontal?: string }).layoutSizingHorizontal = v;
         } catch {
           // Tolerate.
+        }
       }
-    }
       if (figmaMeta.layoutSizingVertical) {
         const v = figmaMeta.layoutSizingVertical;
         try {
@@ -374,11 +371,7 @@ function pickWrapApi(
   meta: FigmaMetadata,
 ): {
   kind: WrapKind;
-  fn: (
-    nodes: ImportBaseNode[],
-    parent: FramishParent,
-    index?: number,
-  ) => ImportBaseNode;
+  fn: (nodes: ImportBaseNode[], parent: FramishParent, index?: number) => ImportBaseNode;
 } {
   if (meta.sourceType !== "BOOLEAN_OPERATION") {
     return { kind: "group", fn: (n, p, i) => api.group(n, p, i) };

@@ -75,8 +75,7 @@ export async function importBundle(opts: ImportBundleOptions): Promise<ImportRes
   // source's overflow-visible semantics without re-triggering auto-grow.
   for (const entry of clipsContentRestoreQueue) {
     try {
-      (entry.node as unknown as { clipsContent?: boolean }).clipsContent =
-        entry.clipsContent;
+      (entry.node as unknown as { clipsContent?: boolean }).clipsContent = entry.clipsContent;
     } catch {
       // Tolerate.
     }
