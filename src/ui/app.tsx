@@ -67,6 +67,13 @@ export function App() {
             );
           }
           break;
+        case "diagnostic-dump":
+          // Plugin menu "Diagnostic: dump selection positions" landed —
+          // immediately trigger a download of the dump JSON. No UI flow,
+          // user gets the file and the plugin closes itself.
+          downloadText(msg.filename, msg.json, "application/json");
+          lastImportSummary.value = `Diagnostic dump downloaded : ${msg.filename}`;
+          break;
       }
     };
     window.addEventListener("message", handler);

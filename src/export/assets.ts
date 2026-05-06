@@ -82,33 +82,36 @@ export function createAssetRegistry(opts: CreateOptions): CreatedRegistry {
     },
 
     async finalize(): Promise<ExportedAsset[]> {
-      const out: ExportedAsset[] = [];
-      for (const entry of byHash.values()) {
-        const handle = opts.api.getImageByHash(entry.figmaHash);
-        if (!handle) {
-          // Skip — caller should warn via mapping context.
-          continue;
-        }
-        const bytes = await handle.getBytesAsync();
-        const ext = sniffImageExtension(bytes);
-        // Figma's `imageHash` is itself a content-addressed hash of the
-        // image bytes (Figma uses SHA-1 internally). Reuse it as the
-        // asset filename instead of re-hashing with our own SHA-256 :
-        //   - The "same bytes → same path" property is preserved.
-        //   - Pure-JS SHA-256 over MBs of image data freezes the plugin
-        //     for tens of seconds in the QuickJS sandbox (no Web Crypto).
-        //   - Cross-checked through Figma's de-dup : the same image
-        //     dropped on two layers shares one `imageHash`, so the asset
-        //     directory is still correctly de-duplicated.
-        const finalName = `${ASSET_DIR}/${entry.figmaHash}.${ext}`;
-        entry.resolvedPath = finalName;
-        out.push({
-          name: finalName,
-          mimeType: extToMime(ext),
-          bytes,
-        });
-      }
-      return out;
+      // Fetch every image's bytes in parallel. Sequential awaits in a
+      // for-of loop multiplied per-image latency — on a scene with 100
+      // images at ~200ms each, the export blocks for ~20s just on byte
+      // fetches. Promise.all keeps the total close to the latency of
+      // the slowest single fetch (Figma serves them in parallel).
+      const entries = Array.from(byHash.values());
+      const results = await Promise.all(
+        entries.map(async (entry): Promise<ExportedAsset | null> => {
+          const handle = opts.api.getImageByHash(entry.figmaHash);
+          if (!handle) return null;
+          const bytes = await handle.getBytesAsync();
+          const ext = sniffImageExtension(bytes);
+          // Figma's `imageHash` is itself a content-addressed hash of
+          // the image bytes (Figma uses SHA-1 internally). Reuse it as
+          // the asset filename instead of re-hashing with SHA-256 :
+          //   - The "same bytes → same path" property is preserved.
+          //   - Pure-JS SHA-256 over MBs of image data freezes the
+          //     plugin for tens of seconds in the QuickJS sandbox.
+          //   - Figma's de-dup ensures one imageHash per unique image,
+          //     so the asset directory stays content-addressed.
+          const finalName = `${ASSET_DIR}/${entry.figmaHash}.${ext}`;
+          entry.resolvedPath = finalName;
+          return {
+            name: finalName,
+            mimeType: extToMime(ext),
+            bytes,
+          };
+        }),
+      );
+      return results.filter((r): r is ExportedAsset => r !== null);
     },
   };
   return reg;

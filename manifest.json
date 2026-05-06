@@ -17,6 +17,8 @@
     { "name": "Export selected frame to LSML", "command": "export" },
     { "name": "Import .lsml file", "command": "import" },
     { "separator": true },
+    { "name": "Diagnostic: dump selection positions", "command": "diagnostic" },
+    { "separator": true },
     { "name": "About Lumencast", "command": "about" }
   ]
 }

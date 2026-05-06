@@ -30,7 +30,7 @@ export type ImportPaint =
       visible?: boolean;
       opacity?: number;
       imageHash: string;
-      scaleMode: "FILL" | "FIT";
+      scaleMode: "FILL" | "FIT" | "CROP" | "TILE";
     };
 
 export interface ImportStroke {
@@ -58,6 +58,22 @@ export interface ImportTextNode extends ImportBaseNode {
   fills?: ImportPaint[];
   textAlignHorizontal?: "LEFT" | "CENTER" | "RIGHT" | "JUSTIFIED";
   resize(w: number, h: number): void;
+  /** Range-styling setters used to restore multi-style / multi-color text
+   *  captured under `metadata.figma.textSegments[]`. Marked optional so
+   *  the legacy mock surface (which doesn't implement them) still compiles
+   *  — the builder calls them defensively via `try { ... } catch {}`. */
+  setRangeFontName?(start: number, end: number, fontName: { family: string; style: string }): void;
+  setRangeFontSize?(start: number, end: number, value: number): void;
+  setRangeFills?(start: number, end: number, paints: ImportPaint[]): void;
+  setRangeTextCase?(start: number, end: number, value: string): void;
+  setRangeTextDecoration?(start: number, end: number, value: string): void;
+  setRangeLetterSpacing?(start: number, end: number, value: { unit: string; value: number }): void;
+  setRangeLineHeight?(start: number, end: number, value: { unit: string; value?: number }): void;
+  setRangeHyperlink?(
+    start: number,
+    end: number,
+    value: { type: "URL"; value: string } | null,
+  ): void;
 }
 
 export interface ImportShapeNode extends ImportBaseNode {
@@ -126,4 +142,38 @@ export interface ImportFigmaApi {
   loadFontAsync(font: FontReference): Promise<void>;
   /** The current page's append entry-point (figma.currentPage.appendChild). */
   appendToPage(node: ImportBaseNode): void;
+  /** Wraps `figma.group(nodes, parent, index?)`. Used by the post-build
+   *  conversion pass to turn frames marked `metadata.figma.sourceType=GROUP`
+   *  back into real Figma GroupNodes. Children must already be in the
+   *  document ; figma.group MOVES them into a fresh group and inserts the
+   *  group at the given index of `parent`. */
+  group(
+    nodes: ImportBaseNode[],
+    parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
+    index?: number,
+  ): ImportBaseNode;
+  /** Wraps `figma.union(nodes, parent, index?)`. Same node-moving semantics
+   *  as `figma.group` but produces a real `BooleanOperationNode` with the
+   *  matching `booleanOperation`. Used by the flat-then-wrap path when the
+   *  source was a `BOOLEAN_OPERATION` with that flavour. */
+  union(
+    nodes: ImportBaseNode[],
+    parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
+    index?: number,
+  ): ImportBaseNode;
+  subtract(
+    nodes: ImportBaseNode[],
+    parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
+    index?: number,
+  ): ImportBaseNode;
+  intersect(
+    nodes: ImportBaseNode[],
+    parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
+    index?: number,
+  ): ImportBaseNode;
+  exclude(
+    nodes: ImportBaseNode[],
+    parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
+    index?: number,
+  ): ImportBaseNode;
 }

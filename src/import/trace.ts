@@ -22,7 +22,16 @@ export interface ImportTraceEntry {
   /** Optional primitive label — `ariaLabel` or `alt` when present. */
   name?: string;
   /** What happened at this node. */
-  action: "build-start" | "build-ok" | "build-failed" | "append-failed" | "warn";
+  action:
+    | "build-start"
+    | "build-ok"
+    | "build-failed"
+    | "append-failed"
+    | "warn"
+    | "frame-dispatch-warn"
+    | "group-inline-start"
+    | "group-inline-done"
+    | "group-inline-failed";
   /** When `action` is `build-failed` or `append-failed`. */
   error?: string;
   /** When `action` is `warn`. */

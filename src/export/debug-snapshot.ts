@@ -38,6 +38,9 @@ interface SnapshotNode {
   width?: number;
   height?: number;
   rotation?: number;
+  /** Figma's raw 2x3 affine transform `[[m00, m01, tx], [m10, m11, ty]]`
+   *  captured for diagnostic purposes (flip detection, exact pose). */
+  relativeTransform?: number[][];
   opacity?: number;
   layoutMode?: string;
   layoutSizingHorizontal?: string;
@@ -53,15 +56,42 @@ interface SnapshotNode {
   paddingTop?: number;
   paddingBottom?: number;
   layoutWrap?: string;
+  layoutAlign?: string;
+  layoutGrow?: number;
+  layoutPositioning?: string;
+  minWidth?: number | null;
+  maxWidth?: number | null;
+  minHeight?: number | null;
+  maxHeight?: number | null;
   // Frame / shape
   clipsContent?: boolean;
   cornerRadius?: number;
+  topLeftRadius?: number;
+  topRightRadius?: number;
+  bottomLeftRadius?: number;
+  bottomRightRadius?: number;
+  cornerSmoothing?: number;
   fills?: unknown;
   fillGeometry?: unknown;
   strokes?: unknown;
   strokeWeight?: number;
   strokeAlign?: string;
+  strokeJoin?: string;
+  strokeCap?: string;
+  strokeMiterLimit?: number;
+  dashPattern?: number[];
+  strokeTopWeight?: number;
+  strokeRightWeight?: number;
+  strokeBottomWeight?: number;
+  strokeLeftWeight?: number;
   vectorPaths?: unknown;
+  // Effects + blend + mask
+  effects?: unknown;
+  blendMode?: string;
+  isMask?: boolean;
+  maskType?: string;
+  // Constraints
+  constraints?: { horizontal?: string; vertical?: string };
   // Text
   characters?: string;
   fontSize?: number;
@@ -73,6 +103,10 @@ interface SnapshotNode {
   textAlignVertical?: string;
   lineHeight?: { unit?: string; value?: number };
   letterSpacing?: { unit?: string; value?: number };
+  paragraphSpacing?: number;
+  paragraphIndent?: number;
+  textTruncation?: string;
+  maxLines?: number;
   // Instance
   mainComponentId?: string | null;
   mainComponentName?: string | null;
@@ -114,6 +148,11 @@ export function snapshotFigmaNode(node: AnyNode, depth = 0): SnapshotNode {
   copyNumber(node, dst, "width");
   copyNumber(node, dst, "height");
   copyNumber(node, dst, "rotation");
+  // relativeTransform is a 2x3 array of arrays — sanitizeArray strips Symbols.
+  const rt = sanitizeArray(node["relativeTransform"]);
+  if (rt && rt.length === 2) {
+    out.relativeTransform = rt as number[][];
+  }
   copyNumber(node, dst, "opacity");
   copyString(node, dst, "layoutMode");
   copyString(node, dst, "layoutSizingHorizontal");
@@ -129,11 +168,24 @@ export function snapshotFigmaNode(node: AnyNode, depth = 0): SnapshotNode {
   copyNumber(node, dst, "paddingTop");
   copyNumber(node, dst, "paddingBottom");
   copyString(node, dst, "layoutWrap");
+  // Per-child auto-layout overrides
+  copyString(node, dst, "layoutAlign");
+  copyNumber(node, dst, "layoutGrow");
+  copyString(node, dst, "layoutPositioning");
+  copyNumber(node, dst, "minWidth");
+  copyNumber(node, dst, "maxWidth");
+  copyNumber(node, dst, "minHeight");
+  copyNumber(node, dst, "maxHeight");
 
   // Frame / shape
   const clipsContent = asBoolean(node["clipsContent"]);
   if (clipsContent !== undefined) out.clipsContent = clipsContent;
   copyNumber(node, dst, "cornerRadius");
+  copyNumber(node, dst, "topLeftRadius");
+  copyNumber(node, dst, "topRightRadius");
+  copyNumber(node, dst, "bottomLeftRadius");
+  copyNumber(node, dst, "bottomRightRadius");
+  copyNumber(node, dst, "cornerSmoothing");
   // fills / strokes / vectorPaths / fillGeometry — deep-clone to strip Symbols.
   const fills = sanitizeArray(node["fills"]);
   if (fills !== undefined) out.fills = fills;
@@ -143,8 +195,43 @@ export function snapshotFigmaNode(node: AnyNode, depth = 0): SnapshotNode {
   if (strokes !== undefined) out.strokes = strokes;
   copyNumber(node, dst, "strokeWeight");
   copyString(node, dst, "strokeAlign");
+  copyString(node, dst, "strokeJoin");
+  copyString(node, dst, "strokeCap");
+  copyNumber(node, dst, "strokeMiterLimit");
+  copyNumber(node, dst, "strokeTopWeight");
+  copyNumber(node, dst, "strokeRightWeight");
+  copyNumber(node, dst, "strokeBottomWeight");
+  copyNumber(node, dst, "strokeLeftWeight");
+  const dashPattern = asArray<unknown>(node["dashPattern"]);
+  if (dashPattern) {
+    const cleaned: number[] = [];
+    for (const v of dashPattern) {
+      const n = asNumber(v);
+      if (n !== undefined) cleaned.push(n);
+    }
+    if (cleaned.length > 0) out.dashPattern = cleaned;
+  }
   const vectorPaths = sanitizeArray(node["vectorPaths"]);
   if (vectorPaths !== undefined) out.vectorPaths = vectorPaths;
+
+  // Effects + blend mode + mask
+  const effects = sanitizeArray(node["effects"]);
+  if (effects !== undefined && effects.length > 0) out.effects = effects;
+  copyString(node, dst, "blendMode");
+  const isMask = asBoolean(node["isMask"]);
+  if (isMask !== undefined) out.isMask = isMask;
+  copyString(node, dst, "maskType");
+
+  // Constraints
+  const constraints = asObject<{ horizontal?: unknown; vertical?: unknown }>(node["constraints"]);
+  if (constraints) {
+    const c: { horizontal?: string; vertical?: string } = {};
+    const h = asString(constraints.horizontal);
+    if (h !== undefined) c.horizontal = h;
+    const v = asString(constraints.vertical);
+    if (v !== undefined) c.vertical = v;
+    if (c.horizontal || c.vertical) out.constraints = c;
+  }
 
   // Text
   if (typeof node["characters"] === "string") out.characters = node["characters"];
@@ -181,12 +268,25 @@ export function snapshotFigmaNode(node: AnyNode, depth = 0): SnapshotNode {
     if (v !== undefined) lsOut.value = v;
     out.letterSpacing = lsOut;
   }
+  copyNumber(node, dst, "paragraphSpacing");
+  copyNumber(node, dst, "paragraphIndent");
+  copyString(node, dst, "textTruncation");
+  copyNumber(node, dst, "maxLines");
 
-  // Instance
-  const mainComponent = asObject<{ id?: unknown; name?: unknown }>(node["mainComponent"]);
-  if (mainComponent) {
-    out.mainComponentId = asString(mainComponent.id) ?? null;
-    out.mainComponentName = asString(mainComponent.name) ?? null;
+  // Instance — `node.mainComponent` is a synchronous getter that throws
+  // in `documentAccess: "dynamic-page"` mode (the API requires
+  // `getMainComponentAsync` instead). The debug snapshot is best-effort
+  // and is captured before any async pre-pass runs, so we tolerate the
+  // throw and leave the field undefined rather than aborting the whole
+  // snapshot. Mocks / non-dynamic-page surfaces still populate it.
+  try {
+    const mainComponent = asObject<{ id?: unknown; name?: unknown }>(node["mainComponent"]);
+    if (mainComponent) {
+      out.mainComponentId = asString(mainComponent.id) ?? null;
+      out.mainComponentName = asString(mainComponent.name) ?? null;
+    }
+  } catch {
+    // dynamic-page : skip silently.
   }
 
   // Children (only for known container types, and only when we have a real

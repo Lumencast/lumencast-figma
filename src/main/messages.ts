@@ -28,6 +28,7 @@ export type MainToUi =
   | { kind: "export-result"; payload: ExportResult }
   | { kind: "import-progress"; phase: ImportPhase; message?: string }
   | { kind: "import-result"; payload: ImportResult }
+  | { kind: "diagnostic-dump"; filename: string; json: string }
   | { kind: "error"; code: PluginErrorCode; message: string; detail?: unknown };
 
 // ----------- Payload shapes -----------

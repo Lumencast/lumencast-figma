@@ -11,6 +11,7 @@ import { PLUGIN_DATA_NAMESPACE, PLUGIN_DATA_KEYS } from "~shared/constants";
 import type { ImportFigmaApi, ImportInstanceNode } from "../figma-api";
 import { applyUniversal } from "../universal";
 import { readFigmaMetadata } from "../figma-metadata";
+import { applyFigmaExtras } from "../figma-extras";
 import type { BuildContext } from "./types";
 
 export function buildInstance(
@@ -21,6 +22,10 @@ export function buildInstance(
   const node = api.createInstancePlaceholder();
   const figmaMeta = readFigmaMetadata(prim);
   node.name = figmaMeta.layerName ?? `Instance: ${prim.scene_id}`;
+  // Placeholder is built from `figma.createFrame()` under the hood — clear
+  // the default white fill + black stroke before reapplying source state.
+  (node as unknown as { fills?: unknown[] }).fills = [];
+  (node as unknown as { strokes?: unknown[] }).strokes = [];
 
   if (prim.size) node.resize(prim.size.w, prim.size.h);
   if (prim.position) {
@@ -54,5 +59,6 @@ export function buildInstance(
   }
 
   applyUniversal(node, prim);
+  applyFigmaExtras(node, figmaMeta);
   return node;
 }

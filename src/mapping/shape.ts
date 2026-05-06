@@ -12,6 +12,7 @@ import { parseLayerName } from "../export/bindings";
 import { resolveVariable } from "./variables";
 import { asArray, asNumber } from "./figma-mixed";
 import { withFigmaMetadata } from "./figma-metadata";
+import { captureFigmaExtras } from "./figma-extras";
 import type { MappingContext, MappingResult } from "./types";
 
 interface MockShapeNode {
@@ -45,8 +46,13 @@ interface MockShapeNode {
 }
 
 export interface ShapeMapOptions {
+  parentRotation?: number;
   parentX?: number;
   parentY?: number;
+  /** True when the immediate source parent is GROUP / BOOLEAN_OPERATION. */
+  parentIsTransparent?: boolean;
+  /** Composed transparent-Group ancestor chain — see TextMapOptions. */
+  groupChainTransform?: number[][];
 }
 
 export function mapShape(
@@ -64,7 +70,10 @@ export function mapShape(
   const prim: ShapePrimitive = {
     kind: "shape",
     geometry: geometryFor(node),
-    ...extractUniversal(node),
+    ...extractUniversal(node, {
+      parentRotation: opts?.parentRotation ?? 0,
+      parentIsTransparent: opts?.parentIsTransparent === true,
+    }),
   };
 
   const w = asNumber(node.width);
@@ -146,6 +155,12 @@ export function mapShape(
   if (node.name && node.name.trim().length > 0) {
     withFigmaMetadata(prim, { layerName: node.name });
   }
+
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
+    localPosition: prim.position ?? { x: 0, y: 0 },
+    parentIsTransparent: opts?.parentIsTransparent === true,
+    ...(opts?.groupChainTransform ? { groupChainTransform: opts.groupChainTransform } : {}),
+  });
 
   // Variable bindings : when fills[0] has a bound color variable AND the
   // shape rendered a single solid `fill`, replace the static fill with a

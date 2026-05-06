@@ -27,21 +27,24 @@ function modeFromFigma(m: "FIXED" | "HUG" | "FILL" | undefined): SizingMode | nu
   return null;
 }
 
-export function extractUniversal(node: FigmaNodeWithUniversal): UniversalProps {
-  const out: UniversalProps = {};
+export interface ExtractUniversalOptions {
+  /** Cumulative rotation of the closest rotated ancestor (degrees). */
+  parentRotation?: number;
+  /** True when the immediate source parent is GROUP / BOOLEAN_OPERATION.
+   *  In that case the rotation is encoded losslessly in the captured raw
+   *  `metadata.figma.transform` matrix — emitting it again as a universal
+   *  `rotation` field would cause double-application on Figma re-import.
+   *  Non-Figma consumers ignore the metadata, so the visual approximation
+   *  for them comes from the position alone (acceptable for transparent
+   *  groups, where the rotation is geometrically tied to the matrix). */
+  parentIsTransparent?: boolean;
+}
 
-  console.warn(
-    "[lumencast]     extractUniversal — visible:",
-    typeof node.visible,
-    "opacity:",
-    typeof node.opacity,
-    "rotation:",
-    typeof node.rotation,
-    "layoutSizingH:",
-    node.layoutSizingHorizontal,
-    "layoutSizingV:",
-    node.layoutSizingVertical,
-  );
+export function extractUniversal(
+  node: FigmaNodeWithUniversal,
+  opts?: ExtractUniversalOptions,
+): UniversalProps {
+  const out: UniversalProps = {};
 
   if (asBoolean(node.visible) === false) {
     out.visible = false;
@@ -50,9 +53,15 @@ export function extractUniversal(node: FigmaNodeWithUniversal): UniversalProps {
   if (opacity !== undefined && opacity !== 1) {
     out.opacity = roundTo3(opacity);
   }
-  const rotation = asNumber(node.rotation);
-  if (rotation !== undefined && rotation !== 0) {
-    out.rotation = roundTo3(rotation);
+  // Skip rotation under a transparent-group parent — the raw matrix in
+  // metadata.figma.transform owns rotation/flip/skew exactly.
+  if (!opts?.parentIsTransparent) {
+    const rotation = asNumber(node.rotation);
+    const parentRot = opts?.parentRotation ?? 0;
+    if (rotation !== undefined) {
+      const local = normaliseDegrees(rotation - parentRot);
+      if (local !== 0) out.rotation = roundTo3(local);
+    }
   }
 
   const lsH = asString(node.layoutSizingHorizontal) as "FIXED" | "HUG" | "FILL" | undefined;
@@ -63,6 +72,12 @@ export function extractUniversal(node: FigmaNodeWithUniversal): UniversalProps {
     out.sizing = { x: sx ?? "fixed", y: sy ?? "fixed" };
   }
   return out;
+}
+
+/** Normalise a degree value to (-180, 180]. */
+function normaliseDegrees(d: number): number {
+  const n = (((d % 360) + 540) % 360) - 180;
+  return Math.abs(n) < 1e-6 ? 0 : n;
 }
 
 function roundTo3(n: number): number {

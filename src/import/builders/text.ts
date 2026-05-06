@@ -10,7 +10,8 @@ import type { ImportFigmaApi, ImportPaint, ImportTextNode } from "../figma-api";
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import { cssToRgb } from "../color";
 import { applyUniversal } from "../universal";
-import { readFigmaMetadata } from "../figma-metadata";
+import { readFigmaMetadata, type FigmaPaintMetadata } from "../figma-metadata";
+import { applyFigmaExtras } from "../figma-extras";
 import type { BuildContext } from "./types";
 
 export function buildText(
@@ -67,6 +68,35 @@ export function buildText(
   }
 
   if (prim.style?.fontSize !== undefined) node.fontSize = prim.style.fontSize;
+  // LSML carries `lineHeight` as a ratio multiplier (e.g. 1 = 100%, 1.2 =
+  // 120%) — map back to Figma's PERCENT unit which encodes the same.
+  // Without this the imported text falls back to AUTO leading and source
+  // designs that explicitly set `leading-none` (1.0) render with a
+  // visibly larger line-box.
+  if (typeof prim.style?.lineHeight === "number") {
+    try {
+      (node as unknown as { lineHeight?: { unit: string; value?: number } }).lineHeight = {
+        unit: "PERCENT",
+        value: prim.style.lineHeight * 100,
+      };
+    } catch {
+      // Some font/glyph combinations reject the setter — tolerate.
+    }
+  }
+  // LSML letterSpacing is in pixels (LSML 1.1 §4.4) — Figma's setter
+  // takes the PIXELS variant of its discriminated union. Plain numbers
+  // round-trip cleanly ; PERCENT-mode source spacing is normalised to
+  // pixels by the mapping side via fontSize.
+  if (typeof prim.style?.letterSpacing === "number") {
+    try {
+      (node as unknown as { letterSpacing?: { unit: string; value: number } }).letterSpacing = {
+        unit: "PIXELS",
+        value: prim.style.letterSpacing,
+      };
+    } catch {
+      // Tolerate mock surfaces that don't accept letterSpacing.
+    }
+  }
   // `fontWeight` on a real Figma TextNode is a read-only getter derived
   // from `fontName.style` ; assigning to it throws `no setter for property
   // fontWeight`. The mock-side test API DOES accept the assignment (and
@@ -90,16 +120,54 @@ export function buildText(
       node.fills = [fill];
     }
   }
+  // `metadata.figma.textFills` overrides `style.color` when present —
+  // covers gradients, multi-fill, per-paint blend / opacity that LSML's
+  // single-color field can't express. Default-NORMAL paints with a
+  // single SOLID fill round-trip via `style.color` instead.
+  if (figmaMeta.textFills && figmaMeta.textFills.length > 0) {
+    const paints = figmaMeta.textFills
+      .map((p) => figmaPaintMetadataToImportPaint(p))
+      .filter((p): p is ImportPaint => p !== null);
+    if (paints.length > 0) node.fills = paints;
+  }
   if (prim.style?.textAlign) {
     const align = prim.style.textAlign.toUpperCase();
     if (align === "LEFT" || align === "CENTER" || align === "RIGHT" || align === "JUSTIFIED") {
       node.textAlignHorizontal = align;
     }
   }
+  // textAlignVertical : Figma exposes TOP / CENTER / BOTTOM. The default is
+  // TOP, but designs often center text inside a fixed-height box (e.g.
+  // a 43px Arial label inside a 67×389 frame, vertically centered). We
+  // stash the source's value in metadata.figma.textAlignVertical and
+  // restore it here — without this the imported text drifts to the top
+  // of its box and overlaps the wrong vertical position.
+  if (figmaMeta.textAlignVertical) {
+    try {
+      (node as unknown as { textAlignVertical?: string }).textAlignVertical =
+        figmaMeta.textAlignVertical;
+    } catch {
+      // Mock surfaces may not accept the setter — tolerate.
+    }
+  }
+  // textDecoration : LSML's CSS-style strings → Figma's enum. Default
+  // NONE / undefined collapses to "NONE".
+  if (typeof prim.style?.textDecoration === "string") {
+    let decoration: "NONE" | "UNDERLINE" | "STRIKETHROUGH" = "NONE";
+    if (prim.style.textDecoration === "underline") decoration = "UNDERLINE";
+    else if (prim.style.textDecoration === "line-through") decoration = "STRIKETHROUGH";
+    if (decoration !== "NONE") {
+      try {
+        (node as unknown as { textDecoration?: string }).textDecoration = decoration;
+      } catch {
+        // Tolerate.
+      }
+    }
+  }
 
-  // textCase : LSML 1.1 §4.4.1 `style.textTransform` covers UPPER /
-  // LOWER / TITLE. SMALL_CAPS / SMALL_CAPS_FORCED have no spec
-  // equivalent and ride in `metadata.figma.textCase`.
+  // textCase : prefer the canonical `style.textTransform` (LSML 1.1
+  // §4.4.1). Fall back to `metadata.figma.textCase` for v0.1 bundles
+  // produced before the spec change.
   const textCase = transformToTextCase(prim.style?.textTransform) ?? figmaMeta.textCase;
   if (textCase) {
     (node as unknown as { textCase?: string }).textCase = textCase;
@@ -107,20 +175,128 @@ export function buildText(
   if (figmaMeta.textAutoResize) {
     (node as unknown as { textAutoResize?: string }).textAutoResize = figmaMeta.textAutoResize;
   }
-  // Position : universal prop (LSML 1.1 §5.4).
-  const pos = prim.position;
-  if (pos) {
-    (node as unknown as { x?: number; y?: number }).x = pos.x;
-    (node as unknown as { x?: number; y?: number }).y = pos.y;
+  // Restore the source's explicit dimensions when textAutoResize ≠
+  // WIDTH_AND_HEIGHT (the createText default). HEIGHT fixes width and
+  // hugs height to content ; NONE / TRUNCATE fix both. Without this,
+  // the imported text grows to its natural-content width (e.g. a 1034px
+  // wide line of "On demand vs formalized" balloons to 1425px and the
+  // parent stack's clipsContent crops it visibly).
+  //
+  // resize MUST come after textAutoResize : Figma rejects resize() while
+  // the node is in WIDTH_AND_HEIGHT mode (auto-resize takes precedence).
+  if (figmaMeta.textAutoResize && figmaMeta.size) {
+    try {
+      node.resize(figmaMeta.size.w, figmaMeta.size.h);
+    } catch {
+      // Some font/glyph combinations or pending font loads make the
+      // setter throw — tolerate so the rest of the build continues.
+    }
+  }
+  // Position : prefer the canonical universal prop (LSML 1.1 §5.4) ;
+  // fall back to `metadata.figma.position` for v0.1 bundles. Skip when
+  // `meta.transform` is present — the relativeTransform setter inside
+  // applyFigmaExtras encodes position + linear atomically (FRAME-ancestor-
+  // relative), so an x/y override here would corrupt the translation.
+  if (!figmaMeta.transform) {
+    const pos = prim.position ?? figmaMeta.position;
+    if (pos) {
+      (node as unknown as { x?: number; y?: number }).x = pos.x;
+      (node as unknown as { x?: number; y?: number }).y = pos.y;
+    }
   }
 
+  // Multi-style ranges : restore per-character styling captured by the
+  // mapping side (multi-fontName, multi-color, multi-fontSize text). All
+  // setters are guarded with try/catch + optional-chaining since the
+  // mock surface in vitest doesn't implement them.
+  applyTextSegments(node, figmaMeta.textSegments);
+
   applyUniversal(node, prim);
+  applyFigmaExtras(node, figmaMeta);
   return node;
+}
+
+/** Apply each captured per-range styling to the freshly-built TEXT node.
+ *  Must run AFTER `node.characters` is set (the setters reject ranges
+ *  that exceed the current character count) and BEFORE applyFigmaExtras
+ *  so node-level metadata doesn't override per-range values. */
+function applyTextSegments(
+  node: ImportTextNode,
+  segments: NonNullable<ReturnType<typeof readFigmaMetadata>["textSegments"]> | undefined,
+): void {
+  if (!segments || segments.length === 0) return;
+  for (const seg of segments) {
+    if (seg.end <= seg.start) continue;
+    if (seg.fontName) {
+      try {
+        node.setRangeFontName?.(seg.start, seg.end, seg.fontName);
+      } catch {
+        // Font may not be loaded — preloadFonts is best-effort. Skip.
+      }
+    }
+    if (seg.fontSize !== undefined) {
+      try {
+        node.setRangeFontSize?.(seg.start, seg.end, seg.fontSize);
+      } catch {
+        // Tolerate.
+      }
+    }
+    if (seg.fills && seg.fills.length > 0) {
+      const paints = seg.fills
+        .map((p) => figmaPaintMetadataToImportPaint(p))
+        .filter((p): p is ImportPaint => p !== null);
+      if (paints.length > 0) {
+        try {
+          node.setRangeFills?.(seg.start, seg.end, paints);
+        } catch {
+          // Tolerate.
+        }
+      }
+    }
+    if (seg.textCase) {
+      try {
+        node.setRangeTextCase?.(seg.start, seg.end, seg.textCase);
+      } catch {
+        // Tolerate.
+      }
+    }
+    if (seg.textDecoration && seg.textDecoration !== "NONE") {
+      try {
+        node.setRangeTextDecoration?.(seg.start, seg.end, seg.textDecoration);
+      } catch {
+        // Tolerate.
+      }
+    }
+    if (seg.letterSpacing) {
+      try {
+        node.setRangeLetterSpacing?.(seg.start, seg.end, seg.letterSpacing);
+      } catch {
+        // Tolerate.
+      }
+    }
+    if (seg.lineHeight) {
+      try {
+        node.setRangeLineHeight?.(seg.start, seg.end, seg.lineHeight);
+      } catch {
+        // Tolerate.
+      }
+    }
+    if (seg.hyperlink && seg.hyperlink.url) {
+      try {
+        node.setRangeHyperlink?.(seg.start, seg.end, {
+          type: "URL",
+          value: seg.hyperlink.url,
+        });
+      } catch {
+        // Tolerate.
+      }
+    }
+  }
 }
 
 /** Map LSML `style.textTransform` (LSML §4.4.1) back to Figma's `textCase`.
  *  Returns undefined when no transform is declared, leaving the caller to
- *  fall back to `metadata.figma.textCase` for the SMALL_CAPS variants. */
+ *  fall back to `metadata.figma.textCase` for v0.1 bundles. */
 function transformToTextCase(tt: string | undefined): "UPPER" | "LOWER" | "TITLE" | undefined {
   if (tt === "uppercase") return "UPPER";
   if (tt === "lowercase") return "LOWER";
@@ -160,4 +336,38 @@ function deriveName(prim: TextPrimitive): string {
     return `[bind:${path}] Text`;
   }
   return "Text";
+}
+
+/** Reconstruct an ImportPaint from the serialisable
+ *  `metadata.figma.textFills[]` shape. Used by the text builder when
+ *  the source carried a non-trivial fill (gradient, multi-fill, etc.). */
+function figmaPaintMetadataToImportPaint(p: FigmaPaintMetadata): ImportPaint | null {
+  if (p.type === "SOLID") {
+    if (!p.color) return null;
+    const out: ImportPaint = { type: "SOLID", color: p.color };
+    if (p.opacity !== undefined && p.opacity !== 1) out.opacity = p.opacity;
+    if (p.visible === false) out.visible = false;
+    if (p.blendMode) (out as unknown as Record<string, unknown>)["blendMode"] = p.blendMode;
+    return out;
+  }
+  if (p.type === "GRADIENT_LINEAR" || p.type === "GRADIENT_RADIAL") {
+    if (!p.gradientStops || p.gradientStops.length < 1) return null;
+    const transform =
+      p.gradientTransform && p.gradientTransform.length === 2
+        ? p.gradientTransform
+        : [
+            [1, 0, 0],
+            [0, 1, 0],
+          ];
+    const out: ImportPaint = {
+      type: p.type,
+      gradientStops: p.gradientStops,
+      gradientTransform: transform,
+    };
+    if (p.opacity !== undefined && p.opacity !== 1) out.opacity = p.opacity;
+    if (p.visible === false) out.visible = false;
+    if (p.blendMode) (out as unknown as Record<string, unknown>)["blendMode"] = p.blendMode;
+    return out;
+  }
+  return null;
 }
