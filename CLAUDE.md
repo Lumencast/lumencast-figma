@@ -10,7 +10,7 @@
 
 ## Description
 
-`lumencast-figma` est le **plugin Figma officiel de Lumencast**. Il convertit une frame Figma en bundle de scène **LSML 1.1** (`.lsml`) et inversement (roundtrip). Premier livrable Layer 5 (authoring tools) du projet Lumencast.
+`lumencast-figma` est le **plugin Figma officiel de Lumencast**. Il convertit une frame Figma en bundle de scène **LSML 1.1** packagée en archive **`.lsmlz`** (ZIP du `.lsml` JSON canonique + ses assets content-addressés, spec LSMLZ-1) et inversement (roundtrip). Premier livrable Layer 5 (authoring tools) du projet Lumencast.
 
 Le repo est un **package unique** (pas un monorepo) qui produit deux artefacts buildés :
 
@@ -26,7 +26,8 @@ Distribution : Figma Community (publication officielle) + GitHub Releases (`.zip
 - **Language** : TypeScript 5.7 strict (`noUncheckedIndexedAccess` on)
 - **UI iframe** : Preact 10 + `@preact/signals` (bundle ~10-30 KB gz)
 - **Figma API** : `@figma/plugin-typings` (typings only, MIT)
-- **Canonicalization** : `@lumencast/compiler` (depuis `lumencast-js/packages/compiler/`) — source de vérité pour le hashing du bundle
+- **Canonicalization** : implémentation locale `src/export/canonicalize.ts` (JCS RFC 8785 + `scene_version` placeholder protocol). Migration vers `@lumencast/compiler@0.2.0` (qui accepte LSML 1.1 depuis sa v0.2) trackée par lumencast-figma#1, conditionnée à la publication npm du package.
+- **Archive packaging** : implémentation locale `src/ui/archive.ts`. Migration vers `@lumencast/archive@0.1.0` planifiée — même condition (publication npm).
 - **Build** : Vite 6 library mode, deux entrées (`src/main/index.ts` + `src/ui/index.tsx`)
 - **Test** : Vitest (unit + integration) avec mock Figma API
 - **Lint** : ESLint 9 flat config + Prettier
@@ -51,8 +52,12 @@ Voir `CONTRIBUTING.md` pour les commandes complètes.
 
 ## Conventions spécifiques
 
-- **Source canonique du format** : `lumencast-protocol/spec/LSML-1.md`. Aucune divergence d'identifiants ou de sémantique. Le plugin emet **LSML 1.1 strict**, jamais 1.0 fallback.
-- **Extension fichier** : `.lsml` (renommage de `.lsml.json` — le contenu reste du JSON content-addressé). Convention propagée depuis le protocol repo.
+- **Source canonique du format** : `lumencast-protocol/spec/LSML-1.md` + `LSMLZ-1.md` (archive). Aucune divergence d'identifiants ou de sémantique. Le plugin emet **LSML 1.1 strict**, jamais 1.0 fallback.
+- **Authoring profile** : le plugin déclare `profiles: ["x-figma.authoring/1"]` dans chaque bundle (LSML §17.5). Surface normative : `lumencast-protocol/spec/profiles/figma-authoring.md`.
+- **Extensions fichier** :
+  - `.lsmlz` (préféré — archive ZIP de l'export, LSMLZ §2.2) — celui que produit le plugin par défaut.
+  - `.lsml` accepté à l'import (loose form, JSON canonical) ; `.lsml.json` accepté.
+  - Médiatypes : `application/lsml+zip` (archive), `application/lsml+json` (loose JSON).
 - **Plugin data namespace** : `lumencast.*` exclusivement. Lecture / écriture hors namespace interdite.
 - **Layer name conventions** (public API — breaking change si modifiées) :
   - `[bind:path.to.leaf] <Layer Name>` → binding sur la primitive
@@ -125,6 +130,8 @@ Concurrency : cancel sur PR, no cancel sur main. Pas de release auto v0.1.x — 
 - **2026-05-03** — Roundtrip support **dans v0.1**, pas v0.2 : décision produit forte du master conversation. Coût ~3 semaines additionnelles assumé.
 - **2026-05-03** — LSML 1.1 strict d'office (pas de fallback 1.0) : la cohérence du pipeline Figma → Prism → Orion exige une version unique. Si LSML 1.1 manque une feature, c'est un issue contre `lumencast-protocol`, pas contre ce repo.
 - **2026-05-03** — Variables Figma supportées (Color / Number / String) en v0.1, modes Light/Dark + Boolean en v0.2 : trade-off complexité × valeur.
+- **2026-05-04** — `.lsmlz` archive container (ZIP du `.lsml` + `assets/`) adopté comme format d'export par défaut depuis v0.1.2. Spec normative remontée à `lumencast-protocol/spec/LSMLZ-1.md` (vendor-neutral, `application/lsml+zip`). Le `.lsml` loose reste accepté à l'import.
+- **2026-05-05** — Phase 5 layout-fidelity (post-v0.1.1) : 6 fix import-side compensant des comportements non-documentés de l'API Figma (silent-drop pre-attach, x/y reset on auto-layout appendChild, `figma.group()` defaults). Tests mock simulent les quirks pour CI catchabilité. Détail dans `HANDOFF.md` § Phase 5 + `CHANGELOG.md` [Unreleased].
 
 ## Source material
 

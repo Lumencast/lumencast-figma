@@ -26,25 +26,26 @@ variables (tokens)                              + composite-instance
 
 Concretely :
 
-- **Export** — select a Figma frame, click _Export to LSML_, get a `.lsml` file (and a sibling `assets/` directory for images).
-- **Import** — open a `.lsml` file, the plugin rebuilds the node tree inside the current Figma page.
+- **Export** — select a Figma frame, click _Export to LSML_, get a single `.lsmlz` archive (ZIP containing the canonical `.lsml` bundle plus content-addressed assets).
+- **Import** — open a `.lsmlz` archive (or a loose `.lsml` + sibling `assets/`), the plugin rebuilds the node tree inside the current Figma page.
 - **Round-trip-stable** — exporting an imported scene reproduces the source byte-for-byte.
 
 The output is a **valid Lumencast scene bundle** that any `@lumencast/runtime`-compliant host can render — `@lumencast/runtime` (browser), Prism (enrichment editor), Orion (Go server), `lumencast-go server`, `lumencast-py server`, `lumencast-rs server`, or any future implementation.
 
 ## Status
 
-**v0.1.0** — feature-complete export + import roundtrip. Figma Community publication is the next step ; until then, install via [local plugin import](#local-development).
+**v0.1.1** — feature-complete export + import roundtrip with high-fidelity layout preservation for nested groups, boolean operations, and auto-layout siblings. Figma Community publication is the next step ; until then, install via [local plugin import](#local-development).
 
-| Phase | Scope                                                              | Status |
-| ----- | ------------------------------------------------------------------ | ------ |
-| 0     | Repo, governance, CI, manifest, src/ skeleton                      | done   |
-| 1     | Export MVP — text/image/shape/frame/stack, bindings, OperatorInput | done   |
-| 2     | LSML 1.1 features — instances, gradients, universal props, tokens  | done   |
-| 3     | Roundtrip — `.lsml` → Figma node tree (byte-stable on fixtures)    | done   |
-| 4     | OSS polish + Figma Community submission                            | active |
+| Phase | Scope                                                                                                              | Status |
+| ----- | ------------------------------------------------------------------------------------------------------------------ | ------ |
+| 0     | Repo, governance, CI, manifest, src/ skeleton                                                                      | done   |
+| 1     | Export MVP — text/image/shape/frame/stack, bindings, OperatorInput                                                 | done   |
+| 2     | LSML 1.1 features — instances, gradients, universal props, tokens                                                  | done   |
+| 3     | Roundtrip — `.lsml` → Figma node tree (byte-stable on fixtures)                                                    | done   |
+| 4     | OSS polish + Figma Community submission                                                                            | active |
+| 5     | Layout fidelity — flat-then-group transform replay, boolean-op flavour preservation, auto-layout ABSOLUTE siblings | done   |
 
-113 tests passing (export + import + roundtrip + 6 e2e against the canonical `schema.json`). Track the [chantier brief](../briefs/chantier-lumencast-figma.md) for the full plan.
+135 tests passing (export + import + roundtrip + 6 e2e against the canonical `schema.json` + headless import-from-archive). Track the [chantier brief](../briefs/chantier-lumencast-figma.md) for the full plan.
 
 ## Quick start (when published)
 
@@ -100,27 +101,30 @@ Full convention reference : [`docs/conventions.md`](docs/conventions.md).
 
 ## Mapping table — Figma → LSML 1.1
 
-| Figma node                            | LSML primitive                    | Notes                                                                                                                                                         |
-| ------------------------------------- | --------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
-| `TEXT`                                | `text`                            | font, size, weight, color, align mapped to `style.*` (LSML §4.4)                                                                                              |
-| `RECTANGLE` w/ image fill             | `image`                           | image hash → `assets/` ref ; `alt` required for a11y (LSML §4.5, §13)                                                                                         |
-| `RECTANGLE` / `ELLIPSE` / `VECTOR`    | `shape`                           | multi-fill / gradients via `fills[]` (LSML §4.6 + §4.12, 1.1+)                                                                                                |
-| `FRAME` (no auto-layout)              | `frame`                           | `size: { w, h }`, optional `backgrounds[]` for stacked fills (LSML §4.3, 1.1+)                                                                                |
-| `FRAME` (auto-layout horizontal)      | `stack` (`direction: horizontal`) | `gap`, `padding`, `wrap`, `crossGap` (LSML §4.1, 1.1+)                                                                                                        |
-| `FRAME` (auto-layout vertical)        | `stack` (`direction: vertical`)   | idem                                                                                                                                                          |
-| `COMPONENT` / `INSTANCE`              | `instance`                        | `scene_id` + `scene_version` + `params` / `bindParams` (LSML §4.9, 1.1+)                                                                                      |
-| Figma Variable ref (Color)            | leaf binding                      | shape `bind: { fill: "tokens.<group>.<name>" }` / frame `bind: { background: ... }` + `defaults` seeded — composition pattern, no spec extension (LSML §17.0) |
-| Auto-layout sizing (`fixed/hug/fill`) | `sizing: { x, y }`                | universal prop on every primitive (LSML §5.4, 1.1+)                                                                                                           |
-| Layer name `[bind:path]`              | `bind` field                      | text / image / shape value binding                                                                                                                            |
-| `OperatorInput` component             | `operator_inputs[]` entry         | extracted, not rendered (LSML §8) — supports 9 types (string, number, boolean, enum, color, date, time, path-ref, image-ref)                                  |
+| Figma node                            | LSML primitive                                                      | Notes                                                                                                                                                         |
+| ------------------------------------- | ------------------------------------------------------------------- | ------------------------------------------------------------------------------------------------------------------------------------------------------------- |
+| `TEXT`                                | `text`                                                              | font, size, weight, color, align mapped to `style.*` (LSML §4.4)                                                                                              |
+| `RECTANGLE` w/ image fill             | `image`                                                             | image hash → `assets/` ref ; `alt` required for a11y (LSML §4.5, §13)                                                                                         |
+| `RECTANGLE` / `ELLIPSE` / `VECTOR`    | `shape`                                                             | multi-fill / gradients via `fills[]` (LSML §4.6 + §4.12, 1.1+)                                                                                                |
+| `FRAME` (no auto-layout)              | `frame`                                                             | `size: { w, h }`, optional `backgrounds[]` for stacked fills (LSML §4.3, 1.1+)                                                                                |
+| `FRAME` (auto-layout horizontal)      | `stack` (`direction: horizontal`)                                   | `gap`, `padding`, `wrap`, `crossGap` (LSML §4.1, 1.1+)                                                                                                        |
+| `FRAME` (auto-layout vertical)        | `stack` (`direction: vertical`)                                     | idem                                                                                                                                                          |
+| `COMPONENT` / `INSTANCE`              | `instance`                                                          | `scene_id` + `scene_version` + `params` / `bindParams` (LSML §4.9, 1.1+)                                                                                      |
+| `GROUP`                               | `frame` (`metadata.figma.sourceType="GROUP"`)                       | flat-then-group reconstruction at import — leaves attached under FRAME ancestor, then `figma.group()` wraps them                                              |
+| `BOOLEAN_OPERATION`                   | `frame` (`metadata.figma.sourceType="BOOLEAN_OPERATION"` + flavour) | `UNION` / `SUBTRACT` / `INTERSECT` / `EXCLUDE` preserved ; roundtripped via `figma.union/subtract/intersect/exclude`                                          |
+| Figma Variable ref (Color)            | leaf binding                                                        | shape `bind: { fill: "tokens.<group>.<name>" }` / frame `bind: { background: ... }` + `defaults` seeded — composition pattern, no spec extension (LSML §17.0) |
+| Auto-layout sizing (`fixed/hug/fill`) | `sizing: { x, y }`                                                  | universal prop on every primitive (LSML §5.4, 1.1+)                                                                                                           |
+| Layer name `[bind:path]`              | `bind` field                                                        | text / image / shape value binding                                                                                                                            |
+| `OperatorInput` component             | `operator_inputs[]` entry                                           | extracted, not rendered (LSML §8) — supports 9 types (string, number, boolean, enum, color, date, time, path-ref, image-ref)                                  |
 
-Things the plugin intentionally **does not** map in v0.1 :
+Things the plugin intentionally **does not** render natively in v0.1 :
 
-- Animations (these belong in LSML `animate` blocks, declared in Prism)
-- Effects (drop-shadow, inner-shadow, layer blur) — kept for v0.2
+- Animations — belong in LSML `animate` blocks, declared in Prism (the enrichment layer)
 - Boolean variables and Figma variable modes (Light/Dark) — kept for v0.2
 - Text style variables (color / fontSize) — blocked on [lumencast-protocol#23](https://github.com/Lumencast/lumencast-protocol/issues/23) (`text.bind` schema is `{value}` only)
 - Multi-frame batch export — single frame only in v0.1
+
+Effects (drop-shadow, inner-shadow, layer / background blur), blend modes, masks, per-corner radii and similar visual properties **are captured** via `metadata.figma.*` per the [`x-figma.authoring/1`](https://github.com/Lumencast/lumencast-protocol/blob/main/spec/profiles/figma-authoring.md) profile — runtimes that support the profile reproduce them ; runtimes that don't ignore the metadata gracefully and render the underlying primitives.
 
 ## Local development
 
