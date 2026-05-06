@@ -11,7 +11,7 @@
 import { describe, it, expect } from "vitest";
 import { readFileSync, existsSync } from "node:fs";
 import { join } from "node:path";
-import { unzipSync, strFromU8 } from "fflate";
+import { unpackArchive } from "@lumencast/archive";
 
 import { importBundle } from "../../src/import";
 import { createImportMock, type BuiltNode } from "../fixtures/figma/import-mock";
@@ -23,18 +23,8 @@ function unpackLsmlz(bytes: Uint8Array): {
   bundleText: string;
   assets: { path: string; bytes: Uint8Array }[];
 } {
-  const entries = unzipSync(bytes);
-  let bundleText = "";
-  const assets: { path: string; bytes: Uint8Array }[] = [];
-  for (const [path, content] of Object.entries(entries)) {
-    if (path.startsWith("_debug/")) continue;
-    if (path.startsWith("assets/")) {
-      assets.push({ path, bytes: content });
-    } else if (/\.lsml$/.test(path)) {
-      bundleText = strFromU8(content);
-    }
-  }
-  return { bundleText, assets };
+  const { lsmlBytes, assets } = unpackArchive(bytes);
+  return { bundleText: lsmlBytes, assets };
 }
 
 function countPrimitives(p: PrimitiveNode): number {

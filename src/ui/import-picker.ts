@@ -6,7 +6,7 @@
 // flow (pick the `.lsml` + every asset image manually) for compatibility
 // with bundles produced by older plugin versions or hand-authored.
 
-import { isArchive, unpackArchive } from "./archive";
+import { isArchive, unpackArchive } from "@lumencast/archive";
 
 export interface PickedImport {
   /** UTF-8 contents of the .lsml bundle. */
