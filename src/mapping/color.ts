@@ -62,6 +62,29 @@ export function paintToSolidCss(paint: FigmaPaint): string | null {
   return rgbToCss(paint.color, a);
 }
 
+/** Extract the raw 2x3 affine matrix from a Figma paint, if it has one.
+ *  Used by mappers to stash the matrix in `metadata.figma.gradientTransforms[]`
+ *  for byte-stable round-trip — `angle_deg` alone loses translation/scale/shear. */
+export function rawGradientTransform(paint: FigmaPaint): number[][] | null {
+  if (paint.type !== "GRADIENT_LINEAR" && paint.type !== "GRADIENT_RADIAL") return null;
+  const t = paint.gradientTransform;
+  if (!t || t.length < 2) return null;
+  // Deep-clone to a plain 2x3 array — Figma's host matrix carries Symbol-
+  // keyed metadata that breaks JSON.stringify and downstream canonicalize.
+  const out: number[][] = [];
+  for (let i = 0; i < 2; i++) {
+    const row = t[i];
+    if (!row) continue;
+    const cleaned: number[] = [];
+    for (let j = 0; j < 3; j++) {
+      const v = row[j];
+      cleaned.push(typeof v === "number" ? v : 0);
+    }
+    out.push(cleaned);
+  }
+  return out.length === 2 ? out : null;
+}
+
 /** Best-effort gradient-transform → angle in degrees.
  *
  *  Figma stores a 2x3 affine matrix that maps the unit square to the gradient

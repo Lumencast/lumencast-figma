@@ -6,16 +6,18 @@
 // runtime treats the root as the document origin).
 
 import type { Bind, Fill, FramePrimitive } from "~shared/lsml-types";
-import { paintToFill, type FigmaPaint, paintToSolidCss } from "./color";
+import { paintToFill, rawGradientTransform, type FigmaPaint, paintToSolidCss } from "./color";
+import { withFigmaMetadata, type FigmaImageBackground } from "./figma-metadata";
+import { captureFigmaExtras } from "./figma-extras";
+import { capturePaintExtras } from "./image";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { resolveVariable } from "./variables";
 import { asArray, asBoolean, asNumber } from "./figma-mixed";
-import { withFigmaMetadata } from "./figma-metadata";
 import type { MappingContext, MappingResult } from "./types";
 
 export interface FrameMapInput {
-  type: "FRAME" | "COMPONENT" | "INSTANCE" | "GROUP";
+  type: "FRAME" | "COMPONENT" | "INSTANCE" | "GROUP" | "BOOLEAN_OPERATION";
   id: string;
   name: string;
   width: number;
@@ -33,6 +35,8 @@ export interface FrameMapInput {
   clipsContent?: boolean;
   layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
+  /** Only meaningful when `type === "BOOLEAN_OPERATION"`. */
+  booleanOperation?: "UNION" | "SUBTRACT" | "INTERSECT" | "EXCLUDE";
 }
 
 export interface FrameMapOptions {
@@ -41,6 +45,12 @@ export interface FrameMapOptions {
   /** Parent's coordinate origin in Figma — children's `x/y` are absolute in Figma. */
   parentX?: number;
   parentY?: number;
+  /** Cumulative rotation of the closest rotated ancestor (degrees). */
+  parentRotation?: number;
+  /** True when the immediate source parent is GROUP / BOOLEAN_OPERATION. */
+  parentIsTransparent?: boolean;
+  /** Composed transparent-Group ancestor chain — see TextMapOptions. */
+  groupChainTransform?: number[][];
 }
 
 export function mapFrame(
@@ -54,7 +64,10 @@ export function mapFrame(
   const prim: FramePrimitive = {
     kind: "frame",
     children,
-    ...extractUniversal(node),
+    ...extractUniversal(node, {
+      parentRotation: opts.parentRotation ?? 0,
+      parentIsTransparent: opts.parentIsTransparent === true,
+    }),
   };
 
   const w = asNumber(node.width) ?? 0;
@@ -73,11 +86,39 @@ export function mapFrame(
   }
 
   // Backgrounds : single solid → `background`, multi/gradient → `backgrounds[]`.
+  // IMAGE fills are NOT representable in LSML's Fill type — capture them
+  // separately under `metadata.figma.imageBackgrounds[]` with the asset
+  // path + paint extras (blendMode, scaleMode, opacity, imageTransform,
+  // …) so avatar circles, hero banners, card image backgrounds round-trip.
+  //
+  // We collect `fills` and `gradientTransforms` in lockstep : if any paint
+  // returns null from `paintToFill` (invisible, unsupported), it's skipped
+  // from BOTH arrays so transforms[i] always lines up with fills[i] /
+  // backgrounds[i]. Earlier two-pass filter+map produced length mismatches
+  // when an invisible paint sat between two visible ones.
   const fillsArr = asArray<FigmaPaint>(node.fills) ?? [];
-  const fills = fillsArr
-    .filter((p) => p.type !== "IMAGE")
-    .map((p) => paintToFill(p))
-    .filter((f): f is Fill => f !== null);
+  const fills: Fill[] = [];
+  const gradientTransformsAligned: (number[][] | null)[] = [];
+  for (const paint of fillsArr) {
+    if (paint.type === "IMAGE") continue;
+    const fill = paintToFill(paint);
+    if (fill === null) continue;
+    fills.push(fill);
+    gradientTransformsAligned.push(rawGradientTransform(paint));
+  }
+  const imageAssetRefs: string[] = [];
+  const imageBackgrounds: FigmaImageBackground[] = [];
+  if (ctx?.registerImageHash) {
+    for (const paint of fillsArr) {
+      if (paint.type !== "IMAGE") continue;
+      const hash = (paint as unknown as { imageHash?: unknown }).imageHash;
+      if (typeof hash !== "string" || hash === "") continue;
+      const src = ctx.registerImageHash(hash);
+      const extras = capturePaintExtras(paint) ?? {};
+      imageBackgrounds.push({ ...extras, src });
+      imageAssetRefs.push(hash);
+    }
+  }
   if (fills.length === 1 && fills[0]?.kind === "solid" && fills[0].opacity === undefined) {
     const single = fillsArr.find((p) => p.type === "SOLID");
     if (single) {
@@ -86,6 +127,13 @@ export function mapFrame(
     }
   } else if (fills.length > 0) {
     prim.backgrounds = fills;
+  }
+
+  // Preserve raw gradient matrices parallel-indexed with the emitted fills
+  // for byte-stable round-trip. Helper drops the array when every entry is
+  // null, so plain solid backgrounds carry no metadata noise.
+  if (fills.length > 0 && gradientTransformsAligned.some((t) => t !== null)) {
+    withFigmaMetadata(prim, { gradientTransforms: gradientTransformsAligned });
   }
 
   if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
@@ -108,18 +156,64 @@ export function mapFrame(
   }
   if (Object.keys(bind).length > 0) prim.bind = bind;
 
-  // metadata.figma.clipsContent — only emit when the value diverges from
-  // the Figma default (true). Importing a frame without explicit metadata
-  // applies `clipsContent: true` already, so capturing `true` here would
-  // pollute every roundtrip with redundant metadata. We only need to
-  // round-trip the non-default `false` case.
+  // `clipsContent` is a first-class field as of LSML 1.1 (§4.3). Default
+  // is `true` ; we only emit when the source frame diverges, so plain
+  // frames don't carry redundant noise.
+  //
+  // GROUP and BOOLEAN_OPERATION nodes in Figma never clip their children
+  // (they don't even have a `clipsContent` property). When we lower them
+  // to LSML `frame`, we MUST emit `clipsContent: false` explicitly,
+  // otherwise the import side defaults to true and clips children that
+  // legitimately extend past the group's bounding box (e.g. an Ellipse
+  // 865×865 inside a Group whose bbox is only 701×701 — the visible
+  // overflow is what the user sees as a decorative sphere).
   const clips = asBoolean(node.clipsContent);
-  if (clips === false) {
-    withFigmaMetadata(prim, { clipsContent: false });
+  if (node.type === "GROUP" || node.type === "BOOLEAN_OPERATION") {
+    prim.clipsContent = false;
+  } else if (clips === false) {
+    prim.clipsContent = false;
   }
 
-  if (defaults) return { node: prim, defaults };
-  return { node: prim };
+  // Stash the source layer name so the import side can restore it
+  // verbatim. Skips when the name is the empty string or just whitespace.
+  if (node.name && node.name.trim().length > 0) {
+    withFigmaMetadata(prim, { layerName: node.name });
+  }
+
+  // Mark groups + boolean-operations so the import side can convert the
+  // freshly-created LSML frame back into a real Figma GroupNode (via
+  // `figma.group()`) — preserves the layer-panel distinction. For BO,
+  // also capture the operation flavour (UNION/SUBTRACT/INTERSECT/EXCLUDE)
+  // so the importer can call the matching `figma.union/subtract/...`
+  // API and reproduce the actual cut/overlap geometry instead of just
+  // grouping the operands.
+  if (node.type === "GROUP" || node.type === "BOOLEAN_OPERATION") {
+    withFigmaMetadata(prim, { sourceType: node.type });
+    if (node.type === "BOOLEAN_OPERATION" && node.booleanOperation) {
+      withFigmaMetadata(prim, { booleanOperation: node.booleanOperation });
+    }
+  }
+
+  // Stash any IMAGE fills captured above. Done here (after sourceType)
+  // so the merge helper sees both keys in one withFigmaMetadata call
+  // pattern.
+  if (imageBackgrounds.length > 0) {
+    withFigmaMetadata(prim, { imageBackgrounds });
+  }
+
+  // Universal x-figma.authoring/1 extras (effects, blendMode, mask flags,
+  // per-corner radii + smoothing, stroke details, constraints, layout
+  // overrides). Per-primitive captures above handle frame-specific keys.
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
+    localPosition: prim.position ?? { x: 0, y: 0 },
+    parentIsTransparent: opts.parentIsTransparent === true,
+    ...(opts.groupChainTransform ? { groupChainTransform: opts.groupChainTransform } : {}),
+  });
+
+  const result: MappingResult = { node: prim };
+  if (defaults) result.defaults = defaults;
+  if (imageAssetRefs.length > 0) result.assetRefs = imageAssetRefs;
+  return result;
 }
 
 function roundTo3(n: number): number {

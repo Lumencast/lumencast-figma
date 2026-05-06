@@ -20,6 +20,8 @@
 import type { InstancePrimitive, LeafPath } from "~shared/lsml-types";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
+import { withFigmaMetadata } from "./figma-metadata";
+import { captureFigmaExtras } from "./figma-extras";
 import type { MappingContext, MappingResult } from "./types";
 import { PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 
@@ -46,6 +48,11 @@ interface InstanceMapOptions {
   isRoot: boolean;
   parentX?: number;
   parentY?: number;
+  parentRotation?: number;
+  /** True when the immediate source parent is GROUP / BOOLEAN_OPERATION. */
+  parentIsTransparent?: boolean;
+  /** Composed transparent-Group ancestor chain — see TextMapOptions. */
+  groupChainTransform?: number[][];
 }
 
 /** Returns the LSML instance primitive when the INSTANCE has the required
@@ -76,7 +83,10 @@ export function mapInstance(
     kind: "instance",
     scene_id: sceneId,
     scene_version: sceneVersion,
-    ...extractUniversal(node),
+    ...extractUniversal(node, {
+      parentRotation: opts.parentRotation ?? 0,
+      parentIsTransparent: opts.parentIsTransparent === true,
+    }),
   };
 
   // size : always emit on instance — runtime needs the slot dimensions.
@@ -127,6 +137,16 @@ export function mapInstance(
   }
 
   if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
+
+  if (node.name && node.name.trim().length > 0) {
+    withFigmaMetadata(prim, { layerName: node.name });
+  }
+
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
+    localPosition: prim.position ?? { x: 0, y: 0 },
+    parentIsTransparent: opts.parentIsTransparent === true,
+    ...(opts.groupChainTransform ? { groupChainTransform: opts.groupChainTransform } : {}),
+  });
 
   return { node: prim };
 }

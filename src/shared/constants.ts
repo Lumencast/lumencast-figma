@@ -48,3 +48,10 @@ export const LSML_ARCHIVE_EXTENSION = ".lsmlz" as const;
 
 /** Sibling directory holding content-hashed assets referenced by the bundle */
 export const ASSETS_DIR = "assets" as const;
+
+/** LSML 1.1 §17.3 authoring profile this plugin emits. Documented at
+ *  `lumencast-protocol/spec/profiles/figma-authoring.md`. The slash-major
+ *  suffix marks it as an *authoring* profile — runtimes that don't speak
+ *  it MUST silently ignore (graceful degrade), unlike rendering profiles
+ *  which use `-version` and trigger BUNDLE_INCOMPATIBLE on mismatch. */
+export const FIGMA_AUTHORING_PROFILE = "x-figma.authoring/1" as const;

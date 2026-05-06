@@ -91,9 +91,17 @@ theme without re-exporting.
 1. Select the root frame of your scene.
 2. Run _Plugins → Development → Lumencast Export_.
 3. Click **Export to LSML**.
-4. The plugin downloads :
-   - `<scene-id>.lsml` — the canonical bundle (UTF-8, no BOM)
-   - `assets/<sha256>.<ext>` — one file per image in your design
+4. The plugin downloads a single `<scene-id>.lsmlz` archive — an
+   [LSMLZ/1](https://github.com/Lumencast/lumencast-protocol/blob/main/spec/LSMLZ-1.md)
+   container packaging :
+   - `<scene-id>.lsml` — the canonical bundle JSON (UTF-8, no BOM)
+   - `assets/<sha256>.<ext>` — one entry per image referenced by the design
+   - Optional `_debug/` subtree (only when the plugin's `--debug` flag is on ;
+     readers ignore it per LSMLZ §3.3)
+
+To get the loose form for tools that read `.lsml` directly, unzip the
+archive — the produced `<scene-id>.lsml` + `assets/` tree is the form
+LSML §18 describes.
 
 The bundle's `scene_version` is the SHA-256 hash of the canonicalized JSON
 per [LSML §3.2](https://github.com/Lumencast/lumencast-protocol/blob/main/spec/LSML-1.md#32-divergence--scene_version-placeholder).
@@ -180,18 +188,20 @@ New paths get their `defaults` value as the initial state.
 
 ## Round-trip — `.lsml` → Figma
 
-If you only have a `.lsml` (e.g. a teammate sent one over) and want to
+If you only have a `.lsmlz` archive or a loose `.lsml` (e.g. a teammate sent one over) and want to
 edit it visually :
 
-1. Run _Lumencast Export → Import .lsml_.
-2. Pick the `.lsml` file plus all the matching `assets/<sha256>.<ext>`
-   files in one go.
+1. Run _Lumencast Export → Import_.
+2. Pick a single `.lsmlz` archive (preferred — one file, drag-and-drop)
+   OR a loose `.lsml` plus all the matching `assets/<sha256>.<ext>` files
+   in one selection. The picker sniffs the magic bytes and routes
+   accordingly.
 3. The plugin rebuilds the node tree on the current Figma page,
    preserving binding paths via plugin data and synthesized `__lit.*`
    leaves.
 
-Re-exporting an imported scene reproduces the original `.lsml` byte-for-byte
-on the layout / defaults / assets — see the round-trip integration test
+Re-exporting an imported scene reproduces the original bundle byte-for-byte
+on the layout / defaults / assets — see the round-trip integration tests
 at [`tests/integration/roundtrip.test.ts`](../tests/integration/roundtrip.test.ts).
 
 ## Where to go next

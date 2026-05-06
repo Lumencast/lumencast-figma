@@ -56,5 +56,38 @@ export function createFigmaImportAdapter(): ImportFigmaApi {
     appendToPage: (node: ImportBaseNode) => {
       figma.currentPage.appendChild(node as unknown as SceneNode);
     },
+    group: (nodes, parent, index) => {
+      // Figma's plugin API : `figma.group(nodes, parent, index?)` moves the
+      // given nodes into a fresh GroupNode inside `parent`. Used by the
+      // post-build group-conversion pass.
+      const sceneNodes = nodes as unknown as SceneNode[];
+      const sceneParent = parent as unknown as BaseNode & ChildrenMixin;
+      const group =
+        index !== undefined
+          ? figma.group(sceneNodes, sceneParent, index)
+          : figma.group(sceneNodes, sceneParent);
+      return group as unknown as ImportBaseNode;
+    },
+    union: (nodes, parent, index) => wrapBoolean("union", nodes, parent, index),
+    subtract: (nodes, parent, index) => wrapBoolean("subtract", nodes, parent, index),
+    intersect: (nodes, parent, index) => wrapBoolean("intersect", nodes, parent, index),
+    exclude: (nodes, parent, index) => wrapBoolean("exclude", nodes, parent, index),
   };
+}
+
+/** Dispatch helper for the four boolean-operation flavours. Each `figma.*`
+ *  function has the same signature as `figma.group` and returns a real
+ *  `BooleanOperationNode` whose `.booleanOperation` is set accordingly. */
+function wrapBoolean(
+  op: "union" | "subtract" | "intersect" | "exclude",
+  nodes: ImportBaseNode[],
+  parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
+  index?: number,
+): ImportBaseNode {
+  const sceneNodes = nodes as unknown as SceneNode[];
+  const sceneParent = parent as unknown as BaseNode & ChildrenMixin;
+  const fn = figma[op];
+  const result =
+    index !== undefined ? fn(sceneNodes, sceneParent, index) : fn(sceneNodes, sceneParent);
+  return result as unknown as ImportBaseNode;
 }

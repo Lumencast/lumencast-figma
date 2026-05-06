@@ -8,9 +8,9 @@ importers:
 
   .:
     dependencies:
-      fflate:
-        specifier: ^0.8.2
-        version: 0.8.2
+      '@lumencast/archive':
+        specifier: ^0.1.0
+        version: 0.1.0
     devDependencies:
       '@eslint/js':
         specifier: ^9.20.0
@@ -425,6 +425,10 @@ packages:
 
   '@jridgewell/trace-mapping@0.3.31':
     resolution: {integrity: sha512-zzNR+SdQSDJzc8joaeP8QQoCQr8NuYx2dIIytl1QeBEZHJ9uW6hebsrYgbz8hJwUQao3TWCMtmfV8Nu1twOLAw==}
+
+  '@lumencast/archive@0.1.0':
+    resolution: {integrity: sha512-iLPrm4njkcELDIEkDzfOovCcj/3lDbP4oUBBqD4AkUiIRnMemxMF4/i/jVV8RKdsitp+arX1MQRGFrfnbSQUhg==}
+    engines: {node: '>=22'}
 
   '@pkgjs/parseargs@0.11.0':
     resolution: {integrity: sha512-+1VkjdD0QBLPodGrJUeqarH8VAIvQODIbwh9XpP5Syisf7YoQgsJKPNFoqqLQlu+VQ/tVSshMR6loPMn8U+dPg==}
@@ -1899,6 +1903,10 @@ snapshots:
     dependencies:
       '@jridgewell/resolve-uri': 3.1.2
       '@jridgewell/sourcemap-codec': 1.5.5
+
+  '@lumencast/archive@0.1.0':
+    dependencies:
+      fflate: 0.8.2
 
   '@pkgjs/parseargs@0.11.0':
     optional: true

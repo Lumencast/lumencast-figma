@@ -55,6 +55,10 @@ export interface SizingPair {
 }
 
 export interface UniversalProps {
+  /** Absolute position relative to the parent's coordinate origin.
+   *  Universal in 1.1+ — honoured when the parent is a frame in absolute
+   *  mode ; ignored under stack/grid layouts. (LSML §5.4) */
+  position?: { x: number; y: number };
   /** Conditional rendering. (1.1+) */
   visible?: boolean;
   /** Auto-layout sizing intent. (1.1+) */
@@ -197,7 +201,10 @@ export interface GridPrimitive extends BasePrimitive {
 export interface FramePrimitive extends BasePrimitive {
   kind: "frame";
   size?: { w: number; h: number }; // required for root, optional nested
-  position?: { x: number; y: number };
+  // `position` is inherited from UniversalProps — kept here in the spec text
+  // for back-compat clarity (LSML §4.3) but uses the same field.
+  /** Clip children that overflow the declared `size`. Default `true`. (1.1+) */
+  clipsContent?: boolean;
   /** Single solid background. Mutually exclusive with `backgrounds`. */
   background?: string;
   /** Stacked backgrounds, top-to-bottom. (1.1+) Mutually exclusive with `background`. */
@@ -217,6 +224,11 @@ export interface TextStyle {
   textAlign?: "left" | "center" | "right" | "justify";
   fontStyle?: "normal" | "italic";
   textDecoration?: string;
+  /** Case transform applied at paint time (LSML §4.4.1). The literal
+   *  `characters` are stored as authored ; the renderer applies the
+   *  transform. Authoring tools mapping Figma `textCase` / Sketch
+   *  `textTransform` MUST use this field, not metadata.* */
+  textTransform?: "none" | "uppercase" | "lowercase" | "capitalize";
 }
 
 export type TextFormatKind = "string" | "number" | "currency" | "date" | "time" | "relative-time";
@@ -254,11 +266,20 @@ export interface ImagePrimitive extends BasePrimitive {
 
 // ---------- Shape (LSML §4.6) ----------
 
+export interface ShapePathEntry {
+  data: string; // SVG path 'd'
+  windingRule?: "NONZERO" | "EVENODD";
+}
+
 export interface ShapePrimitive extends BasePrimitive {
   kind: "shape";
   geometry: "rect" | "circle" | "path";
   size?: { w: number; h: number }; // required for rect/circle
-  pathData?: string; // required for path
+  /** Single-path shorthand. Mutually exclusive with `paths`. */
+  pathData?: string;
+  /** Multi-subpath geometry with per-subpath winding rule. Mutually
+   *  exclusive with `pathData`. (1.1+, LSML §4.6) */
+  paths?: ShapePathEntry[];
   /** Single solid fill. Mutually exclusive with `fills`. */
   fill?: string;
   /** Stacked fills, top-to-bottom. (1.1+) */
@@ -311,7 +332,7 @@ export interface InstancePrimitive extends BasePrimitive {
   bindParams?: Record<string, LeafPath>;
   fit?: "contain" | "cover" | "fill" | "none";
   size?: { w: number; h: number };
-  position?: { x: number; y: number };
+  // `position` inherited from UniversalProps.
 }
 
 // ---------- Vendor primitive (LSML §17.1, 1.1+) ----------

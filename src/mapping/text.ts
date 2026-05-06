@@ -19,7 +19,8 @@ import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { PLUGIN_DATA_KEYS, PLUGIN_DATA_NAMESPACE } from "~shared/constants";
 import { asArray, asNumber, asObject, asString } from "./figma-mixed";
-import { withFigmaMetadata, type FigmaMetadata } from "./figma-metadata";
+import { withFigmaMetadata, type FigmaMetadata, type FigmaTextSegment } from "./figma-metadata";
+import { captureFigmaExtras } from "./figma-extras";
 import type { MappingResult } from "./types";
 
 interface MockTextNode {
@@ -36,8 +37,10 @@ interface MockTextNode {
   fontName?: { family: string; style: string };
   fills?: FigmaPaint[];
   textAlignHorizontal?: "LEFT" | "CENTER" | "RIGHT" | "JUSTIFIED";
+  textAlignVertical?: "TOP" | "CENTER" | "BOTTOM";
   textCase?: "ORIGINAL" | "UPPER" | "LOWER" | "TITLE" | "SMALL_CAPS" | "SMALL_CAPS_FORCED";
   textAutoResize?: "NONE" | "WIDTH_AND_HEIGHT" | "HEIGHT" | "TRUNCATE";
+  textDecoration?: "NONE" | "UNDERLINE" | "STRIKETHROUGH";
   lineHeight?: { unit: "PIXELS" | "PERCENT" | "AUTO"; value?: number };
   letterSpacing?: { unit: "PIXELS" | "PERCENT"; value: number };
   visible?: boolean;
@@ -47,11 +50,29 @@ interface MockTextNode {
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
   /** Plugin data accessor (Figma SceneNode / mock surface). */
   getSharedPluginData?(namespace: string, key: string): string;
+  /** Figma's range-styling reader. Returns one entry per contiguous run of
+   *  identical styling. We only call it when at least one whole-node
+   *  property returned `figma.mixed`, so plain single-style text doesn't
+   *  pay the cost. */
+  getStyledTextSegments?<K extends string>(
+    fields: readonly K[],
+    start?: number,
+    end?: number,
+  ): (Record<string, unknown> & { characters: string; start: number; end: number })[];
 }
 
 export interface TextMapOptions {
+  parentRotation?: number;
   parentX?: number;
   parentY?: number;
+  /** True when the immediate source parent is GROUP / BOOLEAN_OPERATION.
+   *  Triggers raw-relativeTransform capture and rotation suppression. */
+  parentIsTransparent?: boolean;
+  /** Composed transform of every transparent-Group ancestor up to the
+   *  FRAME ancestor (exclusive). Multiplied with the node's own
+   *  relativeTransform inside captureFigmaExtras to express the result
+   *  in the FRAME ancestor's coord system. */
+  groupChainTransform?: number[][];
 }
 
 const ALIGN_MAP: Record<string, TextStyle["textAlign"]> = {
@@ -74,34 +95,127 @@ export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResul
   const prim: TextPrimitive = {
     kind: "text",
     bind: parsed.bind ?? { value: litPath },
-    ...extractUniversal(node),
+    ...extractUniversal(node, {
+      parentRotation: opts?.parentRotation ?? 0,
+      parentIsTransparent: opts?.parentIsTransparent === true,
+    }),
   };
+  // textCase → style.textTransform (LSML §4.4.1). Figma's UPPER/LOWER/TITLE
+  // map directly. SMALL_CAPS / SMALL_CAPS_FORCED have no LSML equivalent
+  // yet — preserve them in metadata.figma until the spec adds an enum.
+  const tc = asString(node.textCase);
+  if (tc) {
+    const tt = textCaseToTransform(tc);
+    if (tt) {
+      style.textTransform = tt;
+    } else if (tc === "SMALL_CAPS" || tc === "SMALL_CAPS_FORCED") {
+      withFigmaMetadata(prim, { textCase: tc as "SMALL_CAPS" | "SMALL_CAPS_FORCED" });
+    }
+  }
   if (Object.keys(style).length > 0) prim.style = style;
   if (parsed.bindStyle) prim.bindStyle = parsed.bindStyle;
   if (parsed.bindUniversal) prim.bindUniversal = parsed.bindUniversal;
 
-  // metadata.figma — capture the Figma-specific text properties LSML does
-  // not carry (textCase, textAutoResize, full fontName.style) plus the
-  // absolute position for non-auto-layout parents.
+  // Universal `position` (LSML §5.4) — relative to parent's coordinate
+  // origin. Non-zero only ; the root is at the document origin.
   const px = asNumber(node.x) ?? 0;
   const py = asNumber(node.y) ?? 0;
   const parentX = opts?.parentX ?? 0;
   const parentY = opts?.parentY ?? 0;
   const relX = roundTo3(px - parentX);
   const relY = roundTo3(py - parentY);
-  const figma: FigmaMetadata = { position: { x: relX, y: relY } };
-  const tc = asString(node.textCase);
-  if (tc && tc !== "ORIGINAL") {
-    figma.textCase = tc as Exclude<FigmaMetadata["textCase"], undefined>;
+  if (relX !== 0 || relY !== 0) prim.position = { x: relX, y: relY };
+
+  // textAutoResize and the raw fontName.style (e.g. "SemiBold Italic") have
+  // no LSML representation — keep them in metadata.figma so the import
+  // builder can pick the closest font variant on roundtrip. The default
+  // for `figma.createText()` is WIDTH_AND_HEIGHT (hug both axes), so
+  // that's what we skip ; NONE / HEIGHT / TRUNCATE all encode explicit
+  // dimensions and must round-trip with size below.
+  const figma: FigmaMetadata = {};
+  // Vertical alignment of text content within the text box. Default
+  // TOP — only emit when explicitly CENTER or BOTTOM, since LSML has no
+  // equivalent. Critical for centered captions inside fixed-height
+  // boxes (e.g. "Transform" inside a 67×389 box at textAlignVertical:
+  // CENTER) — without this the text re-imports as top-aligned and
+  // visually drifts up.
+  const tav = asString(node.textAlignVertical);
+  if (tav === "CENTER" || tav === "BOTTOM") {
+    figma.textAlignVertical = tav;
   }
   const tar = asString(node.textAutoResize);
-  if (tar && tar !== "NONE") {
+  if (tar && tar !== "WIDTH_AND_HEIGHT") {
     figma.textAutoResize = tar as Exclude<FigmaMetadata["textAutoResize"], undefined>;
+    // Capture the explicit dimensions so the import builder can call
+    // `node.resize(...)` after restoring textAutoResize. WIDTH_AND_HEIGHT
+    // is auto-fit so the dimensions are derived from content — skip.
+    const w = asNumber(node.width);
+    const h = asNumber(node.height);
+    if (w !== undefined && h !== undefined) {
+      figma.size = { w: roundTo3(w), h: roundTo3(h) };
+    }
   }
   const fontName = asObject<{ family: string; style: string }>(node.fontName);
   const fontStyleRaw = fontName ? asString(fontName.style) : undefined;
   if (fontStyleRaw) figma.fontStyle = fontStyleRaw;
-  withFigmaMetadata(prim, figma);
+  if (Object.keys(figma).length > 0) withFigmaMetadata(prim, figma);
+
+  // Preserve the source Figma layer name (raw, including any [bind:...]
+  // directive prefix) so the import side can restore it verbatim.
+  if (node.name && node.name.trim().length > 0) {
+    withFigmaMetadata(prim, { layerName: node.name });
+  }
+
+  // Capture the source's full fills array when it isn't a single trivial
+  // SOLID — LSML's `style.color` only carries one CSS color, so gradient
+  // text or multi-fill text must round-trip via `metadata.figma.textFills`.
+  // The import builder reconstructs the paint array and assigns
+  // `node.fills = …` verbatim.
+  const fillsForText = asArray<FigmaPaint>(node.fills) ?? [];
+  const needsTextFills =
+    fillsForText.length > 0 &&
+    !(
+      fillsForText.length === 1 &&
+      fillsForText[0]?.type === "SOLID" &&
+      (fillsForText[0]?.opacity === undefined || fillsForText[0]?.opacity === 1) &&
+      ((fillsForText[0] as unknown as { blendMode?: string }).blendMode ?? "NORMAL") === "NORMAL"
+    );
+  if (needsTextFills) {
+    const textFills = fillsForText
+      .map((p) => paintToFigmaMetadata(p))
+      .filter((p): p is NonNullable<FigmaMetadata["textFills"]>[number] => p !== null);
+    if (textFills.length > 0) withFigmaMetadata(prim, { textFills });
+  }
+
+  // Text-specific authoring extras
+  const textExtras: FigmaMetadata = {};
+  const ps = asNumber((node as { paragraphSpacing?: unknown }).paragraphSpacing);
+  if (ps !== undefined && ps !== 0) textExtras.paragraphSpacing = ps;
+  const pi = asNumber((node as { paragraphIndent?: unknown }).paragraphIndent);
+  if (pi !== undefined && pi !== 0) textExtras.paragraphIndent = pi;
+  const tt = asString((node as { textTruncation?: unknown }).textTruncation);
+  if (tt === "ENDING") textExtras.textTruncation = tt;
+  const ml = asNumber((node as { maxLines?: unknown }).maxLines);
+  if (ml !== undefined) textExtras.maxLines = ml;
+  if (Object.keys(textExtras).length > 0) withFigmaMetadata(prim, textExtras);
+
+  // Multi-style ranges. `getStyledTextSegments` is the supported API for
+  // reading per-character styling without touching `figma.mixed` Symbols
+  // directly. We invoke it ONLY when a whole-node read returned mixed —
+  // otherwise the cost is wasted on plain single-style text.
+  //
+  // Bug pre-fix : a paragraph like "<bold>+645 LP</bold> par la communauté"
+  // returned `figma.mixed` for fontName + fills, which our extractStyle
+  // dropped via asObject/asArray, so the imported text fell back to
+  // Inter Regular black — losing the bold prefix AND the gray suffix.
+  const segments = captureTextSegments(node);
+  if (segments.length > 0) withFigmaMetadata(prim, { textSegments: segments });
+
+  captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
+    localPosition: prim.position ?? { x: 0, y: 0 },
+    parentIsTransparent: opts?.parentIsTransparent === true,
+    ...(opts?.groupChainTransform ? { groupChainTransform: opts.groupChainTransform } : {}),
+  });
 
   // When no [bind:...] directive is present, the node's `characters` is the
   // static text. We surface it via a synthesised leaf path that the bundle
@@ -117,6 +231,153 @@ export function mapText(node: MockTextNode, opts?: TextMapOptions): MappingResul
 
 function roundTo3(n: number): number {
   return Math.round(n * 1000) / 1000;
+}
+
+/** Capture per-range styling for multi-style text. Returns an empty array
+ *  when the node is uniform (whole-node reads succeeded) or when the host
+ *  surface doesn't expose `getStyledTextSegments` (legacy mock).
+ *
+ *  We pass every styling field we can re-apply on import. Each segment
+ *  carries only the fields that differ from the node-level default — the
+ *  builder uses `setRangeFontName` / `setRangeFills` / etc. per segment. */
+function captureTextSegments(node: MockTextNode): FigmaTextSegment[] {
+  if (typeof node.getStyledTextSegments !== "function") return [];
+  // We only run this path when at least one whole-node read returned
+  // `figma.mixed` (i.e. the asObject / asArray helper returned undefined
+  // for fontName / fills). Otherwise plain single-style text doesn't need
+  // segment metadata — `prim.style` already covers it.
+  const fontNameMixed = asObject<{ family: string; style: string }>(node.fontName) === undefined;
+  const fillsMixed = asArray<FigmaPaint>(node.fills) === undefined;
+  const fontSizeMixed = asNumber(node.fontSize) === undefined && node.fontSize !== undefined;
+  if (!fontNameMixed && !fillsMixed && !fontSizeMixed) return [];
+
+  let raw: (Record<string, unknown> & { start: number; end: number })[];
+  try {
+    raw = node.getStyledTextSegments([
+      "fontName",
+      "fontSize",
+      "fills",
+      "textCase",
+      "textDecoration",
+      "letterSpacing",
+      "lineHeight",
+      "hyperlink",
+    ]);
+  } catch {
+    return [];
+  }
+  if (!Array.isArray(raw) || raw.length === 0) return [];
+
+  const out: FigmaTextSegment[] = [];
+  for (const seg of raw) {
+    const start = asNumber(seg["start"]);
+    const end = asNumber(seg["end"]);
+    if (start === undefined || end === undefined || end <= start) continue;
+    const entry: FigmaTextSegment = { start, end };
+    const fn = asObject<{ family: unknown; style: unknown }>(seg["fontName"]);
+    if (fn) {
+      const family = asString(fn.family);
+      const style = asString(fn.style);
+      if (family && style) entry.fontName = { family, style };
+    }
+    const fs = asNumber(seg["fontSize"]);
+    if (fs !== undefined) entry.fontSize = fs;
+    const fillsArr = asArray<FigmaPaint>(seg["fills"]);
+    if (fillsArr && fillsArr.length > 0) {
+      const fills = fillsArr
+        .map((p) => paintToFigmaPaintMetadata(p))
+        .filter((p): p is NonNullable<typeof p> => p !== null);
+      if (fills.length > 0) entry.fills = fills;
+    }
+    const tc = asString(seg["textCase"]);
+    if (
+      tc === "ORIGINAL" ||
+      tc === "UPPER" ||
+      tc === "LOWER" ||
+      tc === "TITLE" ||
+      tc === "SMALL_CAPS" ||
+      tc === "SMALL_CAPS_FORCED"
+    ) {
+      entry.textCase = tc;
+    }
+    const td = asString(seg["textDecoration"]);
+    if (td === "NONE" || td === "UNDERLINE" || td === "STRIKETHROUGH") {
+      entry.textDecoration = td;
+    }
+    const ls = asObject<{ unit: unknown; value: unknown }>(seg["letterSpacing"]);
+    if (ls) {
+      const unit = asString(ls.unit);
+      const value = asNumber(ls.value);
+      if ((unit === "PIXELS" || unit === "PERCENT") && value !== undefined) {
+        entry.letterSpacing = { unit, value };
+      }
+    }
+    const lh = asObject<{ unit: unknown; value: unknown }>(seg["lineHeight"]);
+    if (lh) {
+      const unit = asString(lh.unit);
+      const value = asNumber(lh.value);
+      if (unit === "PIXELS" || unit === "PERCENT" || unit === "AUTO") {
+        const lhEntry: FigmaTextSegment["lineHeight"] = { unit };
+        if (value !== undefined) lhEntry.value = value;
+        entry.lineHeight = lhEntry;
+      }
+    }
+    const hyp = asObject<{ type?: unknown; url?: unknown }>(seg["hyperlink"]);
+    if (hyp) {
+      const url = asString(hyp.url);
+      if (url) entry.hyperlink = { url };
+    }
+    out.push(entry);
+  }
+  return out;
+}
+
+/** Convert a Figma `Paint` into the serialisable `FigmaPaintMetadata` shape
+ *  used by per-range fills. Same surface as `paintToFigmaMetadata` above
+ *  (used for whole-node textFills) ; kept inline for clarity. */
+function paintToFigmaPaintMetadata(
+  paint: FigmaPaint,
+): NonNullable<FigmaMetadata["textFills"]>[number] | null {
+  return paintToFigmaMetadata(paint);
+}
+
+/** Convert a Figma `Paint` into the serialisable shape stashed under
+ *  `metadata.figma.textFills[]`. Handles SOLID + GRADIENT_LINEAR +
+ *  GRADIENT_RADIAL ; anything else (image fills on text are unusual)
+ *  is dropped. Defaults are filtered out so plain paints stay compact. */
+function paintToFigmaMetadata(
+  paint: FigmaPaint,
+): NonNullable<FigmaMetadata["textFills"]>[number] | null {
+  const type = paint.type;
+  if (type !== "SOLID" && type !== "GRADIENT_LINEAR" && type !== "GRADIENT_RADIAL") return null;
+  const out: NonNullable<FigmaMetadata["textFills"]>[number] = { type };
+  if ((paint as { visible?: boolean }).visible === false) out.visible = false;
+  if (typeof paint.opacity === "number" && paint.opacity !== 1) out.opacity = paint.opacity;
+  const blend = (paint as unknown as { blendMode?: unknown }).blendMode;
+  if (typeof blend === "string" && blend !== "NORMAL" && blend !== "PASS_THROUGH") {
+    out.blendMode = blend as NonNullable<typeof out.blendMode>;
+  }
+  if (type === "SOLID" && paint.color) {
+    out.color = { r: paint.color.r, g: paint.color.g, b: paint.color.b };
+  }
+  if ((type === "GRADIENT_LINEAR" || type === "GRADIENT_RADIAL") && paint.gradientStops) {
+    out.gradientStops = paint.gradientStops.map((s) => ({
+      position: s.position,
+      color: { r: s.color.r, g: s.color.g, b: s.color.b, a: s.color.a },
+    }));
+    if (paint.gradientTransform && paint.gradientTransform.length === 2) {
+      out.gradientTransform = [[...paint.gradientTransform[0]!], [...paint.gradientTransform[1]!]];
+    }
+  }
+  return out;
+}
+
+function textCaseToTransform(tc: string): "uppercase" | "lowercase" | "capitalize" | undefined {
+  if (tc === "UPPER") return "uppercase";
+  if (tc === "LOWER") return "lowercase";
+  if (tc === "TITLE") return "capitalize";
+  // ORIGINAL → omit. SMALL_CAPS / SMALL_CAPS_FORCED → caller falls back.
+  return undefined;
 }
 
 function readPluginData(node: MockTextNode, key: string): string | null {
@@ -175,10 +436,26 @@ function extractStyle(node: MockTextNode): TextStyle {
     }
   }
 
+  // Figma stores letterSpacing as { unit: "PIXELS" | "PERCENT", value }.
+  // LSML's `letterSpacing` is a single number in pixels — normalise the
+  // PERCENT variant via fontSize so the builder doesn't have to know
+  // about Figma's discriminated union. Skip the default 0 either way.
+  // textDecoration : Figma's NONE / UNDERLINE / STRIKETHROUGH map to LSML's
+  // CSS-style strings on `style.textDecoration`. Default NONE → omit.
+  const td = asString(node.textDecoration);
+  if (td === "UNDERLINE") style.textDecoration = "underline";
+  else if (td === "STRIKETHROUGH") style.textDecoration = "line-through";
+
   const ls = asObject<{ unit: "PIXELS" | "PERCENT"; value: number }>(node.letterSpacing);
-  if (ls && ls.unit === "PIXELS") {
+  if (ls) {
     const lsValue = asNumber(ls.value);
-    if (lsValue !== undefined) style.letterSpacing = lsValue;
+    if (lsValue !== undefined && lsValue !== 0) {
+      if (ls.unit === "PIXELS") {
+        style.letterSpacing = lsValue;
+      } else if (ls.unit === "PERCENT" && fontSize !== undefined) {
+        style.letterSpacing = roundTo3((lsValue / 100) * fontSize);
+      }
+    }
   }
 
   return style;

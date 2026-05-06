@@ -1,0 +1,6952 @@
+{
+  "generatedAt": "2026-05-04T23:22:57.384Z",
+  "pluginVersion": "0.1.1",
+  "rootSelection": ["GROUP \"Group 2087326238\" (92:83837)"],
+  "entries": [
+    {
+      "id": "92:83837",
+      "name": "Group 2087326238",
+      "type": "GROUP",
+      "depth": 0,
+      "parent": {
+        "id": "92:83836",
+        "name": "Group 2087326240",
+        "type": "GROUP"
+      },
+      "x": 750.2459716796875,
+      "y": 1333.7285614013672,
+      "width": 568.677978515625,
+      "height": 718.6183471679688,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 750.2459716796875],
+        [-0.006047585979104042, -0.999981701374054, 1333.7285614013672]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7773.24609375],
+        [-0.006047585979104042, -0.999981701374054, -2058.271484375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7768.90018750934,
+        "y": -2780.3158107841323,
+        "width": 573.0134787306724,
+        "height": 722.0443264091323
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 48
+    },
+    {
+      "id": "92:83885",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 746.249611596669,
+      "y": 672.9152749487305,
+      "width": 101.45378875732422,
+      "height": 57.79295349121094,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 746.249611596669],
+        [-0.006047585979104042, -0.999981701374054, 672.9152749487305]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7769.24951171875],
+        [-0.006047585979104042, -0.999981701374054, -2719.084716796875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7768.900003863526,
+        "y": -2777.4901632668634,
+        "width": 101.80144014761754,
+        "height": 58.40544646998842
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83499",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83885",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 776.5529183675937,
+      "y": 614.9383014316164,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 776.5529183675937],
+        [0, 0.9999999763791223, 614.9383014316164]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7799.552734375],
+        [0, 1, -2777.061767578125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7799.552734375,
+        "y": -2777.061767578125,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83500",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83885",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 746.247924877556,
+      "y": 615.1212716576733,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 746.247924877556],
+        [0, 0.9999999763791223, 615.1212716576733]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7769.248046875],
+        [0, 1, -2776.878662109375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7769.248046875,
+        "y": -2776.878662109375,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83501",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83885",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 806.9659409777798,
+      "y": 614.7602321789359,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 806.9659409777798],
+        [0, 0.9999999763791223, 614.7602321789359]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7829.9658203125],
+        [0, 1, -2777.23974609375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7829.9658203125,
+        "y": -2777.23974609375,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83884",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 926.2855631192249,
+      "y": 696.3020781122127,
+      "width": 101.45379638671875,
+      "height": 57.79392623901367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 926.2855631192249],
+        [-0.006047585979104042, -0.999981701374054, 696.3020781122127]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7949.28564453125],
+        [-0.006047585979104042, -0.999981701374054, -2695.697998046875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7948.9361307932495,
+        "y": -2754.1044172930056,
+        "width": 101.80145365964836,
+        "height": 58.406419246130554
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83503",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83884",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 956.5878817170792,
+      "y": 638.3250800531338,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 956.5878817170792],
+        [0, 0.9999999763791223, 638.3250800531338]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7979.587890625],
+        [0, 1, -2753.675048828125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7979.587890625,
+        "y": -2753.675048828125,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83504",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83884",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 926.2838633773883,
+      "y": 638.5071288377019,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 926.2838633773883],
+        [0, 0.9999999763791223, 638.5071288377019]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7949.2841796875],
+        [0, 1, -2753.492919921875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7949.2841796875,
+        "y": -2753.492919921875,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83505",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83884",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 987.0018846878295,
+      "y": 638.1451127471075,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 987.0018846878295],
+        [0, 0.9999999763791223, 638.1451127471075]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8010.001953125],
+        [0, 1, -2753.85498046875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8010.001953125,
+        "y": -2753.85498046875,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83883",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 857.9155768987475,
+      "y": 1127.4831206590165,
+      "width": 101.4527587890625,
+      "height": 57.79490280151367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 857.9155768987475],
+        [-0.006047585979104042, -0.999981701374054, 1127.4831206590165]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7880.91552734375],
+        [-0.006047585979104042, -0.999981701374054, -2264.516845703125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7880.566007699904,
+        "y": -2322.924235218925,
+        "width": 101.8004219868244,
+        "height": 58.40738951579988
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83507",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83883",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 888.2178918434624,
+      "y": 1069.5061493253995,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 888.2178918434624],
+        [0, 0.9999999763791223, 1069.5061493253995]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7911.2177734375],
+        [0, 1, -2322.493896484375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7911.2177734375,
+        "y": -2322.493896484375,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83508",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83883",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 857.913881593267,
+      "y": 1069.6871604444261,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 857.913881593267],
+        [0, 0.9999999763791223, 1069.6871604444261]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7880.9140625],
+        [0, 1, -2322.312744140625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7880.9140625,
+        "y": -2322.312744140625,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83509",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83883",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 918.6308660345339,
+      "y": 1069.3251201063663,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 918.6308660345339],
+        [0, 0.9999999763791223, 1069.3251201063663]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7941.630859375],
+        [0, 1, -2322.6748046875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7941.630859375,
+        "y": -2322.6748046875,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83882",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1037.9495770569256,
+      "y": 1150.870210286981,
+      "width": 101.45380401611328,
+      "height": 57.79294967651367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1037.9495770569256],
+        [-0.006047585979104042, -0.999981701374054, 1150.870210286981]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8060.94970703125],
+        [-0.006047585979104042, -0.999981701374054, -2241.1298828125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8060.600199199095,
+        "y": -2299.53532556014,
+        "width": 101.80145538305715,
+        "height": 58.40544274763988
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83511",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83882",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1068.2518385507165,
+      "y": 1092.893231647085,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1068.2518385507165],
+        [0, 0.9999999763791223, 1092.893231647085]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8091.251953125],
+        [0, 1, -2299.10693359375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8091.251953125,
+        "y": -2299.10693359375,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83512",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83882",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1037.947886099228,
+      "y": 1093.0762108363247,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1037.947886099228],
+        [0, 0.9999999763791223, 1093.0762108363247]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8060.9482421875],
+        [0, 1, -2298.923828125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8060.9482421875,
+        "y": -2298.923828125,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83513",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83882",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1098.6659173526218,
+      "y": 1092.7131875871155,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1098.6659173526218],
+        [0, 0.9999999763791223, 1092.7131875871155]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8121.666015625],
+        [0, 1, -2299.286865234375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8121.666015625,
+        "y": -2299.286865234375,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83881",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 801.4695206867812,
+      "y": 900.2038591785354,
+      "width": 101.45380401611328,
+      "height": 57.7933464050293,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 801.4695206867812],
+        [-0.006047585979104042, -0.999981701374054, 900.2038591785354]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7824.4697265625],
+        [-0.006047585979104042, -0.999981701374054, -2491.796142578125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7824.120216331095,
+        "y": -2550.201982047021,
+        "width": 101.8014577823069,
+        "height": 58.40583946889592
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83515",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83881",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 831.7728327494478,
+      "y": 842.2261837122941,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 831.7728327494478],
+        [0, 0.9999999763791223, 842.2261837122941]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7854.77294921875],
+        [0, 1, -2549.77392578125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7854.77294921875,
+        "y": -2549.77392578125,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83516",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83881",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 801.4678374225407,
+      "y": 842.4101610479427,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 801.4678374225407],
+        [0, 0.9999999763791223, 842.4101610479427]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7824.46826171875],
+        [0, 1, -2549.58984375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7824.46826171875,
+        "y": -2549.58984375,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83517",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83881",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 862.1858553602872,
+      "y": 842.0471683973983,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 862.1858553602872],
+        [0, 0.9999999763791223, 842.0471683973983]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7885.18603515625],
+        [0, 1, -2549.952880859375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7885.18603515625,
+        "y": -2549.952880859375,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83880",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 981.5056045543417,
+      "y": 923.591088795537,
+      "width": 101.45380401611328,
+      "height": 57.79392623901367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 981.5056045543417],
+        [-0.006047585979104042, -0.999981701374054, 923.591088795537]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8004.505859375],
+        [-0.006047585979104042, -0.999981701374054, -2468.408935546875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8004.1563456369995,
+        "y": -2526.815354839145,
+        "width": 101.80146128890283,
+        "height": 58.40641929227013
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83519",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83880",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1011.8079174994641,
+      "y": 865.614102214945,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1011.8079174994641],
+        [0, 0.9999999763791223, 865.614102214945]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8034.80810546875],
+        [0, 1, -2526.385986328125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8034.80810546875,
+        "y": -2526.385986328125,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83520",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83880",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 981.5039143529325,
+      "y": 865.7961203894936,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 981.5039143529325],
+        [0, 0.9999999763791223, 865.7961203894936]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8004.50439453125],
+        [0, 1, -2526.203857421875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8004.50439453125,
+        "y": -2526.203857421875,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83521",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83880",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1042.2219317301922,
+      "y": 865.4331582604748,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1042.2219317301922],
+        [0, 0.9999999763791223, 865.4331582604748]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8065.22216796875],
+        [0, 1, -2526.56689453125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8065.22216796875,
+        "y": -2526.56689453125,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83879",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 775.0835945711215,
+      "y": 786.5528511690652,
+      "width": 101.45380401611328,
+      "height": 57.7933464050293,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 775.0835945711215],
+        [-0.006047585979104042, -0.999981701374054, 786.5528511690652]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7798.08349609375],
+        [-0.006047585979104042, -0.999981701374054, -2605.447265625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7797.733985862345,
+        "y": -2663.853105093896,
+        "width": 101.8014577823069,
+        "height": 58.40583946889592
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83523",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83879",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 805.3869029575792,
+      "y": 728.5751986136584,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 805.3869029575792],
+        [0, 0.9999999763791223, 728.5751986136584]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7828.38671875],
+        [0, 1, -2663.4248046875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7828.38671875,
+        "y": -2663.4248046875,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83524",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83879",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 775.0819104560937,
+      "y": 728.7591454140838,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 775.0819104560937],
+        [0, 0.9999999763791223, 728.7591454140838]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7798.08203125],
+        [0, 1, -2663.240966796875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7798.08203125,
+        "y": -2663.240966796875,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83525",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83879",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 835.7999253838607,
+      "y": 728.396152781743,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 835.7999253838607],
+        [0, 0.9999999763791223, 728.396152781743]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7858.7998046875],
+        [0, 1, -2663.60400390625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7858.7998046875,
+        "y": -2663.60400390625,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83878",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 955.1185685673017,
+      "y": 809.9391719541569,
+      "width": 101.45379638671875,
+      "height": 57.79392623901367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 955.1185685673017],
+        [-0.006047585979104042, -0.999981701374054, 809.9391719541569]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7978.11865234375],
+        [-0.006047585979104042, -0.999981701374054, -2582.060791015625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7977.7691386057495,
+        "y": -2640.4672102617556,
+        "width": 101.80145365964836,
+        "height": 58.406419246130554
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83527",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83878",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 985.4208853039818,
+      "y": 751.9621815358678,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 985.4208853039818],
+        [0, 0.9999999763791223, 751.9621815358678]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8008.4208984375],
+        [0, 1, -2640.037841796875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8008.4208984375,
+        "y": -2640.037841796875,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83528",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83878",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 955.1168813470551,
+      "y": 752.1441691971816,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 955.1168813470551],
+        [0, 0.9999999763791223, 752.1441691971816]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7978.1171875],
+        [0, 1, -2639.855712890625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7978.1171875,
+        "y": -2639.855712890625,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83529",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83878",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1015.8349016259281,
+      "y": 751.7822141490976,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1015.8349016259281],
+        [0, 0.9999999763791223, 751.7822141490976]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8038.8349609375],
+        [0, 1, -2640.2177734375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8038.8349609375,
+        "y": -2640.2177734375,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83877",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 886.7475981267996,
+      "y": 1241.120212823691,
+      "width": 101.45379638671875,
+      "height": 57.79392623901367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 886.7475981267996],
+        [-0.006047585979104042, -0.999981701374054, 1241.120212823691]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7909.74755859375],
+        [-0.006047585979104042, -0.999981701374054, -2150.8798828125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7909.3980448557495,
+        "y": -2209.2863020586306,
+        "width": 101.80145365964836,
+        "height": 58.406419246130554
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83531",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83877",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 917.0499149788282,
+      "y": 1183.143241478539,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 917.0499149788282],
+        [0, 0.9999999763791223, 1183.143241478539]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7940.0498046875],
+        [0, 1, -2208.85693359375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7940.0498046875,
+        "y": -2208.85693359375,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83532",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83877",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 886.7459123062515,
+      "y": 1183.3252443911533,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 886.7459123062515],
+        [0, 0.9999999763791223, 1183.3252443911533]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7909.74609375],
+        [0, 1, -2208.6748046875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7909.74609375,
+        "y": -2208.6748046875,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83533",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83877",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 947.4639193032192,
+      "y": 1182.963182609919,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 947.4639193032192],
+        [0, 0.9999999763791223, 1182.963182609919]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7970.4638671875],
+        [0, 1, -2209.036865234375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7970.4638671875,
+        "y": -2209.036865234375,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83876",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1066.783659215125,
+      "y": 1264.5061989644187,
+      "width": 101.45378875732422,
+      "height": 57.79294967651367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1066.783659215125],
+        [-0.006047585979104042, -0.999981701374054, 1264.5061989644187]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8089.78369140625],
+        [-0.006047585979104042, -0.999981701374054, -2127.493896484375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8089.434183574095,
+        "y": -2185.899339139736,
+        "width": 101.80144012454821,
+        "height": 58.405442655361185
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83535",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83876",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1097.0859264308572,
+      "y": 1206.5292202899182,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1097.0859264308572],
+        [0, 0.9999999763791223, 1206.5292202899182]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8120.0859375],
+        [0, 1, -2185.470947265625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8120.0859375,
+        "y": -2185.470947265625,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83536",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83876",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1066.7819745023364,
+      "y": 1206.712207105529,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1066.7819745023364],
+        [0, 0.9999999763791223, 1206.712207105529]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8089.7822265625],
+        [0, 1, -2185.287841796875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8089.7822265625,
+        "y": -2185.287841796875,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83537",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83876",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1127.4999912180574,
+      "y": 1206.3522204987557,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1127.4999912180574],
+        [0, 0.9999999763791223, 1206.3522204987557]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8150.5],
+        [0, 1, -2185.64794921875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8150.5,
+        "y": -2185.64794921875,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83875",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 830.3035074182103,
+      "y": 1013.8392075522324,
+      "width": 101.45378875732422,
+      "height": 57.79294967651367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 830.3035074182103],
+        [-0.006047585979104042, -0.999981701374054, 1013.8392075522324]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7853.3037109375],
+        [-0.006047585979104042, -0.999981701374054, -2378.160888671875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7852.954203105345,
+        "y": -2436.566331327236,
+        "width": 101.80144012454821,
+        "height": 58.405442655361185
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83539",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83875",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 860.6058394826096,
+      "y": 955.8622284855469,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 860.6058394826096],
+        [0, 0.9999999763791223, 955.8622284855469]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7883.60595703125],
+        [0, 1, -2436.137939453125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7883.60595703125,
+        "y": -2436.137939453125,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83540",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83875",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 830.3018192647535,
+      "y": 956.0452233436847,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 830.3018192647535],
+        [0, 0.9999999763791223, 956.0452233436847]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7853.30224609375],
+        [0, 1, -2435.954833984375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7853.30224609375,
+        "y": -2435.954833984375,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83541",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83875",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 891.0198292854147,
+      "y": 955.6841839017145,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 891.0198292854147],
+        [0, 0.9999999763791223, 955.6841839017145]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7914.02001953125],
+        [0, 1, -2436.31591796875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7914.02001953125,
+        "y": -2436.31591796875,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83874",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1010.3395896247519,
+      "y": 1037.2261625160568,
+      "width": 101.45380401611328,
+      "height": 57.79393005371094,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1010.3395896247519],
+        [-0.006047585979104042, -0.999981701374054, 1037.2261625160568]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8033.33984375],
+        [-0.006047585979104042, -0.999981701374054, -2354.77392578125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8032.99032998893,
+        "y": -2413.1803488881474,
+        "width": 101.80146131197216,
+        "height": 58.406423106897364
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83543",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83874",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1040.642940125474,
+      "y": 979.2491658458762,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1040.642940125474],
+        [0, 0.9999999763791223, 979.2491658458762]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8063.64306640625],
+        [0, 1, -2412.7509765625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8063.64306640625,
+        "y": -2412.7509765625,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83544",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83874",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1010.3378848272039,
+      "y": 979.4311903835194,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1010.3378848272039],
+        [0, 0.9999999763791223, 979.4311903835194]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8033.33837890625],
+        [0, 1, -2412.56884765625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8033.33837890625,
+        "y": -2412.56884765625,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83545",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83874",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1071.0559165929749,
+      "y": 979.0681976493474,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1071.0559165929749],
+        [0, 0.9999999763791223, 979.0681976493474]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8094.05615234375],
+        [0, 1, -2412.931884765625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8094.05615234375,
+        "y": -2412.931884765625,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83873",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 849.4495651538437,
+      "y": 739.6002443381192,
+      "width": 101.45379638671875,
+      "height": 57.79392623901367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 849.4495651538437],
+        [-0.006047585979104042, -0.999981701374054, 739.6002443381192]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7872.44970703125],
+        [-0.006047585979104042, -0.999981701374054, -2652.39990234375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7872.1001932932495,
+        "y": -2710.8063215898806,
+        "width": 101.80145365964836,
+        "height": 58.406419246130554
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83547",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83873",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 879.7518914501622,
+      "y": 681.6232576767833,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 879.7518914501622],
+        [0, 0.9999999763791223, 681.6232576767833]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7902.751953125],
+        [0, 1, -2710.376953125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7902.751953125,
+        "y": -2710.376953125,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83548",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83873",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 849.447873277788,
+      "y": 681.8052454240678,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 849.447873277788],
+        [0, 0.9999999763791223, 681.8052454240678]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7872.4482421875],
+        [0, 1, -2710.19482421875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7872.4482421875,
+        "y": -2710.19482421875,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83549",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83873",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 910.1658944209123,
+      "y": 681.443290370757,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 910.1658944209123],
+        [0, 0.9999999763791223, 681.443290370757]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7933.166015625],
+        [0, 1, -2710.556884765625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7933.166015625,
+        "y": -2710.556884765625,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83872",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1029.4855815902365,
+      "y": 762.9851549845998,
+      "width": 101.45378875732422,
+      "height": 57.79294967651367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1029.4855815902365],
+        [-0.006047585979104042, -0.999981701374054, 762.9851549845998]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8052.48583984375],
+        [-0.006047585979104042, -0.999981701374054, -2629.014892578125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8052.136332011595,
+        "y": -2687.420335233486,
+        "width": 101.80144012454821,
+        "height": 58.405442655361185
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83551",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83872",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1059.7878355470511,
+      "y": 705.0081916493532,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1059.7878355470511],
+        [0, 0.9999999763791223, 705.0081916493532]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8082.7880859375],
+        [0, 1, -2686.991943359375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8082.7880859375,
+        "y": -2686.991943359375,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83552",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83872",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1029.4838843145621,
+      "y": 705.1911555721526,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1029.4838843145621],
+        [0, 0.9999999763791223, 705.1911555721526]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8052.484375],
+        [0, 1, -2686.808837890625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8052.484375,
+        "y": -2686.808837890625,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83553",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83872",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1090.201902010868,
+      "y": 704.8311537003813,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1090.201902010868],
+        [0, 0.9999999763791223, 704.8311537003813]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8113.2021484375],
+        [0, 1, -2687.1689453125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8113.2021484375,
+        "y": -2687.1689453125,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83871",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 961.1145385021994,
+      "y": 1194.166799026667,
+      "width": 101.45380401611328,
+      "height": 57.79335403442383,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 961.1145385021994],
+        [-0.006047585979104042, -0.999981701374054, 1194.166799026667]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7984.11474609375],
+        [-0.006047585979104042, -0.999981701374054, -2197.833251953125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7983.765235816206,
+        "y": -2256.239099051276,
+        "width": 101.80145782844647,
+        "height": 58.40584709815084
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83555",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83871",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 991.4168721129222,
+      "y": 1136.1891294778063,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 991.4168721129222],
+        [0, 0.9999999763791223, 1136.1891294778063]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8014.4169921875],
+        [0, 1, -2255.81103515625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8014.4169921875,
+        "y": -2255.81103515625,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83556",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83871",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 961.1128496621532,
+      "y": 1136.3730856707273,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 961.1128496621532],
+        [0, 0.9999999763791223, 1136.3730856707273]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7984.11328125],
+        [0, 1, -2255.626953125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7984.11328125,
+        "y": -2255.626953125,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83557",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83871",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1021.8308804358448,
+      "y": 1136.0100471653514,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1021.8308804358448],
+        [0, 0.9999999763791223, 1136.0100471653514]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8044.8310546875],
+        [0, 1, -2255.989990234375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8044.8310546875,
+        "y": -2255.989990234375,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83870",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1141.149638041206,
+      "y": 1217.5552705810908,
+      "width": 101.45379638671875,
+      "height": 57.79392623901367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1141.149638041206],
+        [-0.006047585979104042, -0.999981701374054, 1217.5552705810908]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8164.14990234375],
+        [-0.006047585979104042, -0.999981701374054, -2174.44482421875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8163.8003886057495,
+        "y": -2232.8512434648806,
+        "width": 101.80145365964836,
+        "height": 58.406419246130554
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83559",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83870",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1171.451910978879,
+      "y": 1159.5782918719858,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1171.451910978879],
+        [0, 0.9999999763791223, 1159.5782918719858]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8194.4521484375],
+        [0, 1, -2232.421875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8194.4521484375,
+        "y": -2232.421875,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83560",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83870",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1141.1479535155981,
+      "y": 1159.760294511188,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1141.1479535155981],
+        [0, 0.9999999763791223, 1159.760294511188]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8164.1484375],
+        [0, 1, -2232.23974609375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8164.1484375,
+        "y": -2232.23974609375,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83561",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83870",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1201.8659591714859,
+      "y": 1159.398232738064,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1201.8659591714859],
+        [0, 0.9999999763791223, 1159.398232738064]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8224.8662109375],
+        [0, 1, -2232.601806640625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8224.8662109375,
+        "y": -2232.601806640625,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83869",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 904.6696012991781,
+      "y": 966.8871187839254,
+      "width": 101.45380401611328,
+      "height": 57.79392623901367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 904.6696012991781],
+        [-0.006047585979104042, -0.999981701374054, 966.8871187839254]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7927.669921875],
+        [-0.006047585979104042, -0.999981701374054, -2425.113037109375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7927.3204081369995,
+        "y": -2483.519456401645,
+        "width": 101.80146128890283,
+        "height": 58.40641929227013
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83563",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83869",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 934.9719257343222,
+      "y": 908.9101397633792,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 934.9719257343222],
+        [0, 0.9999999763791223, 908.9101397633792]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7957.97216796875],
+        [0, 1, -2483.090087890625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7957.97216796875,
+        "y": -2483.090087890625,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83564",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83869",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 904.6679063756239,
+      "y": 909.0921580359741,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 904.6679063756239],
+        [0, 0.9999999763791223, 909.0921580359741]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7927.66845703125],
+        [0, 1, -2482.907958984375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7927.66845703125,
+        "y": -2482.907958984375,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83565",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83869",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 965.3859207073554,
+      "y": 908.7291654072379,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 965.3859207073554],
+        [0, 0.9999999763791223, 908.7291654072379]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7988.38623046875],
+        [0, 1, -2483.27099609375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7988.38623046875,
+        "y": -2483.27099609375,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83868",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1084.7055559009104,
+      "y": 990.2731589753896,
+      "width": 101.45378875732422,
+      "height": 57.79490280151367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1084.7055559009104],
+        [-0.006047585979104042, -0.999981701374054, 990.2731589753896]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8107.70556640625],
+        [-0.006047585979104042, -0.999981701374054, -2401.726806640625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8107.356046762404,
+        "y": -2460.1342023852467,
+        "width": 101.80145193623957,
+        "height": 58.40739574462168
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83567",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83868",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1115.0078020900523,
+      "y": 932.2961727985175,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1115.0078020900523],
+        [0, 0.9999999763791223, 932.2961727985175]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8138.0078125],
+        [0, 1, -2459.703857421875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8138.0078125,
+        "y": -2459.703857421875,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83568",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83868",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1084.7038693004224,
+      "y": 932.4772139672219,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1084.7038693004224],
+        [0, 0.9999999763791223, 932.4772139672219]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8107.7041015625],
+        [0, 1, -2459.522705078125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8107.7041015625,
+        "y": -2459.522705078125,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83569",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83868",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1145.4218874437552,
+      "y": 932.1172120927471,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1145.4218874437552],
+        [0, 0.9999999763791223, 932.1172120927471]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8168.421875],
+        [0, 1, -2459.8828125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8168.421875,
+        "y": -2459.8828125,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83867",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 878.2835536684597,
+      "y": 853.2371491259602,
+      "width": 101.45378875732422,
+      "height": 57.79490280151367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 878.2835536684597],
+        [-0.006047585979104042, -0.999981701374054, 853.2371491259602]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7901.28369140625],
+        [-0.006047585979104042, -0.999981701374054, -2538.762939453125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7900.934171762404,
+        "y": -2597.1703351977467,
+        "width": 101.80145193623957,
+        "height": 58.40739574462168
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83571",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83867",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 908.5858704282093,
+      "y": 795.2601625222985,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 908.5858704282093],
+        [0, 0.9999999763791223, 795.2601625222985]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7931.5859375],
+        [0, 1, -2596.739990234375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7931.5859375,
+        "y": -2596.739990234375,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83572",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83867",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 878.2818617277064,
+      "y": 795.441173631953,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 878.2818617277064],
+        [0, 0.9999999763791223, 795.441173631953]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7901.2822265625],
+        [0, 1, -2596.558837890625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7901.2822265625,
+        "y": -2596.558837890625,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83573",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83867",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 938.9998753062732,
+      "y": 795.0801952047375,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 938.9998753062732],
+        [0, 0.9999999763791223, 795.0801952047375]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7962],
+        [0, 1, -2596.919921875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7962,
+        "y": -2596.919921875,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83866",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1058.3197062617046,
+      "y": 876.62312708376,
+      "width": 101.45378875732422,
+      "height": 57.79490280151367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1058.3197062617046],
+        [-0.006047585979104042, -0.999981701374054, 876.62312708376]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8081.31982421875],
+        [-0.006047585979104042, -0.999981701374054, -2515.376953125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8080.970304574904,
+        "y": -2573.7843488696217,
+        "width": 101.80145193623957,
+        "height": 58.40739574462168
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83575",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83866",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1088.6219678477746,
+      "y": 818.646163702374,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1088.6219678477746],
+        [0, 0.9999999763791223, 818.646163702374]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8111.6220703125],
+        [0, 1, -2573.35400390625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8111.6220703125,
+        "y": -2573.35400390625,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83576",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83866",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1058.3180037605316,
+      "y": 818.827174542221,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1058.3180037605316],
+        [0, 0.9999999763791223, 818.827174542221]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8081.318359375],
+        [0, 1, -2573.1728515625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8081.318359375,
+        "y": -2573.1728515625,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83577",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83866",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1119.0360224999,
+      "y": 818.4671726641415,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1119.0360224999],
+        [0, 0.9999999763791223, 818.4671726641415]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8142.0361328125],
+        [0, 1, -2573.532958984375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8142.0361328125,
+        "y": -2573.532958984375,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83865",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 989.948583259174,
+      "y": 1307.80417269071,
+      "width": 101.45378875732422,
+      "height": 57.79294967651367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 989.948583259174],
+        [-0.006047585979104042, -0.999981701374054, 1307.80417269071]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8012.94873046875],
+        [-0.006047585979104042, -0.999981701374054, -2084.19580078125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8012.599222636595,
+        "y": -2142.601243436611,
+        "width": 101.80144012454821,
+        "height": 58.405442655361185
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83579",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83865",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1020.2509191612701,
+      "y": 1249.827197415582,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1020.2509191612701],
+        [0, 0.9999999763791223, 1249.827197415582]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8043.2509765625],
+        [0, 1, -2142.1728515625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8043.2509765625,
+        "y": -2142.1728515625,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83580",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83865",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 989.9468903278271,
+      "y": 1250.0101770667566,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 989.9468903278271],
+        [0, 0.9999999763791223, 1250.0101770667566]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8012.947265625],
+        [0, 1, -2141.98974609375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8012.947265625,
+        "y": -2141.98974609375,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83581",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83865",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1050.6649169624457,
+      "y": 1249.6492138196497,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1050.6649169624457],
+        [0, 0.9999999763791223, 1249.6492138196497]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8073.6650390625],
+        [0, 1, -2142.350830078125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8073.6650390625,
+        "y": -2142.350830078125,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83864",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1169.9835915044505,
+      "y": 1331.1901642281482,
+      "width": 101.45380401611328,
+      "height": 57.79392623901367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1169.9835915044505],
+        [-0.006047585979104042, -0.999981701374054, 1331.1901642281482]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8192.9833984375],
+        [-0.006047585979104042, -0.999981701374054, -2060.809814453125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8192.6338846995,
+        "y": -2119.216233745395,
+        "width": 101.80146128890192,
+        "height": 58.40641929227013
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83583",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83864",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1200.285860650566,
+      "y": 1273.2131893567403,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1200.285860650566],
+        [0, 0.9999999763791223, 1273.2131893567403]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8223.2861328125],
+        [0, 1, -2118.786865234375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8223.2861328125,
+        "y": -2118.786865234375,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83584",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83864",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1169.981903865994,
+      "y": 1273.395195806605,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1169.981903865994],
+        [0, 0.9999999763791223, 1273.395195806605]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8192.9814453125],
+        [0, 1, -2118.604736328125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8192.9814453125,
+        "y": -2118.604736328125,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83585",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83864",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1230.6999029603967,
+      "y": 1273.0321574928157,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1230.6999029603967],
+        [0, 0.9999999763791223, 1273.0321574928157]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8253.7001953125],
+        [0, 1, -2118.9677734375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8253.7001953125,
+        "y": -2118.9677734375,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83863",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 933.5035922754339,
+      "y": 1080.5231690490755,
+      "width": 101.45380401611328,
+      "height": 57.79294967651367,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 933.5035922754339],
+        [-0.006047585979104042, -0.999981701374054, 1080.5231690490755]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7956.50390625],
+        [-0.006047585979104042, -0.999981701374054, -2311.476806640625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7956.154398417845,
+        "y": -2369.882249388265,
+        "width": 101.80145538305715,
+        "height": 58.40544274763988
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83587",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83863",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 963.8059262932861,
+      "y": 1022.54619760011,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 963.8059262932861],
+        [0, 0.9999999763791223, 1022.54619760011]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7986.80615234375],
+        [0, 1, -2369.453857421875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7986.80615234375,
+        "y": -2369.453857421875,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83588",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83863",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 933.5019128644883,
+      "y": 1022.7291618990537,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 933.5019128644883],
+        [0, 0.9999999763791223, 1022.7291618990537]
+      ],
+      "absoluteTransform": [
+        [1, 0, 7956.50244140625],
+        [0, 1, -2369.270751953125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7956.50244140625,
+        "y": -2369.270751953125,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83589",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83863",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 994.2199290794786,
+      "y": 1022.3661997770641,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 994.2199290794786],
+        [0, 0.9999999763791223, 1022.3661997770641]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8017.22021484375],
+        [0, 1, -2369.6337890625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8017.22021484375,
+        "y": -2369.6337890625,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83862",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1113.5396135402148,
+      "y": 1103.910139640525,
+      "width": 101.45379638671875,
+      "height": 57.79295349121094,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1113.5396135402148],
+        [-0.006047585979104042, -0.999981701374054, 1103.910139640525]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8136.53955078125],
+        [-0.006047585979104042, -0.999981701374054, -2288.08984375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8136.190042926026,
+        "y": -2346.495290266128,
+        "width": 101.80144777687201,
+        "height": 58.405446516127995
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83591",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83862",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1143.8429793455864,
+      "y": 1045.9331505073205,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1143.8429793455864],
+        [0, 0.9999999763791223, 1045.9331505073205]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8166.8427734375],
+        [0, 1, -2346.06689453125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8166.8427734375,
+        "y": -2346.06689453125,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83592",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83862",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1113.5379294763334,
+      "y": 1046.1161515924778,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1113.5379294763334],
+        [0, 0.9999999763791223, 1046.1161515924778]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8136.5380859375],
+        [0, 1, -2345.8837890625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8136.5380859375,
+        "y": -2345.8837890625,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83593",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83862",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1174.2559367386434,
+      "y": 1045.7540745505705,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": 0,
+      "relativeTransform": [
+        [0.9999999763791223, 0, 1174.2559367386434],
+        [0, 0.9999999763791223, 1045.7540745505705]
+      ],
+      "absoluteTransform": [
+        [1, 0, 8197.255859375],
+        [0, 1, -2346.245849609375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8197.255859375,
+        "y": -2346.245849609375,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83861",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 919.8201573926692,
+      "y": 789.0770045318229,
+      "width": 107.00782012939453,
+      "height": 57.79786682128906,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 919.8201573926692],
+        [-0.006047585979104042, -0.999981701374054, 789.0770045318229]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7942.8203125],
+        [-0.006047585979104042, -0.999981701374054, -2602.923095703125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7942.470774930989,
+        "y": -2661.367043895538,
+        "width": 107.35539960233109,
+        "height": 58.44394819241279
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83595",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83861",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 996.1928830824518,
+      "y": 788.6101803560815,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 996.1928830824518],
+        [0, -0.9999999763791223, 788.6101803560815]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8019.19287109375],
+        [0, -1, -2603.389892578125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7973.122444152832,
+        "y": -2660.9049911499023,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83596",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83861",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 965.8888745228373,
+      "y": 788.7932056618496,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 965.8888745228373],
+        [0, -0.9999999763791223, 788.7932056618496]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 7988.88916015625],
+        [0, -1, -2603.206787109375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7942.818733215332,
+        "y": -2660.7218856811523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83597",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83861",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1026.6068919590475,
+      "y": 788.4311895946868,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1026.6068919590475],
+        [0, -0.9999999763791223, 788.4311895946868]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8049.60693359375],
+        [0, -1, -2603.56884765625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8009.21932220459,
+        "y": -2639.804847717285,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83860",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1099.8561943773543,
+      "y": 812.4640513235429,
+      "width": 107.00782012939453,
+      "height": 57.79786682128906,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1099.8561943773543],
+        [-0.006047585979104042, -0.999981701374054, 812.4640513235429]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8122.8564453125],
+        [-0.006047585979104042, -0.999981701374054, -2579.535888671875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8122.506907743489,
+        "y": -2637.979836864288,
+        "width": 107.35539960233109,
+        "height": 58.44394819241279
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83599",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83860",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1176.2288591723377,
+      "y": 811.9972505406521,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1176.2288591723377],
+        [0, -0.9999999763791223, 811.9972505406521]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8199.2294921875],
+        [0, -1, -2580.002685546875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8153.159065246582,
+        "y": -2637.5177841186523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83600",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83860",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1145.9249074630202,
+      "y": 812.1802144663352,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1145.9249074630202],
+        [0, -0.9999999763791223, 812.1802144663352]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8168.92529296875],
+        [0, -1, -2579.81982421875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8122.854866027832,
+        "y": -2637.3349227905273,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83601",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83860",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1206.642913824464,
+      "y": 811.8182595024888,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1206.642913824464],
+        [0, -0.9999999763791223, 811.8182595024888]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8229.6435546875],
+        [0, -1, -2580.181640625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8189.25594329834,
+        "y": -2616.417640686035,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83859",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1031.4852175696124,
+      "y": 1243.6440393558973,
+      "width": 107.00782012939453,
+      "height": 57.79780578613281,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1031.4852175696124],
+        [-0.006047585979104042, -0.999981701374054, 1243.6440393558973]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8054.4853515625],
+        [-0.006047585979104042, -0.999981701374054, -2148.35595703125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8054.135814362605,
+        "y": -2206.7998441896234,
+        "width": 107.3553992332154,
+        "height": 58.4438871583734
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83603",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83859",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1107.858973781176,
+      "y": 1243.1773035933966,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1107.858973781176],
+        [0, -0.9999999763791223, 1243.1773035933966]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8130.85888671875],
+        [0, -1, -2148.82275390625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8084.788459777832,
+        "y": -2206.3378524780273,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83604",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83859",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1077.5539235514282,
+      "y": 1243.3602894216658,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1077.5539235514282],
+        [0, -0.9999999763791223, 1243.3602894216658]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8100.55419921875],
+        [0, -1, -2148.6396484375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8054.483772277832,
+        "y": -2206.1547470092773,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83605",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83859",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1138.271959783939,
+      "y": 1242.9982274636466,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1138.271959783939],
+        [0, -0.9999999763791223, 1242.9982274636466]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8161.27197265625],
+        [0, -1, -2149.001708984375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8120.88436126709,
+        "y": -2185.23770904541,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83858",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1211.5212269534927,
+      "y": 1267.0290454142041,
+      "width": 107.00782775878906,
+      "height": 57.79682922363281,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1211.5212269534927],
+        [-0.006047585979104042, -0.999981701374054, 1267.0290454142041]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8234.521484375],
+        [-0.006047585979104042, -0.999981701374054, -2124.970947265625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8234.17195308095,
+        "y": -2183.4138579255073,
+        "width": 107.35540095662509,
+        "height": 58.44291065988227
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83607",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83858",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1287.893903947754,
+      "y": 1266.5642618088295,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1287.893903947754],
+        [0, -0.9999999763791223, 1266.5642618088295]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8310.89453125],
+        [0, -1, -2125.435791015625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8264.824104309082,
+        "y": -2182.9508895874023,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83608",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83858",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1257.5899426563815,
+      "y": 1266.746272100717,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1257.5899426563815],
+        [0, -0.9999999763791223, 1266.746272100717]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8280.58984375],
+        [0, -1, -2125.253662109375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8234.519416809082,
+        "y": -2182.7687606811523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83609",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83858",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1318.3079767976747,
+      "y": 1266.3832335750442,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1318.3079767976747],
+        [0, -0.9999999763791223, 1266.3832335750442]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8341.30859375],
+        [0, -1, -2125.61669921875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8300.92098236084,
+        "y": -2161.852699279785,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83857",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 975.041163560725,
+      "y": 1016.364056220041,
+      "width": 107.00775909423828,
+      "height": 57.79786682128906,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 975.041163560725],
+        [-0.006047585979104042, -0.999981701374054, 1016.364056220041]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7998.04150390625],
+        [-0.006047585979104042, -0.999981701374054, -2375.635986328125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7997.691966337239,
+        "y": -2434.079934151422,
+        "width": 107.3553385682917,
+        "height": 58.443947823297094
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83611",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83857",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1051.4138801048032,
+      "y": 1015.8982429024961,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1051.4138801048032],
+        [0, -0.9999999763791223, 1015.8982429024961]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8074.4140625],
+        [0, -1, -2376.101806640625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8028.343635559082,
+        "y": -2433.6169052124023,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83612",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83857",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1021.1098614556006,
+      "y": 1016.0802306526643,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1021.1098614556006],
+        [0, -0.9999999763791223, 1016.0802306526643]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8044.1103515625],
+        [0, -1, -2375.919921875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7998.039924621582,
+        "y": -2433.4350204467773,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83613",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83857",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1081.8278371154674,
+      "y": 1015.7182453564831,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1081.8278371154674],
+        [0, -0.9999999763791223, 1015.7182453564831]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8104.828125],
+        [0, -1, -2376.28173828125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8064.44051361084,
+        "y": -2412.517738342285,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83856",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1155.0761561381064,
+      "y": 1039.7499801569934,
+      "width": 107.00782012939453,
+      "height": 57.79780578613281,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1155.0761561381064],
+        [-0.006047585979104042, -0.999981701374054, 1039.7499801569934]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8178.076171875],
+        [-0.006047585979104042, -0.999981701374054, -2352.25]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8177.726634675105,
+        "y": -2410.6938871583734,
+        "width": 107.3553992332154,
+        "height": 58.4438871583734
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83615",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83856",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1231.4499123436576,
+      "y": 1039.2832434003237,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1231.4499123436576],
+        [0, -0.9999999763791223, 1039.2832434003237]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8254.4501953125],
+        [0, -1, -2352.716796875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8208.379768371582,
+        "y": -2410.2318954467773,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83616",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83856",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1201.1448582070034,
+      "y": 1039.466213993153,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1201.1448582070034],
+        [0, -0.9999999763791223, 1039.466213993153]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8224.14453125],
+        [0, -1, -2352.53369140625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8178.074104309082,
+        "y": -2410.0487899780273,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83617",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83856",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1261.8628678294012,
+      "y": 1039.1041674551825,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1261.8628678294012],
+        [0, -0.9999999763791223, 1039.1041674551825]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8284.86328125],
+        [0, -1, -2352.895751953125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8244.47566986084,
+        "y": -2389.13175201416,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83855",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 817.8361606798696,
+      "y": 721.1620028098496,
+      "width": 107.00782012939453,
+      "height": 57.79786682128906,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 817.8361606798696],
+        [-0.006047585979104042, -0.999981701374054, 721.1620028098496]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7840.83642578125],
+        [-0.006047585979104042, -0.999981701374054, -2670.838134765625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7840.486888212239,
+        "y": -2729.282082958038,
+        "width": 107.35539960233109,
+        "height": 58.44394819241279
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83619",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83855",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 894.2088865959165,
+      "y": 720.6952160474453,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 894.2088865959165],
+        [0, -0.9999999763791223, 720.6952160474453]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 7917.208984375],
+        [0, -1, -2671.304931640625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7871.138557434082,
+        "y": -2728.8200302124023,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83620",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83855",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 863.9048738525596,
+      "y": 720.8781803422438,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 863.9048738525596],
+        [0, -0.9999999763791223, 720.8781803422438]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 7886.9052734375],
+        [0, -1, -2671.1220703125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7840.834846496582,
+        "y": -2728.6371688842773,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83621",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83855",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 924.622895103397,
+      "y": 720.5161642519809,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 924.622895103397],
+        [0, -0.9999999763791223, 720.5161642519809]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 7947.623046875],
+        [0, -1, -2671.48388671875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7907.23543548584,
+        "y": -2707.719886779785,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83854",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 997.8721574257554,
+      "y": 744.549965388997,
+      "width": 107.00782012939453,
+      "height": 57.79854965209961,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 997.8721574257554],
+        [-0.006047585979104042, -0.999981701374054, 744.549965388997]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8020.8720703125],
+        [-0.006047585979104042, -0.999981701374054, -2647.4501953125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8020.522528614011,
+        "y": -2705.8948263232282,
+        "width": 107.35540373180902,
+        "height": 58.444631010728244
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83623",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83854",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1074.2459304124782,
+      "y": 744.0822187552213,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1074.2459304124782],
+        [0, -0.9999999763791223, 744.0822187552213]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8097.24560546875],
+        [0, -1, -2647.91796875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8051.175178527832,
+        "y": -2705.4330673217773,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83624",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83854",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1043.9408554792774,
+      "y": 744.2661660541687,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1043.9408554792774],
+        [0, -0.9999999763791223, 744.2661660541687]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8066.94091796875],
+        [0, -1, -2647.73388671875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8020.870491027832,
+        "y": -2705.2489852905273,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83625",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83854",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1104.6588919886249,
+      "y": 743.9041498716629,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1104.6588919886249],
+        [0, -0.9999999763791223, 743.9041498716629]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8127.65869140625],
+        [0, -1, -2648.095947265625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8087.27108001709,
+        "y": -2684.33194732666,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83853",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 929.5010771441207,
+      "y": 1175.7330287493164,
+      "width": 107.0078125,
+      "height": 57.79988098144531,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 929.5010771441207],
+        [-0.006047585979104042, -0.999981701374054, 1175.7330287493164]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7952.5009765625],
+        [-0.006047585979104042, -0.999981701374054, -2216.26708984375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7952.151426812683,
+        "y": -2274.713052113323,
+        "width": 107.35540415388277,
+        "height": 58.4459622695731
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83627",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83853",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1005.8737874099995,
+      "y": 1175.2661773176012,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1005.8737874099995],
+        [0, -0.9999999763791223, 1175.2661773176012]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8028.87353515625],
+        [0, -1, -2216.73388671875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7982.803108215332,
+        "y": -2274.2489852905273,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83628",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83853",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 975.5697782057398,
+      "y": 1175.44720368937,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 975.5697782057398],
+        [0, -0.9999999763791223, 1175.44720368937]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 7998.56982421875],
+        [0, -1, -2216.552978515625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7952.499397277832,
+        "y": -2274.0680770874023,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83629",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83853",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1036.2877812126433,
+      "y": 1175.0872171655133,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1036.2877812126433],
+        [0, -0.9999999763791223, 1175.0872171655133]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8059.28759765625],
+        [0, -1, -2216.912841796875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8018.89998626709,
+        "y": -2253.14884185791,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83852",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1109.5372053757524,
+      "y": 1199.1149784605166,
+      "width": 107.00782775878906,
+      "height": 57.79682922363281,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1109.5372053757524],
+        [-0.006047585979104042, -0.999981701374054, 1199.1149784605166]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8132.537109375],
+        [-0.006047585979104042, -0.999981701374054, -2192.885009765625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8132.1875780809505,
+        "y": -2251.3279204255073,
+        "width": 107.35540095662418,
+        "height": 58.44291065988227
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83631",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83852",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1185.9109657198815,
+      "y": 1198.6501875871706,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1185.9109657198815],
+        [0, -0.9999999763791223, 1198.6501875871706]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8208.9111328125],
+        [0, -1, -2193.349853515625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8162.840705871582,
+        "y": -2250.8649520874023,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83632",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83852",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1155.6059095842882,
+      "y": 1198.8321968708099,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1155.6059095842882],
+        [0, -0.9999999763791223, 1198.8321968708099]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8178.60595703125],
+        [0, -1, -2193.167724609375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8132.535530090332,
+        "y": -2250.6828231811523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83633",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83852",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1216.3239399109534,
+      "y": 1198.4691583681442,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1216.3239399109534],
+        [0, -0.9999999763791223, 1198.4691583681442]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8239.32421875],
+        [0, -1, -2193.53076171875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8198.93660736084,
+        "y": -2229.766761779785,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83851",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 873.0571666633678,
+      "y": 948.449023981048,
+      "width": 107.00782012939453,
+      "height": 57.79786682128906,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 873.0571666633678],
+        [-0.006047585979104042, -0.999981701374054, 948.449023981048]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7896.05712890625],
+        [-0.006047585979104042, -0.999981701374054, -2443.551025390625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7895.707591337239,
+        "y": -2501.994973583038,
+        "width": 107.35539960233109,
+        "height": 58.44394819241279
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83635",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83851",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 949.4298985054238,
+      "y": 947.9832170973477,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 949.4298985054238],
+        [0, -0.9999999763791223, 947.9832170973477]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 7972.4296875],
+        [0, -1, -2444.016845703125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7926.359260559082,
+        "y": -2501.5319442749023,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83636",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83851",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 919.1258760415938,
+      "y": 948.1652048705855,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 919.1258760415938],
+        [0, -0.9999999763791223, 948.1652048705855]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 7942.1259765625],
+        [0, -1, -2443.8349609375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7896.055549621582,
+        "y": -2501.3500595092773,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83637",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83851",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 979.8439012916172,
+      "y": 947.8032192744381,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 979.8439012916172],
+        [0, -0.9999999763791223, 947.8032192744381]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8002.84375],
+        [0, -1, -2444.19677734375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7962.45613861084,
+        "y": -2480.432777404785,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83850",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1053.093111912436,
+      "y": 971.8360408094213,
+      "width": 107.00782775878906,
+      "height": 57.79758071899414,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1053.093111912436],
+        [-0.006047585979104042, -0.999981701374054, 971.8360408094213]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8076.09326171875],
+        [-0.006047585979104042, -0.999981701374054, -2420.1640625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8075.743725879967,
+        "y": -2478.6077246414925,
+        "width": 107.35540550135829,
+        "height": 58.443662141492496
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83639",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83850",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1129.4657920300328,
+      "y": 971.3692505339056,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1129.4657920300328],
+        [0, -0.9999999763791223, 971.3692505339056]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8152.4658203125],
+        [0, -1, -2420.630859375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8106.395393371582,
+        "y": -2478.1459579467773,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83640",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83850",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1099.1618157095413,
+      "y": 971.5531911887765,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1099.1618157095413],
+        [0, -0.9999999763791223, 971.5531911887765]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8122.162109375],
+        [0, -1, -2420.447021484375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8076.091682434082,
+        "y": -2477.9621200561523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83641",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83850",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1159.879846497601,
+      "y": 971.190228978704,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1159.879846497601],
+        [0, -0.9999999763791223, 971.190228978704]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8182.8798828125],
+        [0, -1, -2420.809814453125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8142.49227142334,
+        "y": -2457.04581451416,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83849",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 846.6701383055824,
+      "y": 834.7971070935286,
+      "width": 107.00782775878906,
+      "height": 57.79689025878906,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 846.6701383055824],
+        [-0.006047585979104042, -0.999981701374054, 834.7971070935286]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7869.67041015625],
+        [-0.006047585979104042, -0.999981701374054, -2557.202880859375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7869.320878493085,
+        "y": -2615.6458525532967,
+        "width": 107.35540132574079,
+        "height": 58.44297169392166
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83643",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83849",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 923.0428684217484,
+      "y": 834.3322763903578,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 923.0428684217484],
+        [0, -0.9999999763791223, 834.3322763903578]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 7946.04296875],
+        [0, -1, -2557.667724609375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7899.972541809082,
+        "y": -2615.1828231811523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83644",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83849",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 892.7388497725456,
+      "y": 834.514264140526,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 892.7388497725456],
+        [0, -0.9999999763791223, 834.514264140526]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 7915.7392578125],
+        [0, -1, -2557.48583984375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7869.668830871582,
+        "y": -2615.0009384155273,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83645",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83849",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 953.456880560605,
+      "y": 834.1513019303774,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 953.456880560605],
+        [0, -0.9999999763791223, 834.1513019303774]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 7976.45703125],
+        [0, -1, -2557.8486328125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7936.06941986084,
+        "y": -2594.084632873535,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83848",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1026.7062731786777,
+      "y": 858.1839396662981,
+      "width": 107.00782012939453,
+      "height": 57.79786682128906,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1026.7062731786777],
+        [-0.006047585979104042, -0.999981701374054, 858.1839396662981]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8049.70654296875],
+        [-0.006047585979104042, -0.999981701374054, -2533.816162109375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8049.357005399739,
+        "y": -2592.260110301788,
+        "width": 107.35539960233109,
+        "height": 58.44394819241279
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83647",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83848",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1103.0789456578223,
+      "y": 857.7171479161,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1103.0789456578223],
+        [0, -0.9999999763791223, 857.7171479161]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8126.0791015625],
+        [0, -1, -2534.282958984375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8080.008674621582,
+        "y": -2591.7980575561523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83648",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83848",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1072.7749977631322,
+      "y": 857.9001118187134,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1072.7749977631322],
+        [0, -0.9999999763791223, 857.9001118187134]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8095.775390625],
+        [0, -1, -2534.10009765625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8049.704963684082,
+        "y": -2591.6151962280273,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83649",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83848",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1133.4930001253888,
+      "y": 857.5381263606463,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1133.4930001253888],
+        [0, -0.9999999763791223, 857.5381263606463]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8156.4931640625],
+        [0, -1, -2534.4619140625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8116.10555267334,
+        "y": -2570.697914123535,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83847",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 958.3351772232786,
+      "y": 1289.3669344556022,
+      "width": 107.00782012939453,
+      "height": 57.79780578613281,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 958.3351772232786],
+        [-0.006047585979104042, -0.999981701374054, 1289.3669344556022]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7981.33544921875],
+        [-0.006047585979104042, -0.999981701374054, -2102.633056640625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7980.985912018855,
+        "y": -2161.0769437989984,
+        "width": 107.3553992332154,
+        "height": 58.4438871583734
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83651",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83847",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1034.7078406723294,
+      "y": 1288.9011726800436,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1034.7078406723294],
+        [0, -0.9999999763791223, 1288.9011726800436]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8057.7080078125],
+        [0, -1, -2103.098876953125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8011.637580871582,
+        "y": -2160.6139755249023,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83652",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83847",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1004.4038831955843,
+      "y": 1289.0831829488611,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1004.4038831955843],
+        [0, -0.9999999763791223, 1289.0831829488611]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8027.404296875],
+        [0, -1, -2102.916748046875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7981.333869934082,
+        "y": -2160.4318466186523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83653",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83847",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1065.1219194280957,
+      "y": 1288.721120990902,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1065.1219194280957],
+        [0, -0.9999999763791223, 1288.721120990902]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8088.1220703125],
+        [0, -1, -2103.27880859375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8047.73445892334,
+        "y": -2139.514808654785,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83846",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1138.3712210942717,
+      "y": 1312.7551199136196,
+      "width": 107.0078125,
+      "height": 57.79958724975586,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1138.3712210942717],
+        [-0.006047585979104042, -0.999981701374054, 1312.7551199136196]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8161.37158203125],
+        [-0.006047585979104042, -0.999981701374054, -2079.244873046875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8161.022034057801,
+        "y": -2137.6905415901338,
+        "width": 107.35540237751502,
+        "height": 58.44566854325876
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83655",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83846",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1214.7449800058648,
+      "y": 1312.2863074863817,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1214.7449800058648],
+        [0, -0.9999999763791223, 1312.2863074863817]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8237.7451171875],
+        [0, -1, -2079.713623046875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8191.674690246582,
+        "y": -2137.2287216186523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83656",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83846",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1184.4399318558008,
+      "y": 1312.4702679750371,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1184.4399318558008],
+        [0, -0.9999999763791223, 1312.4702679750371]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8207.4404296875],
+        [0, -1, -2079.52978515625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8161.370002746582,
+        "y": -2137.0448837280273,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83657",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83846",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1245.1579480415303,
+      "y": 1312.109306698429,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1245.1579480415303],
+        [0, -0.9999999763791223, 1312.109306698429]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8268.158203125],
+        [0, -1, -2079.890625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8227.77059173584,
+        "y": -2116.126625061035,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83845",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 901.8911475487287,
+      "y": 1062.0859288150284,
+      "width": 107.00782012939453,
+      "height": 57.79780578613281,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 901.8911475487287],
+        [-0.006047585979104042, -0.999981701374054, 1062.0859288150284]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7924.89111328125],
+        [-0.006047585979104042, -0.999981701374054, -2329.9140625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7924.541576081355,
+        "y": -2388.3579496583734,
+        "width": 107.3553992332154,
+        "height": 58.4438871583734
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83659",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83845",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 978.2638719639726,
+      "y": 1061.620155451848,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 978.2638719639726],
+        [0, -0.9999999763791223, 1061.620155451848]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8001.263671875],
+        [0, -1, -2330.3798828125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7955.193244934082,
+        "y": -2387.8949813842773,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83660",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83845",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 947.9598534993277,
+      "y": 1061.8021737190359,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 947.9598534993277],
+        [0, -0.9999999763791223, 1061.8021737190359]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 7970.9599609375],
+        [0, -1, -2330.19775390625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7924.889533996582,
+        "y": -2387.7128524780273,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83661",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83845",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1008.6778745656079,
+      "y": 1061.4401271118568,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1008.6778745656079],
+        [0, -0.9999999763791223, 1061.4401271118568]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8031.677734375],
+        [0, -1, -2330.559814453125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7991.29012298584,
+        "y": -2366.79581451416,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83844",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1081.9271018736245,
+      "y": 1085.471923230963,
+      "width": 107.00782012939453,
+      "height": 57.79780578613281,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1081.9271018736245],
+        [-0.006047585979104042, -0.999981701374054, 1085.471923230963]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8104.92724609375],
+        [-0.006047585979104042, -0.999981701374054, -2306.528076171875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8104.577708893855,
+        "y": -2364.9719633302484,
+        "width": 107.3553992332154,
+        "height": 58.4438871583734
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83663",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83844",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1158.3008809908156,
+      "y": 1085.0051902836792,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1158.3008809908156],
+        [0, -0.9999999763791223, 1085.0051902836792]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8181.30078125],
+        [0, -1, -2306.994873046875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8135.230354309082,
+        "y": -2364.5099716186523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83664",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83844",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1127.995800244048,
+      "y": 1085.1881762965063,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1127.995800244048],
+        [0, -0.9999999763791223, 1085.1881762965063]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8150.99609375],
+        [0, -1, -2306.811767578125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8104.925666809082,
+        "y": -2364.3268661499023,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83665",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83844",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1188.7138364765597,
+      "y": 1084.8261143385828,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1188.7138364765597],
+        [0, -0.9999999763791223, 1084.8261143385828]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8211.7138671875],
+        [0, -1, -2307.173828125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8171.32625579834,
+        "y": -2343.409828186035,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83843",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 892.203219478334,
+      "y": 674.2079855634561,
+      "width": 107.00782012939453,
+      "height": 57.79786682128906,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 892.203219478334],
+        [-0.006047585979104042, -0.999981701374054, 674.2079855634561]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7915.203125],
+        [-0.006047585979104042, -0.999981701374054, -2717.7919921875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7914.853587430989,
+        "y": -2776.235940379913,
+        "width": 107.35539960233109,
+        "height": 58.44394819241279
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83667",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83843",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 968.5759527950677,
+      "y": 673.7411609606712,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 968.5759527950677],
+        [0, -0.9999999763791223, 673.7411609606712]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 7991.57568359375],
+        [0, -1, -2718.2587890625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7945.505256652832,
+        "y": -2775.7738876342773,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83668",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83843",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 938.2719251623162,
+      "y": 673.9241863817879,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 938.2719251623162],
+        [0, -0.9999999763791223, 673.9241863817879]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 7961.27197265625],
+        [0, -1, -2718.07568359375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7915.201545715332,
+        "y": -2775.5907821655273,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83669",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83843",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 998.9899464131547,
+      "y": 673.5621702917238,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 998.9899464131547],
+        [0, -0.9999999763791223, 673.5621702917238]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8021.98974609375],
+        [0, -1, -2718.437744140625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7981.60213470459,
+        "y": -2754.67374420166,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83842",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1072.2382740125431,
+      "y": 697.5940617163915,
+      "width": 107.00782775878906,
+      "height": 57.79689025878906,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1072.2382740125431],
+        [-0.006047585979104042, -0.999981701374054, 697.5940617163915]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8095.23828125],
+        [-0.006047585979104042, -0.999981701374054, -2694.406005859375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8094.888749586835,
+        "y": -2752.8489775532967,
+        "width": 107.35540132573988,
+        "height": 58.44297169392166
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83671",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83842",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1148.6109506525243,
+      "y": 697.1292195300365,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1148.6109506525243],
+        [0, -0.9999999763791223, 697.1292195300365]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8171.61083984375],
+        [0, -1, -2694.870849609375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8125.540412902832,
+        "y": -2752.3859481811523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83672",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83842",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1118.3069968519885,
+      "y": 697.3112068880197,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1118.3069968519885],
+        [0, -0.9999999763791223, 697.3112068880197]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8141.30712890625],
+        [0, -1, -2694.68896484375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8095.236701965332,
+        "y": -2752.2040634155273,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83673",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83842",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1179.024993492958,
+      "y": 696.9482754024926,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1179.024993492958],
+        [0, -0.9999999763791223, 696.9482754024926]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8202.025390625],
+        [0, -1, -2695.0517578125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8161.63777923584,
+        "y": -2731.287757873535,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83841",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1003.8671563852547,
+      "y": 1128.77599613154,
+      "width": 107.00782775878906,
+      "height": 57.79682922363281,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1003.8671563852547],
+        [-0.006047585979104042, -0.999981701374054, 1128.77599613154]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8026.8671875],
+        [-0.006047585979104042, -0.999981701374054, -2263.22412109375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8026.5176562059505,
+        "y": -2321.6670317536323,
+        "width": 107.35540095662509,
+        "height": 58.44291065988227
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83675",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83841",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1080.2398105291381,
+      "y": 1128.31121884659,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1080.2398105291381],
+        [0, -0.9999999763791223, 1128.31121884659]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8103.23974609375],
+        [0, -1, -2263.68896484375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8057.169319152832,
+        "y": -2321.2040634155273,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83676",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83841",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1049.9358873379008,
+      "y": 1128.4932212785252,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1049.9358873379008],
+        [0, -0.9999999763791223, 1128.4932212785252]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8072.93603515625],
+        [0, -1, -2263.5068359375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8026.865608215332,
+        "y": -2321.0219345092773,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83677",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83841",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1110.6538833329182,
+      "y": 1128.1301829833787,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1110.6538833329182],
+        [0, -0.9999999763791223, 1128.1301829833787]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8133.65380859375],
+        [0, -1, -2263.869873046875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8093.26619720459,
+        "y": -2300.10587310791,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83840",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1183.903184201833,
+      "y": 1152.1640500771887,
+      "width": 107.0078125,
+      "height": 57.79890441894531,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1183.903184201833],
+        [-0.006047585979104042, -0.999981701374054, 1152.1640500771887]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8206.9033203125],
+        [-0.006047585979104042, -0.999981701374054, -2239.8359375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8206.553776468529,
+        "y": -2298.280923224943,
+        "width": 107.35539824803709,
+        "height": 58.44498572494285
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83679",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83840",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1260.275857991022,
+      "y": 1151.6962133853795,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1260.275857991022],
+        [0, -0.9999999763791223, 1151.6962133853795]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8283.2763671875],
+        [0, -1, -2240.3037109375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8237.205940246582,
+        "y": -2297.8188095092773,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83680",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83840",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1229.9718758569634,
+      "y": 1151.8791927541301,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1229.9718758569634],
+        [0, -0.9999999763791223, 1151.8791927541301]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8252.9716796875],
+        [0, -1, -2240.120849609375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8206.901252746582,
+        "y": -2297.6359481811523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83681",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83840",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1290.6898882165297,
+      "y": 1151.5182295931909,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1290.6898882165297],
+        [0, -0.9999999763791223, 1151.5182295931909]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8313.6904296875],
+        [0, -1, -2240.481689453125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8273.30281829834,
+        "y": -2276.71768951416,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83839",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 947.423138845372,
+      "y": 901.496996985011,
+      "width": 107.00775909423828,
+      "height": 57.79884338378906,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 947.423138845372],
+        [-0.006047585979104042, -0.999981701374054, 901.496996985011]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 7970.42333984375],
+        [-0.006047585979104042, -0.999981701374054, -2490.5029296875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7970.073796368893,
+        "y": -2548.9478540554273,
+        "width": 107.35534447413738,
+        "height": 58.44492436792734
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83683",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83839",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1023.7958588743627,
+      "y": 901.0292367848117,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1023.7958588743627],
+        [0, -0.9999999763791223, 901.0292367848117]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8046.7958984375],
+        [0, -1, -2490.970703125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8000.725471496582,
+        "y": -2548.4858016967773,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83684",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83839",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 993.4918423163781,
+      "y": 901.21220110268,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 993.4918423163781],
+        [0, -0.9999999763791223, 901.21220110268]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8016.4921875],
+        [0, -1, -2490.787841796875]
+      ],
+      "absoluteBoundingBox": {
+        "x": 7970.421760559082,
+        "y": -2548.3029403686523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83685",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83839",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1054.2097971796986,
+      "y": 900.8511925126443,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1054.2097971796986],
+        [0, -0.9999999763791223, 900.8511925126443]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8077.2099609375],
+        [0, -1, -2491.148681640625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8036.82234954834,
+        "y": -2527.38468170166,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83838",
+      "name": "Calque_1-2",
+      "type": "GROUP",
+      "depth": 1,
+      "parent": {
+        "id": "92:83837",
+        "name": "Group 2087326238",
+        "type": "GROUP"
+      },
+      "x": 1127.459083725325,
+      "y": 924.883952779345,
+      "width": 107.00782012939453,
+      "height": 57.79786682128906,
+      "rotation": 0.3465032690872021,
+      "relativeTransform": [
+        [0.999981701374054, -0.006047585979104042, 1127.459083725325],
+        [-0.006047585979104042, -0.999981701374054, 924.883952779345]
+      ],
+      "absoluteTransform": [
+        [0.999981701374054, -0.006047585979104042, 8150.458984375],
+        [-0.006047585979104042, -0.999981701374054, -2467.1162109375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8150.109446805989,
+        "y": -2525.560159129913,
+        "width": 107.35539960233109,
+        "height": 58.44394819241279
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 3
+    },
+    {
+      "id": "92:83687",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83838",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1203.8317392281351,
+      "y": 924.4181386355847,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1203.8317392281351],
+        [0, -0.9999999763791223, 924.4181386355847]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8226.83203125],
+        [0, -1, -2467.58203125]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8180.761604309082,
+        "y": -2525.0971298217773,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83688",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83838",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1173.5277777983438,
+      "y": 924.6001260397072,
+      "width": 46.07042694091797,
+      "height": 57.515098571777344,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1173.5277777983438],
+        [0, -0.9999999763791223, 924.6001260397072]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8196.52734375],
+        [0, -1, -2467.400146484375]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8150.456916809082,
+        "y": -2524.9152450561523,
+        "width": 46.07042694091797,
+        "height": 57.515098571777344
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    },
+    {
+      "id": "92:83689",
+      "name": "Vector",
+      "type": "VECTOR",
+      "depth": 2,
+      "parent": {
+        "id": "92:83838",
+        "name": "Calque_1-2",
+        "type": "GROUP"
+      },
+      "x": 1234.2458183068775,
+      "y": 924.238140351252,
+      "width": 40.387611389160156,
+      "height": 36.236000061035156,
+      "rotation": -180,
+      "relativeTransform": [
+        [-0.9999999763791223, 0, 1234.2458183068775],
+        [0, -0.9999999763791223, 924.238140351252]
+      ],
+      "absoluteTransform": [
+        [-1, 0, 8257.24609375],
+        [0, -1, -2467.761962890625]
+      ],
+      "absoluteBoundingBox": {
+        "x": 8216.85848236084,
+        "y": -2503.99796295166,
+        "width": 40.387611389160156,
+        "height": 36.236000061035156
+      },
+      "constraints": {
+        "horizontal": "SCALE",
+        "vertical": "SCALE"
+      },
+      "layoutSizingHorizontal": "FIXED",
+      "layoutSizingVertical": "FIXED",
+      "childCount": 0
+    }
+  ]
+}

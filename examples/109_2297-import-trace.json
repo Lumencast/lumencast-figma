@@ -1,0 +1,405 @@
+{
+  "summary": {
+    "expected": 59,
+    "built": 59,
+    "failed": 0,
+    "vectorPathRejected": 0
+  },
+  "warnings": [],
+  "entries": [
+    {
+      "seq": 0,
+      "path": "$",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 1,
+      "path": "$.children[0]",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 2,
+      "path": "$.children[0].children[0]",
+      "kind": "shape",
+      "name": "Rectangle 5",
+      "action": "build-start"
+    },
+    {
+      "seq": 3,
+      "path": "$.children[0].children[1]",
+      "kind": "image",
+      "name": "image 3",
+      "action": "build-start"
+    },
+    {
+      "seq": 4,
+      "path": "$.children[0].children[2]",
+      "kind": "image",
+      "name": "image 2",
+      "action": "build-start"
+    },
+    {
+      "seq": 5,
+      "path": "$.children[1]",
+      "kind": "stack",
+      "action": "build-start"
+    },
+    {
+      "seq": 6,
+      "path": "$.children[1].children[0]",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 7,
+      "path": "$.children[1].children[0].children[0]",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 8,
+      "path": "$.children[1].children[0].children[0].children[0]",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 9,
+      "path": "$.children[1].children[0].children[0].children[0].children[0]",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 10,
+      "path": "$.children[1].children[0].children[0].children[0].children[0].children[0]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 11,
+      "path": "$.children[1].children[0].children[0].children[0].children[0].children[1]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 12,
+      "path": "$.children[1].children[0].children[0].children[0].children[0].children[2]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 13,
+      "path": "$.children[1].children[0].children[1]",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 14,
+      "path": "$.children[1].children[0].children[1].children[0]",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 15,
+      "path": "$.children[1].children[0].children[1].children[0].children[0]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 16,
+      "path": "$.children[1].children[0].children[1].children[0].children[1]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 17,
+      "path": "$.children[1].children[0].children[1].children[0].children[2]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 18,
+      "path": "$.children[1].children[0].children[1].children[0].children[3]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 19,
+      "path": "$.children[1].children[0].children[1].children[0].children[4]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 20,
+      "path": "$.children[1].children[0].children[1].children[0].children[5]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 21,
+      "path": "$.children[1].children[0].children[1].children[0].children[6]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 22,
+      "path": "$.children[1].children[0].children[1].children[0].children[7]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 23,
+      "path": "$.children[1].children[0].children[1].children[0].children[8]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 24,
+      "path": "$.children[1].children[0].children[1].children[0].children[9]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 25,
+      "path": "$.children[1].children[1]",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 26,
+      "path": "$.children[1].children[1].children[0]",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 27,
+      "path": "$.children[1].children[1].children[0].children[0]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 28,
+      "path": "$.children[1].children[1].children[0].children[1]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 29,
+      "path": "$.children[1].children[1].children[0].children[2]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 30,
+      "path": "$.children[1].children[1].children[0].children[3]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 31,
+      "path": "$.children[1].children[1].children[0].children[4]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 32,
+      "path": "$.children[1].children[1].children[0].children[5]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 33,
+      "path": "$.children[1].children[1].children[0].children[6]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 34,
+      "path": "$.children[1].children[1].children[0].children[7]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 35,
+      "path": "$.children[1].children[1].children[0].children[8]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 36,
+      "path": "$.children[1].children[1].children[0].children[9]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 37,
+      "path": "$.children[1].children[1].children[0].children[10]",
+      "kind": "shape",
+      "name": "Vector",
+      "action": "build-start"
+    },
+    {
+      "seq": 38,
+      "path": "$.children[2]",
+      "kind": "text",
+      "action": "build-start"
+    },
+    {
+      "seq": 39,
+      "path": "$.children[3]",
+      "kind": "shape",
+      "name": "Rectangle 6",
+      "action": "build-start"
+    },
+    {
+      "seq": 40,
+      "path": "$.children[4]",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 41,
+      "path": "$.children[4].children[0]",
+      "kind": "shape",
+      "name": "Vector 1",
+      "action": "build-start"
+    },
+    {
+      "seq": 42,
+      "path": "$.children[4].children[1]",
+      "kind": "image",
+      "name": "Ruby20-%2006 3",
+      "action": "build-start"
+    },
+    {
+      "seq": 43,
+      "path": "$.children[4].children[2]",
+      "kind": "shape",
+      "name": "Background+Shadow",
+      "action": "build-start"
+    },
+    {
+      "seq": 44,
+      "path": "$.children[5]",
+      "kind": "image",
+      "name": "Sunshine 27",
+      "action": "build-start"
+    },
+    {
+      "seq": 45,
+      "path": "$.children[6]",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 46,
+      "path": "$.children[6].children[0]",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 47,
+      "path": "$.children[6].children[0].children[0]",
+      "kind": "image",
+      "name": "3d-render-of-abstract-matte-white-and-orange-wavy-shape-3 2",
+      "action": "build-start"
+    },
+    {
+      "seq": 48,
+      "path": "$.children[6].children[0].children[1]",
+      "kind": "shape",
+      "name": "Ellipse 1",
+      "action": "build-start"
+    },
+    {
+      "seq": 49,
+      "path": "$.children[6].children[0].children[2]",
+      "kind": "image",
+      "name": "3d-render-of-abstract-matte-white-and-orange-wavy-shape-3 1",
+      "action": "build-start"
+    },
+    {
+      "seq": 50,
+      "path": "$.children[7]",
+      "kind": "image",
+      "name": "Sunshine 26",
+      "action": "build-start"
+    },
+    {
+      "seq": 51,
+      "path": "$.children[8]",
+      "kind": "shape",
+      "name": "Unique_Logo_Video_Generation 1",
+      "action": "build-start"
+    },
+    {
+      "seq": 52,
+      "path": "$.children[9]",
+      "kind": "image",
+      "name": "_pqbORWP 1",
+      "action": "build-start"
+    },
+    {
+      "seq": 53,
+      "path": "$.children[10]",
+      "kind": "stack",
+      "action": "build-start"
+    },
+    {
+      "seq": 54,
+      "path": "$.children[10].children[0]",
+      "kind": "text",
+      "action": "build-start"
+    },
+    {
+      "seq": 55,
+      "path": "$.children[11]",
+      "kind": "frame",
+      "action": "build-start"
+    },
+    {
+      "seq": 56,
+      "path": "$.children[11].children[0]",
+      "kind": "shape",
+      "name": "Rectangle 240648598",
+      "action": "build-start"
+    },
+    {
+      "seq": 57,
+      "path": "$.children[11].children[1]",
+      "kind": "shape",
+      "name": "Ellipse 43517",
+      "action": "build-start"
+    },
+    {
+      "seq": 58,
+      "path": "$.children[11].children[2]",
+      "kind": "text",
+      "action": "build-start"
+    }
+  ]
+}

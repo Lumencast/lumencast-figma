@@ -7,7 +7,7 @@ import type {
   SelectionSummary,
   UiToMain,
 } from "../main/messages";
-import { downloadExport } from "./download";
+import { downloadExport, downloadText } from "./download";
 import { pickImport } from "./import-picker";
 
 function send(msg: UiToMain): void {
@@ -41,6 +41,7 @@ export function App() {
             sceneId: msg.payload.bundle.scene_id,
             bundleBytes: msg.payload.canonical,
             assets: msg.payload.assets,
+            ...(msg.payload.debugArtefacts ? { debugArtefacts: msg.payload.debugArtefacts } : {}),
           });
           break;
         }
@@ -54,6 +55,24 @@ export function App() {
         case "import-result":
           importPhase.value = null;
           lastImportSummary.value = `Imported. ${msg.payload.primitivesCreated} primitive(s).`;
+          if (msg.payload.debugArtefacts?.importTrace) {
+            // Same fire-and-forget download path the export uses ; the user
+            // gets the trace file alongside their re-imported scene without
+            // any extra UI step. Filename uses the rootNodeId so multiple
+            // imports in the same session don't overwrite each other.
+            downloadText(
+              `${msg.payload.rootNodeId}-import-trace.json`,
+              msg.payload.debugArtefacts.importTrace,
+              "application/json",
+            );
+          }
+          break;
+        case "diagnostic-dump":
+          // Plugin menu "Diagnostic: dump selection positions" landed —
+          // immediately trigger a download of the dump JSON. No UI flow,
+          // user gets the file and the plugin closes itself.
+          downloadText(msg.filename, msg.json, "application/json");
+          lastImportSummary.value = `Diagnostic dump downloaded : ${msg.filename}`;
           break;
       }
     };

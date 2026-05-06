@@ -33,6 +33,11 @@ export interface BuiltNode {
   type: string;
   id: string;
   name: string;
+  /** Set by appendChild on a parent (or by figma.group). Used by the
+   *  group-conversion post-pass. */
+  parent?: BuiltNode;
+  /** Detach from parent. Mirrors Figma's `node.remove()`. */
+  remove?(): void;
   visible?: boolean;
   opacity?: number;
   rotation?: number;
@@ -78,6 +83,39 @@ export interface ImportMock extends ImportFigmaApi {
   appended(): BuiltNode[];
 }
 
+/** Mirror Figma's silent-drop quirk on `layoutPositioning="ABSOLUTE"` :
+ *  the setter is a no-op when the node has no parent yet, or when its
+ *  parent is not an auto-layout stack (`layoutMode` not HORIZONTAL or
+ *  VERTICAL). The real Figma plugin runtime swallows the assignment
+ *  without throwing, so importers that set the property pre-attach
+ *  silently lose it. The mock reproduces the quirk so regression tests
+ *  for the post-attach replay (walk.ts) can fail when the replay is
+ *  removed. */
+function installLayoutPositioningQuirk(n: BuiltNode): void {
+  let stored: string | undefined;
+  Object.defineProperty(n, "layoutPositioning", {
+    configurable: true,
+    enumerable: true,
+    get() {
+      return stored;
+    },
+    set(v: string | undefined) {
+      if (v !== "ABSOLUTE") {
+        stored = v;
+        return;
+      }
+      const parent = n.parent;
+      const parentMode = parent
+        ? (parent as unknown as { layoutMode?: string }).layoutMode
+        : undefined;
+      if (parentMode === "HORIZONTAL" || parentMode === "VERTICAL") {
+        stored = v;
+      }
+      // else : silent drop, mirroring Figma.
+    },
+  });
+}
+
 function attachPluginData<T extends BuiltNode>(node: T): T {
   // The builders write plugin data via setSharedPluginData. We back that
   // with the same equipPluginData helper used on export-side mocks so the
@@ -106,6 +144,7 @@ export function createImportMock(): ImportMock {
       n.width = w;
       n.height = h;
     };
+    installLayoutPositioningQuirk(n);
     return text;
   };
 
@@ -115,6 +154,7 @@ export function createImportMock(): ImportMock {
       n.width = w;
       n.height = h;
     };
+    installLayoutPositioningQuirk(n);
     return shape;
   };
 
@@ -125,7 +165,37 @@ export function createImportMock(): ImportMock {
       n.height = h;
     };
     frame.appendChild = (child: ImportBaseNode) => {
-      n.children.push(child as unknown as BuiltNode);
+      const c = child as unknown as BuiltNode;
+      // Detach from previous parent if any (mock only — real Figma does
+      // this implicitly when re-parenting).
+      if (c.parent && c.parent.children) {
+        const i = c.parent.children.indexOf(c);
+        if (i >= 0) c.parent.children.splice(i, 1);
+      }
+      n.children.push(c);
+      c.parent = n;
+      // Mirror Figma's auto-layout x/y reset : on appendChild to an
+      // auto-layout stack, a child whose layoutPositioning is not yet
+      // ABSOLUTE has its x/y overwritten by the layout-determined slot.
+      // We don't compute the actual slot (would require simulating the
+      // full alignment algorithm) — we set x/y to NaN to signal "lost",
+      // which makes regression tests fail when the post-attach
+      // replay in walk.ts forgets to re-apply the captured position.
+      if (n.layoutMode === "HORIZONTAL" || n.layoutMode === "VERTICAL") {
+        const lp = (c as unknown as { layoutPositioning?: string }).layoutPositioning;
+        if (lp !== "ABSOLUTE") {
+          c.x = NaN;
+          c.y = NaN;
+        }
+      }
+    };
+    installLayoutPositioningQuirk(n);
+    n.remove = () => {
+      if (n.parent && n.parent.children) {
+        const i = n.parent.children.indexOf(n);
+        if (i >= 0) n.parent.children.splice(i, 1);
+        delete n.parent;
+      }
     };
     return frame;
   };
@@ -136,7 +206,48 @@ export function createImportMock(): ImportMock {
       n.width = w;
       n.height = h;
     };
+    installLayoutPositioningQuirk(n);
     return inst;
+  };
+
+  // Shared synthesis path for figma.group + the four boolean-op flavours.
+  // Each one creates a synthetic container node, MOVES the given children
+  // into it, and inserts it into the parent at the requested index. Used
+  // by the post-build conversion pass to validate group / BO reconstruction
+  // without a live Figma sandbox. The optional `booleanOperation` arg
+  // tags BOOLEAN_OPERATION nodes so downstream assertions can detect the
+  // op flavour the same way Figma's API exposes it.
+  const wrapAsContainer = (
+    type: "GROUP" | "BOOLEAN_OPERATION",
+    name: string,
+    nodes: ImportBaseNode[],
+    parent: ImportBaseNode & { appendChild(child: ImportBaseNode): void },
+    index?: number,
+    booleanOperation?: "UNION" | "SUBTRACT" | "INTERSECT" | "EXCLUDE",
+  ): ImportBaseNode => {
+    const containerNode = wrapFrame(mkBase(type));
+    containerNode.name = name;
+    const containerBuilt = containerNode as unknown as BuiltNode;
+    if (booleanOperation) {
+      (containerBuilt as { booleanOperation?: string }).booleanOperation = booleanOperation;
+    }
+    const parentNode = parent as unknown as BuiltNode;
+    for (const child of nodes) {
+      const c = child as unknown as BuiltNode;
+      if (c.parent && c.parent.children) {
+        const i = c.parent.children.indexOf(c);
+        if (i >= 0) c.parent.children.splice(i, 1);
+      }
+      containerBuilt.children.push(c);
+      c.parent = containerBuilt;
+    }
+    if (index !== undefined && index <= parentNode.children.length) {
+      parentNode.children.splice(index, 0, containerBuilt);
+    } else {
+      parentNode.children.push(containerBuilt);
+    }
+    containerBuilt.parent = parentNode;
+    return containerNode as unknown as ImportBaseNode;
   };
 
   const api: ImportMock = {
@@ -173,6 +284,15 @@ export function createImportMock(): ImportMock {
     appendToPage: (node) => {
       store.appended.push(node as unknown as BuiltNode);
     },
+    group: (nodes, parent, index) => wrapAsContainer("GROUP", "Group", nodes, parent, index),
+    union: (nodes, parent, index) =>
+      wrapAsContainer("BOOLEAN_OPERATION", "Union", nodes, parent, index, "UNION"),
+    subtract: (nodes, parent, index) =>
+      wrapAsContainer("BOOLEAN_OPERATION", "Subtract", nodes, parent, index, "SUBTRACT"),
+    intersect: (nodes, parent, index) =>
+      wrapAsContainer("BOOLEAN_OPERATION", "Intersect", nodes, parent, index, "INTERSECT"),
+    exclude: (nodes, parent, index) =>
+      wrapAsContainer("BOOLEAN_OPERATION", "Exclude", nodes, parent, index, "EXCLUDE"),
     appended: () => store.appended,
   };
 

@@ -74,7 +74,10 @@ export interface ExtractResult {
   warnings: ExtractWarning[];
 }
 
-export function extractOperatorInputs(root: AnyFigmaNode): ExtractResult {
+export function extractOperatorInputs(
+  root: AnyFigmaNode,
+  mainComponentMap?: Map<string, { name: string } | null>,
+): ExtractResult {
   const inputs: OperatorInputSpec[] = [];
   const warnings: ExtractWarning[] = [];
   const seenPaths = new Set<string>();
@@ -83,7 +86,7 @@ export function extractOperatorInputs(root: AnyFigmaNode): ExtractResult {
   while (stack.length > 0) {
     const node = stack.pop();
     if (!node) continue;
-    if (isOperatorInput(node)) {
+    if (isOperatorInput(node, mainComponentMap)) {
       const spec = readSpec(node, warnings);
       if (spec) {
         if (seenPaths.has(spec.path)) {
@@ -110,9 +113,19 @@ export function extractOperatorInputs(root: AnyFigmaNode): ExtractResult {
   return { inputs, warnings };
 }
 
-function isOperatorInput(node: AnyFigmaNode): boolean {
+function isOperatorInput(
+  node: AnyFigmaNode,
+  mainComponentMap?: Map<string, { name: string } | null>,
+): boolean {
   if (node.type === "COMPONENT") return node.name === OPERATOR_INPUT_COMPONENT_NAME;
-  if (node.type === "INSTANCE") return node.mainComponent?.name === OPERATOR_INPUT_COMPONENT_NAME;
+  if (node.type === "INSTANCE") {
+    // dynamic-page mode : `node.mainComponent` throws synchronously, so
+    // we read the value the export pipeline pre-resolved into the map.
+    // Mock surfaces (vitest) leave the map undefined and fall through to
+    // the synchronous accessor.
+    const mc = mainComponentMap?.has(node.id) ? mainComponentMap.get(node.id) : node.mainComponent;
+    return mc?.name === OPERATOR_INPUT_COMPONENT_NAME;
+  }
   return false;
 }
 

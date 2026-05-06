@@ -1,0 +1,525 @@
+{
+  "entries": [
+    {
+      "seq": 0,
+      "depth": 0,
+      "type": "FRAME",
+      "id": "1:3",
+      "name": "TEMPLATE STATS",
+      "action": "walk-container",
+      "note": "FRAME"
+    },
+    {
+      "seq": 1,
+      "depth": 1,
+      "type": "GROUP",
+      "id": "1:4",
+      "name": "Group 2087326246",
+      "action": "walk-container",
+      "note": "GROUP"
+    },
+    {
+      "seq": 2,
+      "depth": 2,
+      "type": "RECTANGLE",
+      "id": "1:5",
+      "name": "Rectangle 5",
+      "action": "map-shape",
+      "note": "rect"
+    },
+    {
+      "seq": 3,
+      "depth": 2,
+      "type": "RECTANGLE",
+      "id": "1:6",
+      "name": "image 3",
+      "action": "map-image"
+    },
+    {
+      "seq": 4,
+      "depth": 2,
+      "type": "RECTANGLE",
+      "id": "1:7",
+      "name": "image 2",
+      "action": "map-image"
+    },
+    {
+      "seq": 5,
+      "depth": 1,
+      "type": "FRAME",
+      "id": "1:8",
+      "name": "Frame 7",
+      "action": "walk-container",
+      "note": "FRAME"
+    },
+    {
+      "seq": 6,
+      "depth": 2,
+      "type": "GROUP",
+      "id": "1:9",
+      "name": "Group 2087326235",
+      "action": "walk-container",
+      "note": "GROUP"
+    },
+    {
+      "seq": 7,
+      "depth": 3,
+      "type": "FRAME",
+      "id": "1:10",
+      "name": "PICTO FINAL 2",
+      "action": "walk-container",
+      "note": "FRAME"
+    },
+    {
+      "seq": 8,
+      "depth": 4,
+      "type": "GROUP",
+      "id": "1:11",
+      "name": "Calque_1-2",
+      "action": "walk-container",
+      "note": "GROUP"
+    },
+    {
+      "seq": 9,
+      "depth": 5,
+      "type": "BOOLEAN_OPERATION",
+      "id": "1:12",
+      "name": "Union",
+      "action": "walk-container",
+      "note": "BOOLEAN_OPERATION"
+    },
+    {
+      "seq": 10,
+      "depth": 6,
+      "type": "VECTOR",
+      "id": "1:13",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 11,
+      "depth": 6,
+      "type": "VECTOR",
+      "id": "1:14",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 12,
+      "depth": 6,
+      "type": "VECTOR",
+      "id": "1:15",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 13,
+      "depth": 3,
+      "type": "FRAME",
+      "id": "1:16",
+      "name": "LOGO TXT 1",
+      "action": "walk-container",
+      "note": "FRAME"
+    },
+    {
+      "seq": 14,
+      "depth": 4,
+      "type": "GROUP",
+      "id": "1:17",
+      "name": "Calque_1-2",
+      "action": "walk-container",
+      "note": "GROUP"
+    },
+    {
+      "seq": 15,
+      "depth": 5,
+      "type": "VECTOR",
+      "id": "1:18",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 16,
+      "depth": 5,
+      "type": "VECTOR",
+      "id": "1:19",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 17,
+      "depth": 5,
+      "type": "VECTOR",
+      "id": "1:20",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 18,
+      "depth": 5,
+      "type": "VECTOR",
+      "id": "1:21",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 19,
+      "depth": 5,
+      "type": "VECTOR",
+      "id": "1:22",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 20,
+      "depth": 5,
+      "type": "VECTOR",
+      "id": "1:23",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 21,
+      "depth": 5,
+      "type": "VECTOR",
+      "id": "1:24",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 22,
+      "depth": 5,
+      "type": "VECTOR",
+      "id": "1:25",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 23,
+      "depth": 5,
+      "type": "VECTOR",
+      "id": "1:26",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 24,
+      "depth": 5,
+      "type": "VECTOR",
+      "id": "1:27",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 25,
+      "depth": 2,
+      "type": "FRAME",
+      "id": "1:28",
+      "name": "logo-full-desktop-dark 1",
+      "action": "walk-container",
+      "note": "FRAME"
+    },
+    {
+      "seq": 26,
+      "depth": 3,
+      "type": "GROUP",
+      "id": "1:29",
+      "name": "Calque_1-2",
+      "action": "walk-container",
+      "note": "GROUP"
+    },
+    {
+      "seq": 27,
+      "depth": 4,
+      "type": "VECTOR",
+      "id": "1:30",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 28,
+      "depth": 4,
+      "type": "VECTOR",
+      "id": "1:31",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 29,
+      "depth": 4,
+      "type": "VECTOR",
+      "id": "1:32",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 30,
+      "depth": 4,
+      "type": "VECTOR",
+      "id": "1:33",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 31,
+      "depth": 4,
+      "type": "VECTOR",
+      "id": "1:34",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 32,
+      "depth": 4,
+      "type": "VECTOR",
+      "id": "1:35",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 33,
+      "depth": 4,
+      "type": "VECTOR",
+      "id": "1:36",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 34,
+      "depth": 4,
+      "type": "VECTOR",
+      "id": "1:37",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 35,
+      "depth": 4,
+      "type": "VECTOR",
+      "id": "1:38",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 36,
+      "depth": 4,
+      "type": "VECTOR",
+      "id": "1:39",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 37,
+      "depth": 4,
+      "type": "VECTOR",
+      "id": "1:40",
+      "name": "Vector",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 38,
+      "depth": 1,
+      "type": "TEXT",
+      "id": "1:41",
+      "name": "wellplayed",
+      "action": "map-text"
+    },
+    {
+      "seq": 39,
+      "depth": 1,
+      "type": "RECTANGLE",
+      "id": "1:42",
+      "name": "Rectangle 6",
+      "action": "map-shape",
+      "note": "rect"
+    },
+    {
+      "seq": 40,
+      "depth": 1,
+      "type": "GROUP",
+      "id": "1:45",
+      "name": "Mask group",
+      "action": "walk-container",
+      "note": "GROUP"
+    },
+    {
+      "seq": 41,
+      "depth": 2,
+      "type": "VECTOR",
+      "id": "1:46",
+      "name": "Vector 1",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 42,
+      "depth": 2,
+      "type": "RECTANGLE",
+      "id": "1:47",
+      "name": "Ruby20-%2006 3",
+      "action": "map-image"
+    },
+    {
+      "seq": 43,
+      "depth": 2,
+      "type": "RECTANGLE",
+      "id": "1:48",
+      "name": "Background+Shadow",
+      "action": "map-shape",
+      "note": "rect"
+    },
+    {
+      "seq": 44,
+      "depth": 1,
+      "type": "RECTANGLE",
+      "id": "1:49",
+      "name": "Sunshine 27",
+      "action": "map-image"
+    },
+    {
+      "seq": 45,
+      "depth": 1,
+      "type": "GROUP",
+      "id": "1:50",
+      "name": "Group 2087326238",
+      "action": "walk-container",
+      "note": "GROUP"
+    },
+    {
+      "seq": 46,
+      "depth": 2,
+      "type": "GROUP",
+      "id": "1:51",
+      "name": "Mask group",
+      "action": "walk-container",
+      "note": "GROUP"
+    },
+    {
+      "seq": 47,
+      "depth": 3,
+      "type": "RECTANGLE",
+      "id": "1:52",
+      "name": "3d-render-of-abstract-matte-white-and-orange-wavy-shape-3 2",
+      "action": "map-image"
+    },
+    {
+      "seq": 48,
+      "depth": 3,
+      "type": "ELLIPSE",
+      "id": "1:53",
+      "name": "Ellipse 1",
+      "action": "map-shape",
+      "note": "ELLIPSE"
+    },
+    {
+      "seq": 49,
+      "depth": 3,
+      "type": "RECTANGLE",
+      "id": "1:54",
+      "name": "3d-render-of-abstract-matte-white-and-orange-wavy-shape-3 1",
+      "action": "map-image"
+    },
+    {
+      "seq": 50,
+      "depth": 1,
+      "type": "RECTANGLE",
+      "id": "1:55",
+      "name": "Sunshine 26",
+      "action": "map-image"
+    },
+    {
+      "seq": 51,
+      "depth": 1,
+      "type": "VECTOR",
+      "id": "1:56",
+      "name": "Unique_Logo_Video_Generation 1",
+      "action": "map-shape",
+      "note": "VECTOR"
+    },
+    {
+      "seq": 52,
+      "depth": 1,
+      "type": "RECTANGLE",
+      "id": "1:57",
+      "name": "_pqbORWP 1",
+      "action": "map-image"
+    },
+    {
+      "seq": 53,
+      "depth": 1,
+      "type": "FRAME",
+      "id": "1:58",
+      "name": "Frame 8",
+      "action": "walk-container",
+      "note": "FRAME"
+    },
+    {
+      "seq": 54,
+      "depth": 2,
+      "type": "TEXT",
+      "id": "1:59",
+      "name": "On demand vs formalized",
+      "action": "map-text"
+    },
+    {
+      "seq": 55,
+      "depth": 1,
+      "type": "GROUP",
+      "id": "1:66",
+      "name": "Group 2087326259",
+      "action": "walk-container",
+      "note": "GROUP"
+    },
+    {
+      "seq": 56,
+      "depth": 2,
+      "type": "RECTANGLE",
+      "id": "1:67",
+      "name": "Rectangle 240648598",
+      "action": "map-shape",
+      "note": "rect"
+    },
+    {
+      "seq": 57,
+      "depth": 2,
+      "type": "ELLIPSE",
+      "id": "1:68",
+      "name": "Ellipse 43517",
+      "action": "map-shape",
+      "note": "ELLIPSE"
+    },
+    {
+      "seq": 58,
+      "depth": 2,
+      "type": "TEXT",
+      "id": "1:69",
+      "name": "Transform",
+      "action": "map-text"
+    }
+  ],
+  "warnings": []
+}
