@@ -8,6 +8,24 @@ documented per release.
 
 ## [Unreleased]
 
+Layout-fidelity hardening for nested groups, boolean operations, and auto-layout siblings flagged "ignore auto layout". Surfaced when bento / steps / hero stats cards round-tripped with collapsed visuals on first re-import.
+
+### Fixed
+
+- **Flat-then-group child positions under auto-layout parent** ([`12a433a`](https://github.com/Lumencast/lumencast-figma/commit/12a433a)) — leaves built into a transient flat group under an auto-layout FRAME ancestor were repacked by the stack instead of honouring their captured `relativeTransform`. The wrap bbox collapsed (`Group 2087326240` re-imported at 27×15 with the 4 sub-groups visually missing).
+- **Boolean op flavour preserved on roundtrip** ([`0532e99`](https://github.com/Lumencast/lumencast-figma/commit/0532e99)) — `SUBTRACT` / `INTERSECT` / `EXCLUDE` were silently demoted to `UNION` at import. `metadata.figma.booleanOperation` is now read on import and routed to `figma.subtract` / `intersect` / `exclude`.
+- **Boolean op captured fill applied** ([`a8ca8f7`](https://github.com/Lumencast/lumencast-figma/commit/a8ca8f7)) — `BooleanOperationNode` paints with its OWN fills (operands provide geometry only). The captured `background` / `backgrounds[]` from the LSML frame primitive is now re-applied on the freshly built BO node ; without this every `Subtract` / `Intersect` / `Exclude` rendered fully transparent.
+- **Size + sizing modes re-applied after auto-layout attach** ([`023d686`](https://github.com/Lumencast/lumencast-figma/commit/023d686)) — frames captured as FIXED / FIXED at 1440 × 2187 came back HUG / HUG at the createFrame default 100 × 100 because Figma's auto-layout reset sizing during `appendChild`. Both axes are now forced to FIXED first ; `applyFigmaExtras` then restores the captured modes.
+- **`relativeTransform` post-attach replay for every flat-then-group child** ([`a0bb3b9`](https://github.com/Lumencast/lumencast-figma/commit/a0bb3b9)) — Figma's `relativeTransform` setter on an off-tree node doesn't stick. Without a post-attach replay, every flat-then-group leaf landed at (0, 0) in the FRAME ancestor and `figma.group()` wrapped a stack of siblings at the origin — bbox collapsed to a tiny union.
+- **`layoutPositioning="ABSOLUTE"` + position post-attach replay** ([`8e051fc`](https://github.com/Lumencast/lumencast-figma/commit/8e051fc)) — Figma silently drops `ABSOLUTE` when set on an off-tree node, and overwrites `x`/`y` on `appendChild` to an auto-layout stack with the layout slot. Children flagged "ignore auto layout" in the source (Background+Shadow indicators, free-positioned content frames) now have the flag re-applied post-attach and their captured position re-asserted.
+
+### Added
+
+- **Headless import-replay integration test** — `tests/integration/import-from-archive.test.ts` runs the full `.lsmlz` → in-memory Figma node tree pipeline against a real example bundle (`examples/template-stats.lsmlz`), proving that every primitive in the archive constructs and that direct children of the root land within (or just outside) the frame.
+- **Mock simulates Figma's silent-drop quirks** — `tests/fixtures/figma/import-mock.ts` now models the `layoutPositioning="ABSOLUTE"` silent-drop on off-tree nodes, the `appendChild` x/y reset on auto-layout parents, and the `figma.group()` default `AUTO` positioning. Regression tests for the post-attach replay can now fail in CI when the replay is removed.
+
+22 net-new tests (135 total ; was 113 at v0.1.1).
+
 ## [0.1.1] — 2026-05-03
 
 Two production-blocker fixes uncovered when v0.1.0 was loaded into Figma desktop for the first time.

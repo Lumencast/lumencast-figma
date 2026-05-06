@@ -69,6 +69,25 @@ LSML bundle → Figma node tree, with byte-stable round-trip on the scoreboard f
 
 Release : https://github.com/Lumencast/lumencast-figma/releases/tag/v0.1.0
 
+### Phase 5 — Layout fidelity (post-v0.1.1, currently on `feat/figma-authoring-profile`)
+
+High-fidelity round-trip for nested groups, boolean operations, and auto-layout siblings flagged "ignore auto layout". Discovered when stats cards (bento / steps / hero) re-imported with collapsed visuals on the first round-trip past simple fixtures.
+
+Six commits, all import-side (no export change) :
+
+- `12a433a` — preserve flat-then-group child positions under auto-layout parent
+- `0532e99` — preserve `UNION/SUBTRACT/INTERSECT/EXCLUDE` flavour on roundtrip
+- `a8ca8f7` — apply captured fill on freshly built `BooleanOperationNode`
+- `023d686` — re-apply size + sizing modes after attaching to auto-layout
+- `a0bb3b9` — replay `relativeTransform` post-attach for every flat-then-group child
+- `8e051fc` — replay `layoutPositioning="ABSOLUTE"` + position post-attach (universal scope, not only flat-group)
+
+Each fix targets a specific Figma host quirk surfaced empirically (the public Plugin API doesn't document the timing constraints — silent-drop pre-attach, x/y reset on `appendChild` to an auto-layout stack, `figma.group()` default `AUTO` positioning). The mock at `tests/fixtures/figma/import-mock.ts` now reproduces these quirks so the regressions are catchable in CI.
+
+22 net-new tests (135 total ; was 113 at v0.1.1) including a headless import-replay integration test driven by a real example bundle.
+
+Outstanding under this phase : one known case still collapsing — multi-level GROUPs (`bg-texture > Group 2087326240 > sub-group > Calque > Vector`, 4 levels of nested GROUPs above shape leaves) end up with the outer Group's bbox at the size of a single deepest leaf. The flat-then-group recursion doesn't preserve intermediate groups' bbox-derived positions when the FRAME ancestor is auto-layout. Investigation continues — see the `examples/steps.lsmlz` reproduction.
+
 ## What is next
 
 ### Phase 4 wrap-up — Figma Community submission
