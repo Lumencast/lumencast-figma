@@ -95,9 +95,9 @@ export function buildText(
     }
   }
 
-  // textCase : prefer the canonical `style.textTransform` (LSML 1.1
-  // §4.4.1). Fall back to `metadata.figma.textCase` for v0.1 bundles
-  // produced before the spec change.
+  // textCase : LSML 1.1 §4.4.1 `style.textTransform` covers UPPER /
+  // LOWER / TITLE. SMALL_CAPS / SMALL_CAPS_FORCED have no spec
+  // equivalent and ride in `metadata.figma.textCase`.
   const textCase =
     transformToTextCase(prim.style?.textTransform) ?? figmaMeta.textCase;
   if (textCase) {
@@ -106,9 +106,8 @@ export function buildText(
   if (figmaMeta.textAutoResize) {
     (node as unknown as { textAutoResize?: string }).textAutoResize = figmaMeta.textAutoResize;
   }
-  // Position : prefer the canonical universal prop (LSML 1.1 §5.4) ;
-  // fall back to `metadata.figma.position` for v0.1 bundles.
-  const pos = prim.position ?? figmaMeta.position;
+  // Position : universal prop (LSML 1.1 §5.4).
+  const pos = prim.position;
   if (pos) {
     (node as unknown as { x?: number; y?: number }).x = pos.x;
     (node as unknown as { x?: number; y?: number }).y = pos.y;
@@ -120,7 +119,7 @@ export function buildText(
 
 /** Map LSML `style.textTransform` (LSML §4.4.1) back to Figma's `textCase`.
  *  Returns undefined when no transform is declared, leaving the caller to
- *  fall back to `metadata.figma.textCase` for v0.1 bundles. */
+ *  fall back to `metadata.figma.textCase` for the SMALL_CAPS variants. */
 function transformToTextCase(
   tt: string | undefined,
 ): "UPPER" | "LOWER" | "TITLE" | undefined {

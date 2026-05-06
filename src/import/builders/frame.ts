@@ -20,16 +20,13 @@ export function buildFrame(
   if (prim.size) node.resize(prim.size.w, prim.size.h);
   node.layoutMode = "NONE";
 
-  // `clipsContent` : prefer the canonical first-class field (LSML 1.1
-  // §4.3). Fall back to `metadata.figma.clipsContent` for v0.1 bundles.
+  // `clipsContent` is the canonical first-class field (LSML 1.1 §4.3).
   // Default true matches the Figma frame default — without this, child
   // layouts that extend past the declared `size` trigger auto-grow.
-  (node as unknown as { clipsContent?: boolean }).clipsContent =
-    prim.clipsContent ?? figmaMeta.clipsContent ?? true;
+  (node as unknown as { clipsContent?: boolean }).clipsContent = prim.clipsContent ?? true;
 
-  // Position : universal prop (LSML 1.1 §5.4). v0.1 bundles stashed it
-  // in `metadata.figma.position` ; we still read that as a fallback.
-  const pos = prim.position ?? figmaMeta.position;
+  // Position : universal prop (LSML 1.1 §5.4).
+  const pos = prim.position;
   if (pos) {
     node.x = pos.x;
     node.y = pos.y;

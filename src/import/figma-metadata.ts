@@ -1,16 +1,13 @@
 // Import-side reader for `metadata.figma.*`. Mirror of
 // `src/mapping/figma-metadata.ts` ; consumed by every per-primitive
 // builder to re-apply Figma-specific props that LSML 1.1 cannot carry
-// natively (position on non-frame primitives, vector size, textCase,
-// textAutoResize, fontName.style, clipsContent).
+// natively (textCase SMALL_CAPS variants, textAutoResize, fontName.style,
+// gradient transform handles, original layer name).
 
 export interface FigmaMetadata {
-  position?: { x: number; y: number };
-  size?: { w: number; h: number };
-  textCase?: "ORIGINAL" | "UPPER" | "LOWER" | "TITLE" | "SMALL_CAPS" | "SMALL_CAPS_FORCED";
+  textCase?: "SMALL_CAPS" | "SMALL_CAPS_FORCED";
   textAutoResize?: "NONE" | "WIDTH_AND_HEIGHT" | "HEIGHT" | "TRUNCATE";
   fontStyle?: string;
-  clipsContent?: boolean;
   /** Raw Figma 2x3 affine matrices indexed parallel with the prim's `fills[]`
    *  / `backgrounds[]`. Used by the import builder to restore byte-stable
    *  gradient handles when present (avoids the lossy angle_deg round-trip). */
