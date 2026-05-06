@@ -569,32 +569,6 @@ function parseEffects(raw: unknown): FigmaEffect[] {
   return out;
 }
 
-/** Compose two 2x3 affine transforms (A * B with implicit `[0,0,1]` last
- *  row). Returns a fresh matrix. Pass `undefined` for A as identity. */
-function compose2x3(a: number[][] | undefined, b: number[][]): number[][] {
-  if (!a)
-    return [
-      [b[0]![0]!, b[0]![1]!, b[0]![2]!],
-      [b[1]![0]!, b[1]![1]!, b[1]![2]!],
-    ];
-  const a00 = a[0]![0]!,
-    a01 = a[0]![1]!,
-    a02 = a[0]![2]!;
-  const a10 = a[1]![0]!,
-    a11 = a[1]![1]!,
-    a12 = a[1]![2]!;
-  const b00 = b[0]![0]!,
-    b01 = b[0]![1]!,
-    b02 = b[0]![2]!;
-  const b10 = b[1]![0]!,
-    b11 = b[1]![1]!,
-    b12 = b[1]![2]!;
-  return [
-    [a00 * b00 + a01 * b10, a00 * b01 + a01 * b11, a00 * b02 + a01 * b12 + a02],
-    [a10 * b00 + a11 * b10, a10 * b01 + a11 * b11, a10 * b02 + a11 * b12 + a12],
-  ];
-}
-
 /** Coerce `node.relativeTransform` (which may be the figma.mixed Symbol or
  *  contain Symbol-wrapped numbers) into a clean `number[][]` 2x3 matrix.
  *  Returns null if the shape doesn't match. */
