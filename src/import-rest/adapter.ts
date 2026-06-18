@@ -131,9 +131,29 @@ function noPluginData(): string {
   return "";
 }
 
+/** Coord-system container types : a FRAME/COMPONENT/INSTANCE/SECTION redefines
+ *  the coordinate origin for its descendants (a GROUP/BOOLEAN_OPERATION does
+ *  NOT — its children stay in the outer frame's coord system). MUST match
+ *  `COORD_SYSTEM_TYPES` in `src/mapping/traverse.ts`. */
+const COORD_SYSTEM_TYPES = new Set([
+  "FRAME",
+  "COMPONENT",
+  "INSTANCE",
+  "SECTION",
+  "COMPONENT_SET",
+]);
+
 /** Adapt a REST node subtree to the main-thread shape `src/mapping` consumes.
- *  Positions, sizes, hierarchy, and `visible` are preserved exactly. */
-export function adaptNode(node: RestNode): AdaptedNode {
+ *  Sizes, hierarchy, and `visible` are preserved exactly.
+ *
+ *  Position : REST exposes `absoluteBoundingBox` (frame-absolute), but the
+ *  mapper (`src/mapping`) expects the PLUGIN convention — `x/y` relative to the
+ *  closest coord-system (FRAME) ancestor — and subtracts the LSML-parent origin
+ *  itself. So we convert here : subtract the nearest FRAME ancestor's absolute
+ *  origin. Without this, nested frames carried absolute coords that the runtime
+ *  re-accumulated through every containing block (logo landed ~1100px too low).
+ *  `coordOrigin` is the absolute origin of that ancestor (root = 0,0). */
+export function adaptNode(node: RestNode, coordOrigin: { x: number; y: number } = { x: 0, y: 0 }): AdaptedNode {
   const box = node.absoluteBoundingBox ?? null;
   const out: AdaptedNode = {
     type: node.type,
@@ -148,8 +168,8 @@ export function adaptNode(node: RestNode): AdaptedNode {
   if (node.rotation !== undefined) out.rotation = node.rotation;
   if (node.blendMode !== undefined) out.blendMode = node.blendMode;
   if (box) {
-    out.x = box.x;
-    out.y = box.y;
+    out.x = box.x - coordOrigin.x;
+    out.y = box.y - coordOrigin.y;
     out.width = box.width;
     out.height = box.height;
   }
@@ -193,7 +213,12 @@ export function adaptNode(node: RestNode): AdaptedNode {
     if (node.style.fontWeight !== undefined) out.fontWeight = node.style.fontWeight;
     if (node.style.textAlignHorizontal) out.textAlignHorizontal = node.style.textAlignHorizontal;
   }
-  if (node.children) out.children = node.children.map(adaptNode);
+  // Children's coord origin : a coord-system container (FRAME/etc.) redefines
+  // the origin to its own absolute box ; a transparent GROUP/BOOLEAN keeps the
+  // outer frame's origin (matches the mapper's transparent-group handling).
+  const childOrigin =
+    COORD_SYSTEM_TYPES.has(node.type) && box ? { x: box.x, y: box.y } : coordOrigin;
+  if (node.children) out.children = node.children.map((c) => adaptNode(c, childOrigin));
   return out;
 }
 
