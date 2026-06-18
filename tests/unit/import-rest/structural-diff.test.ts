@@ -166,6 +166,86 @@ describe("structuralDiff", () => {
     expect(structuralDiff(rest, lsml)).toEqual([]);
   });
 
+  it("flags a group-source mask (#O) missing on the follower", () => {
+    // A GROUP/FRAME `isMask` container is NOT consumed (kept in the tree like a
+    // shape mask). It still sets the mask on its followers. Pre-#O the follower
+    // had no `mask` → this is exactly the residual the live 817:3 diff reported.
+    const rest: RestNode = {
+      id: "0:1",
+      name: "G",
+      type: "GROUP",
+      absoluteBoundingBox: box(0, 0, 10, 10),
+      children: [
+        {
+          id: "817:2011",
+          name: "Mask group",
+          type: "GROUP",
+          isMask: true,
+          absoluteBoundingBox: box(0, 0, 10, 10),
+          children: [],
+        },
+        {
+          id: "817:2016",
+          name: "Subject",
+          type: "RECTANGLE",
+          absoluteBoundingBox: box(0, 0, 10, 10),
+        },
+      ],
+    };
+    // Kept-in-tree mask container occupies an LSML slot ; follower lacks mask.
+    const lsml: LsmlNode = {
+      kind: "frame",
+      size: { w: 10, h: 10 },
+      children: [
+        { kind: "frame", size: { w: 10, h: 10 }, children: [] },
+        { kind: "shape", size: { w: 10, h: 10 } },
+      ],
+    };
+    const divs = structuralDiff(rest, lsml);
+    expect(summarizeDiff(divs)).toEqual({ mask: 1 });
+    expect(divs[0]!.figmaId).toBe("817:2016");
+  });
+
+  it("passes a group-source mask (#O) once the follower carries the group mask", () => {
+    // Post-#O : the mapper stamps `mask:{source:{kind:"group"}}` on the
+    // follower → the residual closes, diff = 0 (RC2 on this fragment).
+    const rest: RestNode = {
+      id: "0:1",
+      name: "G",
+      type: "GROUP",
+      absoluteBoundingBox: box(0, 0, 10, 10),
+      children: [
+        {
+          id: "817:2011",
+          name: "Mask group",
+          type: "GROUP",
+          isMask: true,
+          absoluteBoundingBox: box(0, 0, 10, 10),
+          children: [],
+        },
+        {
+          id: "817:2016",
+          name: "Subject",
+          type: "RECTANGLE",
+          absoluteBoundingBox: box(0, 0, 10, 10),
+        },
+      ],
+    };
+    const lsml: LsmlNode = {
+      kind: "frame",
+      size: { w: 10, h: 10 },
+      children: [
+        { kind: "frame", size: { w: 10, h: 10 }, children: [] },
+        {
+          kind: "shape",
+          size: { w: 10, h: 10 },
+          mask: { source: { kind: "group", ref: "fig-817:2011" } },
+        },
+      ],
+    };
+    expect(structuralDiff(rest, lsml)).toEqual([]);
+  });
+
   it("flags a dropped image fill (REST IMAGE paint → non-image LSML)", () => {
     const rest: RestNode = {
       id: "0:1",

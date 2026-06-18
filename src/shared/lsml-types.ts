@@ -107,7 +107,10 @@ export type GradientTransform = [number, number, number, number, number, number]
  *  An `source.kind === "image"` `src` is host/scheme-allowlist-gated (T1/T2)
  *  before the DOM, downstream — the mapper only emits the typed fields. */
 export interface LSMLMask {
-  source: { kind: "shape"; ref: string } | { kind: "image"; src: string };
+  source:
+    | { kind: "shape"; ref: string }
+    | { kind: "image"; src: string }
+    | { kind: "group"; ref: string };
   type: "alpha" | "luminance";
   op: "intersect" | "subtract" | "union";
   position?: { x: number; y: number };
