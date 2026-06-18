@@ -33,6 +33,7 @@
       "~mapping/*": ["./src/mapping/*"],
       "~export/*": ["./src/export/*"],
       "~import/*": ["./src/import/*"],
+      "~import-rest/*": ["./src/import-rest/*"],
       "~shared/*": ["./src/shared/*"]
     },
     "baseUrl": "."

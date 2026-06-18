@@ -26,6 +26,7 @@ export default defineConfig({
       "~mapping": resolve(__dirname, "src/mapping"),
       "~export": resolve(__dirname, "src/export"),
       "~import": resolve(__dirname, "src/import"),
+      "~import-rest": resolve(__dirname, "src/import-rest"),
       "~shared": resolve(__dirname, "src/shared"),
     },
   },
