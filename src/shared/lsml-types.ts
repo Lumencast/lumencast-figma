@@ -217,6 +217,11 @@ export interface KeyframesBlock {
 
 export interface BasePrimitive extends UniversalProps {
   kind: PrimitiveKind;
+  /** Stable identifier (LSML §2 `LSMLBaseNode.id`). The mapper emits this
+   *  ONLY on a shape primitive referenced by a `mask.source.kind:"shape"` of
+   *  the same bundle (ADR 002 A2.1 #K) : `id = "fig-" + safeIdRef(figmaNodeId)`,
+   *  deterministic ⇒ stable + unique. No id is emitted on unreferenced nodes. */
+  id?: string;
   bind?: Bind;
   bindStyle?: BindStyle;
   bindAnimate?: BindAnimate;

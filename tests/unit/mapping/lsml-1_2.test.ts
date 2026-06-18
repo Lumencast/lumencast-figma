@@ -11,6 +11,8 @@ import {
   mapScaleModeToObjectFit,
   matrixToGradientTransform,
   imagePaintToFill,
+  safeIdRef,
+  stableShapeId,
 } from "../../../src/mapping/lsml-1_2";
 import { mapShape } from "../../../src/mapping/shape";
 import { captureFigmaExtras } from "../../../src/mapping/figma-extras";
@@ -59,6 +61,33 @@ describe("mapMaskType (Figma → alpha|luminance)", () => {
     expect(mapMaskType("ALPHA")).toBe("alpha");
     expect(mapMaskType("VECTOR")).toBe("alpha");
     expect(mapMaskType(undefined)).toBe("alpha");
+  });
+});
+
+describe("safeIdRef / stableShapeId (#K — deterministic stable shape ids)", () => {
+  it("preserves a Figma id (incl. its `:`) within the safe token class", () => {
+    expect(safeIdRef("817:1991")).toBe("817:1991");
+    expect(safeIdRef("A_b-2:3")).toBe("A_b-2:3");
+  });
+
+  it("rejects a token carrying markup / unsafe characters", () => {
+    expect(safeIdRef('"><script>')).toBeNull();
+    expect(safeIdRef("a b")).toBeNull();
+    expect(safeIdRef("a#b")).toBeNull();
+    expect(safeIdRef("")).toBeNull();
+  });
+
+  it("stableShapeId prefixes `fig-` and is deterministic + unique", () => {
+    // Determinism : same input → same id every call.
+    expect(stableShapeId("817:1991")).toBe("fig-817:1991");
+    expect(stableShapeId("817:1991")).toBe("fig-817:1991");
+    // Uniqueness : distinct Figma ids → distinct ids.
+    expect(stableShapeId("817:1992")).toBe("fig-817:1992");
+    expect(stableShapeId("817:1991")).not.toBe(stableShapeId("817:1992"));
+  });
+
+  it("returns null when the source id is not a safe token (no broken ref)", () => {
+    expect(stableShapeId('a"b')).toBeNull();
   });
 });
 
