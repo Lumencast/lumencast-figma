@@ -4,12 +4,7 @@
   "title": "LSML 1.1 — Lumencast Scene Markup Language",
   "description": "Canonical machine-readable JSON Schema for LSML 1.x scene bundles (1.0, 1.0.1, 1.1). The normative spec lives in spec/LSML-1.md ; this file is its precise mechanical companion. 1.1 adds the `instance` primitive, universal props, multi-fill / gradients, stack wrap, animation extensions, and §17 extension mechanisms — all additive, all opt-in via `lsml: \"1.1\"`.",
   "type": "object",
-  "required": [
-    "lsml",
-    "scene_id",
-    "scene_version",
-    "layout"
-  ],
+  "required": ["lsml", "scene_id", "scene_version", "layout"],
   "additionalProperties": true,
   "properties": {
     "$schema": {
@@ -19,11 +14,7 @@
     },
     "lsml": {
       "type": "string",
-      "enum": [
-        "1.0",
-        "1.1",
-        "1.2"
-      ],
+      "enum": ["1.0", "1.1", "1.2"],
       "description": "Schema version. '1.0' (and the 1.0.1 errata-compat alias), '1.1' (additive features), or '1.2' (additive : blendMode, typed mask, first-class image-fill, gradient transform — ADR 002 §3.2)."
     },
     "scene_id": {
@@ -107,10 +98,7 @@
     },
     "FillStop": {
       "type": "object",
-      "required": [
-        "offset",
-        "color"
-      ],
+      "required": ["offset", "color"],
       "additionalProperties": false,
       "properties": {
         "offset": {
@@ -133,10 +121,7 @@
       "oneOf": [
         {
           "type": "object",
-          "required": [
-            "kind",
-            "color"
-          ],
+          "required": ["kind", "color"],
           "additionalProperties": false,
           "properties": {
             "kind": {
@@ -154,10 +139,7 @@
         },
         {
           "type": "object",
-          "required": [
-            "kind",
-            "stops"
-          ],
+          "required": ["kind", "stops"],
           "additionalProperties": false,
           "properties": {
             "kind": {
@@ -185,10 +167,7 @@
         },
         {
           "type": "object",
-          "required": [
-            "kind",
-            "stops"
-          ],
+          "required": ["kind", "stops"],
           "additionalProperties": false,
           "properties": {
             "kind": {
@@ -221,10 +200,7 @@
         {
           "description": "(1.2+) First-class image-fill (ADR 002 §3.2). `src` is host/scheme-allowlist-gated (T1/T2) before the DOM ; only https: or a bounded data:image/* payload, host in assets.allowedHosts.",
           "type": "object",
-          "required": [
-            "kind",
-            "src"
-          ],
+          "required": ["kind", "src"],
           "additionalProperties": false,
           "properties": {
             "kind": {
@@ -273,13 +249,7 @@
     "ObjectFit": {
       "type": "string",
       "description": "(1.2+) How an image-fill / mask image source is fitted into its box (closed enum → CSS object-fit). ADR 002 §3.2.",
-      "enum": [
-        "cover",
-        "contain",
-        "fill",
-        "none",
-        "scale-down"
-      ]
+      "enum": ["cover", "contain", "fill", "none", "scale-down"]
     },
     "GradientTransform": {
       "type": "array",
@@ -299,21 +269,14 @@
     "Mask": {
       "type": "object",
       "description": "(1.2+) Typed mask spec (ADR 002 §3.2 ; Bastion T3). The runtime builds <mask>/<clipPath> from these TYPED fields — there is deliberately no free-form SVG string anywhere in this shape.",
-      "required": [
-        "source",
-        "type",
-        "op"
-      ],
+      "required": ["source", "type", "op"],
       "additionalProperties": false,
       "properties": {
         "source": {
           "oneOf": [
             {
               "type": "object",
-              "required": [
-                "kind",
-                "ref"
-              ],
+              "required": ["kind", "ref"],
               "additionalProperties": false,
               "properties": {
                 "kind": {
@@ -327,10 +290,7 @@
             },
             {
               "type": "object",
-              "required": [
-                "kind",
-                "src"
-              ],
+              "required": ["kind", "src"],
               "additionalProperties": false,
               "properties": {
                 "kind": {
@@ -345,18 +305,11 @@
         },
         "type": {
           "type": "string",
-          "enum": [
-            "alpha",
-            "luminance"
-          ]
+          "enum": ["alpha", "luminance"]
         },
         "op": {
           "type": "string",
-          "enum": [
-            "intersect",
-            "subtract",
-            "union"
-          ]
+          "enum": ["intersect", "subtract", "union"]
         },
         "position": {
           "$ref": "#/$defs/Position"
@@ -381,11 +334,7 @@
     },
     "SizingMode": {
       "type": "string",
-      "enum": [
-        "fixed",
-        "hug",
-        "fill"
-      ],
+      "enum": ["fixed", "hug", "fill"],
       "description": "(1.1+) Auto-layout sizing intent on a flex axis. See LSML §5.4.1."
     },
     "Sizing": {
@@ -419,10 +368,7 @@
     "Keyframes": {
       "type": "object",
       "description": "(1.1+) Multi-step animation sequence. See LSML §6.6.",
-      "required": [
-        "steps",
-        "duration_ms"
-      ],
+      "required": ["steps", "duration_ms"],
       "additionalProperties": false,
       "properties": {
         "key": {
@@ -433,9 +379,7 @@
           "minItems": 2,
           "items": {
             "type": "object",
-            "required": [
-              "at"
-            ],
+            "required": ["at"],
             "additionalProperties": false,
             "properties": {
               "at": {
@@ -504,12 +448,7 @@
         },
         "easing": {
           "type": "string",
-          "enum": [
-            "linear",
-            "ease-in",
-            "ease-out",
-            "ease-in-out"
-          ]
+          "enum": ["linear", "ease-in", "ease-out", "ease-in-out"]
         }
       }
     },
@@ -532,10 +471,7 @@
     },
     "Size": {
       "type": "object",
-      "required": [
-        "w",
-        "h"
-      ],
+      "required": ["w", "h"],
       "properties": {
         "w": {
           "type": "number",
@@ -550,10 +486,7 @@
     },
     "Position": {
       "type": "object",
-      "required": [
-        "x",
-        "y"
-      ],
+      "required": ["x", "y"],
       "properties": {
         "x": {
           "type": "number"
@@ -579,13 +512,7 @@
             },
             "easing": {
               "type": "string",
-              "enum": [
-                "linear",
-                "ease-in",
-                "ease-out",
-                "ease-in-out",
-                "spring"
-              ]
+              "enum": ["linear", "ease-in", "ease-out", "ease-in-out", "spring"]
             },
             "stiffness": {
               "type": "number",
@@ -672,12 +599,7 @@
             },
             {
               "type": "string",
-              "enum": [
-                "normal",
-                "bold",
-                "lighter",
-                "bolder"
-              ]
+              "enum": ["normal", "bold", "lighter", "bolder"]
             }
           ]
         },
@@ -686,11 +608,7 @@
         },
         "fontStyle": {
           "type": "string",
-          "enum": [
-            "normal",
-            "italic",
-            "oblique"
-          ]
+          "enum": ["normal", "italic", "oblique"]
         },
         "color": {
           "$ref": "#/$defs/Color"
@@ -704,38 +622,22 @@
         },
         "textAlign": {
           "type": "string",
-          "enum": [
-            "start",
-            "center",
-            "end",
-            "justify"
-          ]
+          "enum": ["start", "center", "end", "justify"]
         },
         "textTransform": {
           "type": "string",
-          "enum": [
-            "none",
-            "uppercase",
-            "lowercase",
-            "capitalize"
-          ]
+          "enum": ["none", "uppercase", "lowercase", "capitalize"]
         },
         "textDecoration": {
           "type": "string",
-          "enum": [
-            "none",
-            "underline",
-            "line-through"
-          ]
+          "enum": ["none", "underline", "line-through"]
         }
       }
     },
     "FormatSpec": {
       "type": "object",
       "additionalProperties": false,
-      "required": [
-        "kind"
-      ],
+      "required": ["kind"],
       "properties": {
         "kind": {
           "type": "string",
@@ -796,9 +698,7 @@
     "VendorPrimitiveNode": {
       "description": "(1.1+ §17.1) Vendor-prefixed primitive. `kind` MUST match `x-<vendor>.<name>` per §17.1.1. Schema validation accepts the structure ; runtime support is the consumer's contract. Universal props (§5.4) are accepted unprefixed.",
       "type": "object",
-      "required": [
-        "kind"
-      ],
+      "required": ["kind"],
       "additionalProperties": true,
       "properties": {
         "kind": {
@@ -843,11 +743,7 @@
     },
     "StackNode": {
       "type": "object",
-      "required": [
-        "kind",
-        "direction",
-        "children"
-      ],
+      "required": ["kind", "direction", "children"],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -855,10 +751,7 @@
         },
         "direction": {
           "type": "string",
-          "enum": [
-            "horizontal",
-            "vertical"
-          ]
+          "enum": ["horizontal", "vertical"]
         },
         "gap": {
           "type": "number",
@@ -875,22 +768,11 @@
         },
         "align": {
           "type": "string",
-          "enum": [
-            "start",
-            "center",
-            "end",
-            "stretch"
-          ]
+          "enum": ["start", "center", "end", "stretch"]
         },
         "justify": {
           "type": "string",
-          "enum": [
-            "start",
-            "center",
-            "end",
-            "space-between",
-            "space-around"
-          ]
+          "enum": ["start", "center", "end", "space-between", "space-around"]
         },
         "padding": {
           "$ref": "#/$defs/PaddingValue"
@@ -960,11 +842,7 @@
     },
     "GridNode": {
       "type": "object",
-      "required": [
-        "kind",
-        "columns",
-        "children"
-      ],
+      "required": ["kind", "columns", "children"],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -1072,10 +950,7 @@
     },
     "FrameNode": {
       "type": "object",
-      "required": [
-        "kind",
-        "children"
-      ],
+      "required": ["kind", "children"],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -1150,18 +1025,12 @@
       },
       "not": {
         "description": "background and backgrounds are mutually exclusive.",
-        "required": [
-          "background",
-          "backgrounds"
-        ]
+        "required": ["background", "backgrounds"]
       }
     },
     "TextNode": {
       "type": "object",
-      "required": [
-        "kind",
-        "bind"
-      ],
+      "required": ["kind", "bind"],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -1169,9 +1038,7 @@
         },
         "bind": {
           "type": "object",
-          "required": [
-            "value"
-          ],
+          "required": ["value"],
           "properties": {
             "value": {
               "$ref": "#/$defs/LeafPath"
@@ -1200,12 +1067,7 @@
         },
         "role": {
           "type": "string",
-          "enum": [
-            "heading",
-            "paragraph",
-            "label",
-            "presentation"
-          ]
+          "enum": ["heading", "paragraph", "label", "presentation"]
         },
         "position": {
           "$ref": "#/$defs/Position",
@@ -1243,12 +1105,7 @@
     },
     "ImageNode": {
       "type": "object",
-      "required": [
-        "kind",
-        "bind",
-        "alt",
-        "size"
-      ],
+      "required": ["kind", "bind", "alt", "size"],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -1256,9 +1113,7 @@
         },
         "bind": {
           "type": "object",
-          "required": [
-            "src"
-          ],
+          "required": ["src"],
           "properties": {
             "src": {
               "$ref": "#/$defs/LeafPath"
@@ -1275,12 +1130,7 @@
         },
         "fit": {
           "type": "string",
-          "enum": [
-            "contain",
-            "cover",
-            "fill",
-            "none"
-          ]
+          "enum": ["contain", "cover", "fill", "none"]
         },
         "animate": {
           "$ref": "#/$defs/AnimateDirective"
@@ -1324,10 +1174,7 @@
     },
     "ShapeNode": {
       "type": "object",
-      "required": [
-        "kind",
-        "geometry"
-      ],
+      "required": ["kind", "geometry"],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -1335,11 +1182,7 @@
         },
         "geometry": {
           "type": "string",
-          "enum": [
-            "rect",
-            "circle",
-            "path"
-          ]
+          "enum": ["rect", "circle", "path"]
         },
         "size": {
           "$ref": "#/$defs/Size"
@@ -1353,9 +1196,7 @@
           "description": "(1.1+) Multi-subpath geometry. Required when geometry === 'path' and `pathData` is absent. Each entry has its own winding rule. Mutually exclusive with `pathData`.",
           "items": {
             "type": "object",
-            "required": [
-              "data"
-            ],
+            "required": ["data"],
             "additionalProperties": false,
             "properties": {
               "data": {
@@ -1364,10 +1205,7 @@
               },
               "windingRule": {
                 "type": "string",
-                "enum": [
-                  "NONZERO",
-                  "EVENODD"
-                ],
+                "enum": ["NONZERO", "EVENODD"],
                 "description": "Default NONZERO when omitted."
               }
             }
@@ -1455,14 +1293,10 @@
           "then": {
             "oneOf": [
               {
-                "required": [
-                  "pathData"
-                ]
+                "required": ["pathData"]
               },
               {
-                "required": [
-                  "paths"
-                ]
+                "required": ["paths"]
               }
             ]
           }
@@ -1471,54 +1305,37 @@
           "if": {
             "properties": {
               "geometry": {
-                "enum": [
-                  "rect",
-                  "circle"
-                ]
+                "enum": ["rect", "circle"]
               }
             }
           },
           "then": {
-            "required": [
-              "size"
-            ]
+            "required": ["size"]
           }
         },
         {
           "description": "fill and fills are mutually exclusive.",
           "not": {
-            "required": [
-              "fill",
-              "fills"
-            ]
+            "required": ["fill", "fills"]
           }
         },
         {
           "description": "stroke and strokes are mutually exclusive.",
           "not": {
-            "required": [
-              "stroke",
-              "strokes"
-            ]
+            "required": ["stroke", "strokes"]
           }
         },
         {
           "description": "(1.1+) pathData and paths are mutually exclusive.",
           "not": {
-            "required": [
-              "pathData",
-              "paths"
-            ]
+            "required": ["pathData", "paths"]
           }
         }
       ]
     },
     "MediaNode": {
       "type": "object",
-      "required": [
-        "kind",
-        "bind"
-      ],
+      "required": ["kind", "bind"],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -1526,25 +1343,17 @@
         },
         "media_kind": {
           "type": "string",
-          "enum": [
-            "video",
-            "audio"
-          ],
+          "enum": ["video", "audio"],
           "description": "Canonical name as of LSML 1.0.1. Either media_kind or kind_hint MUST be present."
         },
         "kind_hint": {
           "type": "string",
-          "enum": [
-            "video",
-            "audio"
-          ],
+          "enum": ["video", "audio"],
           "description": "Deprecated synonym for media_kind. Accepted for backward compatibility ; new bundles SHOULD use media_kind."
         },
         "bind": {
           "type": "object",
-          "required": [
-            "src"
-          ],
+          "required": ["src"],
           "properties": {
             "src": {
               "$ref": "#/$defs/LeafPath"
@@ -1611,25 +1420,16 @@
       },
       "anyOf": [
         {
-          "required": [
-            "media_kind"
-          ]
+          "required": ["media_kind"]
         },
         {
-          "required": [
-            "kind_hint"
-          ]
+          "required": ["kind_hint"]
         }
       ]
     },
     "RepeatNode": {
       "type": "object",
-      "required": [
-        "kind",
-        "bind",
-        "scope",
-        "template"
-      ],
+      "required": ["kind", "bind", "scope", "template"],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -1637,9 +1437,7 @@
         },
         "bind": {
           "type": "object",
-          "required": [
-            "items"
-          ],
+          "required": ["items"],
           "properties": {
             "items": {
               "$ref": "#/$defs/LeafPath"
@@ -1678,11 +1476,7 @@
     "InstanceNode": {
       "type": "object",
       "description": "(1.1+) Mounts a sub-scene by id. See LSML §4.9.",
-      "required": [
-        "kind",
-        "scene_id",
-        "scene_version"
-      ],
+      "required": ["kind", "scene_id", "scene_version"],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -1733,12 +1527,7 @@
         },
         "fit": {
           "type": "string",
-          "enum": [
-            "contain",
-            "cover",
-            "fill",
-            "none"
-          ]
+          "enum": ["contain", "cover", "fill", "none"]
         },
         "size": {
           "$ref": "#/$defs/Size"
@@ -1802,19 +1591,11 @@
     },
     "OperatorInputRole": {
       "type": "string",
-      "enum": [
-        "operator",
-        "service"
-      ]
+      "enum": ["operator", "service"]
     },
     "OperatorInput": {
       "type": "object",
-      "required": [
-        "path",
-        "label",
-        "type",
-        "writable_by"
-      ],
+      "required": ["path", "label", "type", "writable_by"],
       "additionalProperties": false,
       "properties": {
         "path": {
@@ -1901,10 +1682,7 @@
           "type": "array",
           "description": "Deprecated: prefer constraints.values. Accepted for backward compatibility with LSML 1.0 bundles.",
           "items": {
-            "type": [
-              "string",
-              "number"
-            ]
+            "type": ["string", "number"]
           }
         },
         "writable_by": {
@@ -1920,13 +1698,7 @@
         },
         "default": {
           "description": "Initial value for the operator input. Equivalent to declaring the path in the bundle's `defaults` map (LSML §10) ; conflict resolution: `defaults` wins.",
-          "type": [
-            "string",
-            "number",
-            "boolean",
-            "null",
-            "array"
-          ]
+          "type": ["string", "number", "boolean", "null", "array"]
         }
       },
       "allOf": [
@@ -1942,21 +1714,15 @@
           "then": {
             "anyOf": [
               {
-                "required": [
-                  "values"
-                ]
+                "required": ["values"]
               },
               {
                 "properties": {
                   "constraints": {
-                    "required": [
-                      "values"
-                    ]
+                    "required": ["values"]
                   }
                 },
-                "required": [
-                  "constraints"
-                ]
+                "required": ["constraints"]
               }
             ]
           }
@@ -1989,10 +1755,7 @@
     "VendorAdapterDecl": {
       "description": "(1.1+ §17.2) Vendor-prefixed adapter. `kind` MUST match `x-<vendor>.<name>`. `writes_to` is required (same constraint as standard adapters).",
       "type": "object",
-      "required": [
-        "kind",
-        "writes_to"
-      ],
+      "required": ["kind", "writes_to"],
       "additionalProperties": true,
       "properties": {
         "kind": {
@@ -2019,10 +1782,7 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": [
-              "family",
-              "url"
-            ],
+            "required": ["family", "url"],
             "additionalProperties": false,
             "properties": {
               "family": {
@@ -2041,10 +1801,7 @@
               },
               "style": {
                 "type": "string",
-                "enum": [
-                  "normal",
-                  "italic"
-                ]
+                "enum": ["normal", "italic"]
               }
             }
           }
