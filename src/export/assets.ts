@@ -11,8 +11,15 @@
 // downstream tooling (Prism) replaces it with the real CDN host.
 
 import type { ExportedAsset } from "../main/messages";
+import type { ShapePrimitive } from "~shared/lsml-types";
 import { bytesToDataUri } from "./base64";
 import { emitSanitizedSvgDataUri, looksLikeSvg, sanitizeSvg, SanitizeError } from "./svg-sanitize";
+import {
+  decomposeSvg,
+  DecomposeError,
+  fitDecomposedToBox,
+  type DecomposedSvg,
+} from "./svg-decompose";
 
 interface FigmaImageHandle {
   hash: string;
@@ -66,6 +73,12 @@ interface PendingDataUriEntry {
   placeholder: string;
   /** Resolved later. */
   resolvedDataUri?: string;
+  /** N1 (ADR 002 #M): a decomposable SVG asset resolves NOT to a data: URI but
+   *  to native LSML geometry — the referencing image-fill/mask is replaced by
+   *  these shapes (0 data:URI, 0 surface). Mutually exclusive with
+   *  `resolvedDataUri`: a given SVG either decomposes (N1) or is sanitized (N2),
+   *  never both (A3.4). */
+  resolvedDecompose?: DecomposedSvg;
 }
 
 /** Pre-allocate a placeholder asset path from the Figma hash so the bundle
@@ -97,6 +110,11 @@ export interface CreatedRegistry extends AssetRegistry {
   /** Map of placeholder path → final sha256 path, populated by `finalize`.
    *  The bundle assembler walks the tree and rewrites src fields. */
   rewrites(): Record<string, string>;
+  /** Map of data-URI placeholder → decomposed native geometry (N1, ADR 002
+   *  #M), populated by `finalize`. The walker replaces the referencing
+   *  image-fill/mask with these shapes (0 data:URI). A placeholder present
+   *  here is NEVER present in `rewrites` — N1 and N2 are mutually exclusive. */
+  decompositions(): Record<string, DecomposedSvg>;
 }
 
 export function createAssetRegistry(opts: CreateOptions): CreatedRegistry {
@@ -135,6 +153,14 @@ export function createAssetRegistry(opts: CreateOptions): CreatedRegistry {
       return out;
     },
 
+    decompositions() {
+      const out: Record<string, DecomposedSvg> = {};
+      for (const e of dataUriByHash.values()) {
+        if (e.resolvedDecompose) out[e.placeholder] = e.resolvedDecompose;
+      }
+      return out;
+    },
+
     async finalize(): Promise<ExportedAsset[]> {
       // Resolve data-URI image-fill / mask sources : fetch the bytes once,
       // inline as `data:image/<mime>;base64,…`. Runs in parallel with the
@@ -144,24 +170,55 @@ export function createAssetRegistry(opts: CreateOptions): CreatedRegistry {
           const handle = opts.api.getImageByHash(entry.figmaHash);
           if (!handle) return;
           const bytes = await handle.getBytesAsync();
-          // SVG path (Bastion contract #N): an SVG asset is NOT a raster and
-          // never reaches `RASTER_DATA_URI_EXTS` / `extToMime`. It is routed
-          // to the geometry-only sanitizer, which parses-then-rebuilds a typed
-          // allowlisted document and re-embeds it via the SINGLE emitter
-          // `emitSanitizedSvgDataUri` (the only path to `data:image/svg+xml`).
-          // A non-sanitizable SVG (DTD/entity, parse failure, empty rebuild,
-          // DoS bound exceeded) is OMITTED with an `error`-severity diagnostic
-          // (§7) so the authoring gate (#I) refuses the bundle — never a silent
-          // drop, never a raw-byte SVG data: URI.
+          // SVG path. The choke-point order is N1 → N2 → error (ADR 002 A3.4),
+          // gravé here:
+          //
+          //   N1 (#M, PREFERRED): a purely geometric SVG is DECOMPOSED into
+          //   native LSML `shape` primitives — 0 image, 0 `data:` URI, 0 SVG
+          //   markup, 0 surface. The referencing image-fill/mask is replaced by
+          //   the geometry at rewrite time (see `applyAssetPathRewrites`).
+          //
+          //   N2 (#N, FALLBACK): if a single element/attribute is not
+          //   decomposable (text, filter, raster, …), N1 throws and we fall
+          //   through to the geometry-only sanitizer, which parses-then-rebuilds
+          //   a typed allowlisted document and re-embeds it via the SINGLE
+          //   emitter `emitSanitizedSvgDataUri` (the only path to
+          //   `data:image/svg+xml`). N1 NEVER produces a partial decomposition:
+          //   it is all-or-nothing, so the SVG is either fully native or fully
+          //   sanitized — never a half-render (A3.4).
+          //
+          //   ERROR: if BOTH N1 and N2 fail (DTD/entity, parse failure, empty
+          //   rebuild, DoS bound), the asset is OMITTED with an `error`-severity
+          //   diagnostic (§7) so the authoring gate (#I) refuses the bundle —
+          //   never a silent drop, never a raw-byte SVG data: URI.
           if (looksLikeSvg(bytes)) {
+            let decomposed: DecomposedSvg | null = null;
+            try {
+              decomposed = decomposeSvg(bytes); // N1
+            } catch (n1Err) {
+              if (!(n1Err instanceof DecomposeError)) throw n1Err;
+              // N1 declined → fall through to N2 (sanitizer).
+            }
+            if (decomposed) entry.resolvedDecompose = decomposed;
+            // N2 (sanitize) is ALSO computed when N1 succeeds, but ONLY to back
+            // the mask channel: the shape-mask ref channel (#K) is not yet
+            // landed on this side (LSMLMask.source has no shape-id target),
+            // so a decomposable SVG referenced by a *mask* falls back to the
+            // sanitized data: URI until #K. An image-FILL always uses N1
+            // geometry (0 data:URI). When N1 fails, N2 is the sole path; if it
+            // too fails, the asset is omitted with an `error` diagnostic so the
+            // authoring gate (#I) refuses the bundle (A3.4 case 3) — never a
+            // silent drop, never a raw-byte SVG data: URI.
             try {
               entry.resolvedDataUri = emitSanitizedSvgDataUri(sanitizeSvg(bytes));
             } catch (err) {
+              if (decomposed) return; // N1 covers the fill case; mask absent → fine
               const reason = err instanceof SanitizeError ? err.message : String(err);
               opts.onDiagnostic?.(
                 "asset-svg-unsanitizable",
-                `Image fill/mask SVG source omitted: could not sanitize (${reason}); ` +
-                  `referencing fill/mask dropped. Authoring gate must refuse the bundle.`,
+                `Image fill/mask SVG source omitted: not decomposable and could not ` +
+                  `sanitize (${reason}); referencing fill/mask dropped. Authoring gate ` +
+                  `must refuse the bundle.`,
                 "error",
               );
             }
@@ -221,13 +278,51 @@ export function createAssetRegistry(opts: CreateOptions): CreatedRegistry {
 }
 
 /** Walk an LSML primitive tree and rewrite `src` paths from placeholder to
- *  sha256-based forms. Mutates in place — returns the same node for chain. */
+ *  sha256-based forms. Mutates in place — returns the same node for chain.
+ *
+ *  When `decompositions` is supplied (ADR 002 #M / N1), an image-fill / mask
+ *  whose `src` references a DECOMPOSED placeholder is replaced by NATIVE LSML
+ *  geometry instead of being rewritten to a `data:` URI: the image-fill is
+ *  removed from its `fills[]`/`backgrounds[]` and the decomposed shapes are
+ *  injected as children of the host node, scaled to the host's box. This is
+ *  the 0-data:URI, 0-surface path (A3.2). */
 export function applyAssetPathRewrites<T extends object>(
   node: T,
   rewrites: Record<string, string>,
+  decompositions: Record<string, DecomposedSvg> = {},
 ): T {
-  walk(node, rewrites);
+  walk(node, rewrites, decompositions);
   return node;
+}
+
+/** A placeholder that N1 resolved to native geometry. */
+function decomposedRef(v: unknown, decomp: Record<string, DecomposedSvg>): DecomposedSvg | null {
+  return typeof v === "string" && v.startsWith(DATA_URI_PREFIX) ? (decomp[v] ?? null) : null;
+}
+
+/** The host node's box, for fitting decomposed shapes. A shape/frame exposes
+ *  `size`; default to the source viewBox extent when absent. */
+function hostBox(obj: Record<string, unknown>): { w: number; h: number } | null {
+  const size = obj.size;
+  if (size !== null && typeof size === "object" && !Array.isArray(size)) {
+    const w = (size as Record<string, unknown>).w;
+    const h = (size as Record<string, unknown>).h;
+    if (typeof w === "number" && typeof h === "number" && w > 0 && h > 0) return { w, h };
+  }
+  return null;
+}
+
+/** Build the native shape children for a decomposed SVG, fitting the source
+ *  viewBox onto the host box (object-fit: fill — the default for a shape/frame
+ *  image paint). The fit is an affine `translate(-minX,-minY)` then
+ *  `scale(box.w/vbW, box.h/vbH)`, BAKED into the shapes' path data + gradient
+ *  transforms by `fitDecomposedToBox` (all geometry math stays in the
+ *  decomposer). When the host box is unknown, shapes keep source coordinates. */
+function decomposedChildren(
+  d: DecomposedSvg,
+  box: { w: number; h: number } | null,
+): ShapePrimitive[] {
+  return fitDecomposedToBox(d, box).shapes;
 }
 
 /** True if `v` is a data-URI placeholder that `finalize` did NOT resolve
@@ -258,11 +353,17 @@ function referencesOmittedAsset(
   return false;
 }
 
-function walk(value: unknown, rewrites: Record<string, string>): void {
+function walk(
+  value: unknown,
+  rewrites: Record<string, string>,
+  decomp: Record<string, DecomposedSvg>,
+): void {
   if (value === null || typeof value !== "object") return;
   if (Array.isArray(value)) {
     // Prune array entries (e.g. fills[] / backgrounds[]) that reference an
-    // omitted data-URI placeholder, then recurse into survivors.
+    // omitted data-URI placeholder, then recurse into survivors. Decomposed
+    // image-fills are handled at the OWNING object level (below), not here —
+    // the host node, not the fill, receives the geometry.
     for (let i = value.length - 1; i >= 0; i--) {
       const v = value[i];
       if (
@@ -274,11 +375,16 @@ function walk(value: unknown, rewrites: Record<string, string>): void {
         value.splice(i, 1);
         continue;
       }
-      walk(v, rewrites);
+      walk(v, rewrites, decomp);
     }
     return;
   }
   const obj = value as Record<string, unknown>;
+
+  // N1 (ADR 002 #M): replace a decomposable image-fill / mask source on THIS
+  // host node with native geometry before the generic rewrite/prune pass.
+  injectDecomposedGeometry(obj, decomp);
+
   for (const key of Object.keys(obj)) {
     const v = obj[key];
     if (typeof v === "string" && rewrites[v]) {
@@ -291,9 +397,50 @@ function walk(value: unknown, rewrites: Record<string, string>): void {
         delete obj[key];
         continue;
       }
-      walk(v, rewrites);
+      walk(v, rewrites, decomp);
     }
   }
+}
+
+/** N1 structural transform (ADR 002 A3.2). For the host node `obj`: any
+ *  image-fill in `fills[]` / `backgrounds[]` whose `src` decomposed is REMOVED
+ *  and the native shapes are appended to `obj.children`, fitted to the host box
+ *  (the image-fill→shapes placement). All injected geometry is TYPED LSML —
+ *  0 data:URI, 0 SVG markup.
+ *
+ *  ASSUMPTION (flagged for review): a decomposable SVG referenced by a `mask`
+ *  is NOT injected here — the shape-mask ref channel (#K, `mask.source.kind:
+ *  "shape"`) is not yet landed on this side (`LSMLMask.source` has no shape-id
+ *  target). Such a mask keeps its image source, which `finalize` resolved to a
+ *  SANITIZED `data:image/svg+xml` (N2) for exactly this reason — so the mask
+ *  case is still 0-loss and surface-bounded, just not yet native. */
+function injectDecomposedGeometry(
+  obj: Record<string, unknown>,
+  decomp: Record<string, DecomposedSvg>,
+): void {
+  if (Object.keys(decomp).length === 0) return;
+  const box = hostBox(obj);
+
+  for (const arrKey of ["fills", "backgrounds"] as const) {
+    const arr = obj[arrKey];
+    if (!Array.isArray(arr)) continue;
+    for (let i = arr.length - 1; i >= 0; i--) {
+      const entry = arr[i];
+      if (entry === null || typeof entry !== "object" || Array.isArray(entry)) continue;
+      const d = decomposedRef((entry as Record<string, unknown>).src, decomp);
+      if (!d) continue;
+      arr.splice(i, 1); // remove the image-fill
+      const kids = ensureChildren(obj);
+      for (const shape of decomposedChildren(d, box)) kids.push(shape);
+    }
+    // An emptied fills/backgrounds array is left as-is ([]) — harmless and
+    // consistent with the existing prune behaviour.
+  }
+}
+
+function ensureChildren(obj: Record<string, unknown>): unknown[] {
+  if (!Array.isArray(obj.children)) obj.children = [];
+  return obj.children as unknown[];
 }
 
 /** Sniff PNG / JPEG / GIF / WebP magic bytes. Falls back to "bin" for the

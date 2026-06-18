@@ -242,6 +242,103 @@ describe("createAssetRegistry", () => {
     expect((tree.children[0] as { mask?: unknown }).mask).toBeUndefined();
   });
 
+  // --- N1 decomposition (ADR 002 #M) : SVG fill → native geometry ---
+
+  it("decomposes a geometric SVG fill into native shapes — 0 data:URI in the bundle", async () => {
+    const figma = createMockFigma();
+    figma.__registerImage({
+      hash: "geo",
+      bytes: bytesFromString(
+        '<svg xmlns="http://www.w3.org/2000/svg" viewBox="0 0 10 10">' +
+          '<path d="M0 0 L10 0 L10 10 Z" fill="#ff0000"/>' +
+          '<rect x="0" y="0" width="10" height="10" fill="#00ff00"/></svg>',
+      ),
+      mimeType: "image/svg+xml",
+    });
+    const diagnostics: { code: string }[] = [];
+    const reg = createAssetRegistry({
+      api: figma,
+      onDiagnostic: (code) => diagnostics.push({ code }),
+    });
+    const src = reg.registerImageHashAsDataUri("geo");
+
+    await reg.finalize();
+    const decomp = reg.decompositions();
+    expect(decomp[src]).toBeDefined();
+    expect(diagnostics).toHaveLength(0);
+
+    // A host shape with an image-fill referencing the decomposed SVG.
+    const tree = {
+      kind: "shape",
+      geometry: "rect",
+      size: { w: 20, h: 20 },
+      fills: [{ kind: "image", src }],
+    };
+    applyAssetPathRewrites(tree, reg.rewrites(), decomp);
+
+    const serialized = JSON.stringify(tree);
+    // 0 data:URI anywhere, 0 placeholder leak, 0 SVG markup.
+    expect(serialized).not.toContain("data:");
+    expect(serialized).not.toContain("__asset-data:");
+    expect(serialized).not.toContain("<svg");
+    // The image-fill is gone; native shapes are injected as children.
+    expect(tree.fills).toHaveLength(0);
+    const kids = (tree as unknown as { children: { kind: string; geometry: string }[] }).children;
+    expect(kids).toHaveLength(2);
+    expect(kids.every((k) => k.kind === "shape" && k.geometry === "path")).toBe(true);
+    // Fitted to the 20×20 host box (source viewBox 10×10 → scale 2).
+    const first = kids[0] as unknown as { pathData: string };
+    expect(first.pathData).toBe("M 0 0 L 20 0 L 20 20 Z");
+  });
+
+  it("falls back to the N2 sanitizer when the SVG is NOT decomposable (one bad element)", async () => {
+    const figma = createMockFigma();
+    figma.__registerImage({
+      hash: "mixed",
+      bytes: bytesFromString(
+        '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0 L1 1" fill="#000"/>' +
+          "<text>hi</text></svg>",
+      ),
+      mimeType: "image/svg+xml",
+    });
+    const diagnostics: { code: string }[] = [];
+    const reg = createAssetRegistry({
+      api: figma,
+      onDiagnostic: (code) => diagnostics.push({ code }),
+    });
+    const src = reg.registerImageHashAsDataUri("mixed");
+
+    await reg.finalize();
+    // N1 declined (a <text> is present) → NOT decomposed.
+    expect(reg.decompositions()[src]).toBeUndefined();
+    // N2 produced a sanitized data:image/svg+xml (the <text> dropped).
+    const rewrites = reg.rewrites();
+    expect(rewrites[src]).toMatch(/^data:image\/svg\+xml;base64,/);
+    expect(diagnostics).toHaveLength(0);
+  });
+
+  it("raises an error diagnostic when BOTH N1 and N2 fail (A3.4 case 3)", async () => {
+    const figma = createMockFigma();
+    figma.__registerImage({
+      hash: "bad",
+      bytes: bytesFromString('<svg onload="alert(1)"><script>x</script></svg>'),
+      mimeType: "image/svg+xml",
+    });
+    const diagnostics: { code: string; severity: string | undefined }[] = [];
+    const reg = createAssetRegistry({
+      api: figma,
+      onDiagnostic: (code, _m, severity) => diagnostics.push({ code, severity }),
+    });
+    const src = reg.registerImageHashAsDataUri("bad");
+
+    await reg.finalize();
+    expect(reg.decompositions()[src]).toBeUndefined();
+    expect(reg.rewrites()[src]).toBeUndefined();
+    expect(diagnostics).toHaveLength(1);
+    expect(diagnostics[0]?.code).toBe("asset-svg-unsanitizable");
+    expect(diagnostics[0]?.severity).toBe("error");
+  });
+
   it("applyAssetPathRewrites rewrites placeholder paths in nested LSML trees", () => {
     const tree = {
       kind: "frame",
