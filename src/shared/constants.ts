@@ -34,8 +34,16 @@ export const BIND_LAYER_PREFIX_RE = /^\s*\[bind:([a-zA-Z0-9_.{}]+)\]\s*(.*)$/;
 /** Name of the Figma component the plugin treats as an operator-input declaration */
 export const OPERATOR_INPUT_COMPONENT_NAME = "OperatorInput";
 
-/** LSML target version emitted by this plugin */
+/** Baseline LSML version emitted by this plugin. A bundle is upgraded to
+ *  {@link LSML_VERSION_1_2} only when its layout carries a 1.2 construct
+ *  (blendMode / mask / image-fill / gradient transform) — a design with none
+ *  of those produces byte-identical 1.1 output, as before. */
 export const LSML_VERSION = "1.1" as const;
+
+/** LSML version emitted when the layout carries any 1.2 construct
+ *  (ADR 002 §3.2 — blend modes, typed masks, first-class image-fills,
+ *  gradient transforms). Additive over 1.1 ; a 1.1 receiver degrades. */
+export const LSML_VERSION_1_2 = "1.2" as const;
 
 /** File extension of the bundle on disk (renamed .lsml.json) */
 export const LSML_FILE_EXTENSION = ".lsml" as const;

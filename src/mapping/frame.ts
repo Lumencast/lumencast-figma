@@ -7,6 +7,7 @@
 
 import type { Bind, Fill, FramePrimitive } from "~shared/lsml-types";
 import { paintToFill, rawGradientTransform, type FigmaPaint, paintToSolidCss } from "./color";
+import { imagePaintToFill } from "./lsml-1_2";
 import { withFigmaMetadata, type FigmaImageBackground } from "./figma-metadata";
 import { captureFigmaExtras } from "./figma-extras";
 import { capturePaintExtras } from "./image";
@@ -85,39 +86,43 @@ export function mapFrame(
     if (x !== 0 || y !== 0) prim.position = { x: roundTo3(x), y: roundTo3(y) };
   }
 
-  // Backgrounds : single solid → `background`, multi/gradient → `backgrounds[]`.
-  // IMAGE fills are NOT representable in LSML's Fill type — capture them
-  // separately under `metadata.figma.imageBackgrounds[]` with the asset
-  // path + paint extras (blendMode, scaleMode, opacity, imageTransform,
-  // …) so avatar circles, hero banners, card image backgrounds round-trip.
-  //
-  // We collect `fills` and `gradientTransforms` in lockstep : if any paint
-  // returns null from `paintToFill` (invisible, unsupported), it's skipped
-  // from BOTH arrays so transforms[i] always lines up with fills[i] /
-  // backgrounds[i]. Earlier two-pass filter+map produced length mismatches
-  // when an invisible paint sat between two visible ones.
+  // Backgrounds in source order. IMAGE paints now lower to a 1.2 first-class
+  // image-fill `{ kind:"image"; src; objectFit }` in `backgrounds[]` (LSML
+  // 1.2 §4.1) — no longer only stashed in `metadata.figma.imageBackgrounds`.
+  // The metadata stash is kept in parallel, but ONLY for the paint surface
+  // the core image-fill can't carry (blendMode / filters / imageTransform /
+  // scalingFactor / rotation) — a legitimate round-trip channel for the
+  // non-promoted Figma-only fields (ADR 002 §3.3). `gradientTransforms` stays
+  // parallel-indexed with the emitted `backgrounds` (null for image entries).
   const fillsArr = asArray<FigmaPaint>(node.fills) ?? [];
   const fills: Fill[] = [];
   const gradientTransformsAligned: (number[][] | null)[] = [];
+  const imageAssetRefs: string[] = [];
+  const imageBackgrounds: FigmaImageBackground[] = [];
+  const registerDataUri = ctx?.registerImageHashAsDataUri;
   for (const paint of fillsArr) {
-    if (paint.type === "IMAGE") continue;
+    if (paint.type === "IMAGE") {
+      if (!registerDataUri) continue;
+      const imageFill = imagePaintToFill(paint, registerDataUri);
+      if (imageFill === null) continue;
+      fills.push(imageFill);
+      gradientTransformsAligned.push(null);
+      const hash = paint.imageHash;
+      if (typeof hash === "string" && hash !== "") imageAssetRefs.push(hash);
+      // Round-trip the Figma-only paint surface (blend/filters/transform).
+      // `src` here is a stable per-paint marker so import can pair the
+      // metadata back with the emitted background ; we reuse the data-URI
+      // placeholder via the same registry call (deduped).
+      const extras = capturePaintExtras(paint);
+      if (extras && Object.keys(extras).length > 0) {
+        imageBackgrounds.push({ ...extras, src: imageFill.src });
+      }
+      continue;
+    }
     const fill = paintToFill(paint);
     if (fill === null) continue;
     fills.push(fill);
     gradientTransformsAligned.push(rawGradientTransform(paint));
-  }
-  const imageAssetRefs: string[] = [];
-  const imageBackgrounds: FigmaImageBackground[] = [];
-  if (ctx?.registerImageHash) {
-    for (const paint of fillsArr) {
-      if (paint.type !== "IMAGE") continue;
-      const hash = (paint as unknown as { imageHash?: unknown }).imageHash;
-      if (typeof hash !== "string" || hash === "") continue;
-      const src = ctx.registerImageHash(hash);
-      const extras = capturePaintExtras(paint) ?? {};
-      imageBackgrounds.push({ ...extras, src });
-      imageAssetRefs.push(hash);
-    }
   }
   if (fills.length === 1 && fills[0]?.kind === "solid" && fills[0].opacity === undefined) {
     const single = fillsArr.find((p) => p.type === "SOLID");

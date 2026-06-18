@@ -11,6 +11,7 @@
 // downstream tooling (Prism) replaces it with the real CDN host.
 
 import type { ExportedAsset } from "../main/messages";
+import { bytesToDataUri } from "./base64";
 
 interface FigmaImageHandle {
   hash: string;
@@ -25,6 +26,15 @@ export interface AssetRegistry {
   /** Returns the canonical `assets/<sha256>.<ext>` path for a Figma image hash.
    *  Multiple calls with the same hash return the same path. */
   registerImageHash(hash: string): string;
+  /** Returns a placeholder that `finalize` rewrites to a `data:image/<mime>;
+   *  base64,<bytes>` URI. Used for 1.2 image-fill / mask-image `src`, where
+   *  the AssetUrl schema (LSML 1.2 §5) forbids a relative `assets/<sha>` path
+   *  and only admits `https:` or a bounded `data:image/*` payload. A data:
+   *  URI carries no remote host, so `assets.allowedHosts` stays `[]`-coherent
+   *  (Bastion T6). The same hash also registered via `registerImageHash`
+   *  (e.g. an image-primitive) keeps its local `assets/<sha>` path — the two
+   *  placeholders are distinct. */
+  registerImageHashAsDataUri(hash: string): string;
   /** Resolves all registered hashes to bytes + sha256 paths. */
   finalize(): Promise<ExportedAsset[]>;
 }
@@ -39,10 +49,24 @@ interface PendingEntry {
   resolvedPath?: string;
 }
 
+interface PendingDataUriEntry {
+  figmaHash: string;
+  /** Placeholder returned synchronously to the mapper. Rewritten to a
+   *  `data:image/<mime>;base64,<bytes>` URI at finalize-time. */
+  placeholder: string;
+  /** Resolved later. */
+  resolvedDataUri?: string;
+}
+
 /** Pre-allocate a placeholder asset path from the Figma hash so the bundle
  *  can be assembled before bytes are fetched. We use the figma hash itself
  *  as the placeholder ; finalize() rewrites paths to sha256-based ones. */
 const ASSET_DIR = "assets";
+
+/** Distinct namespace for data-URI placeholders so the rewrite walker never
+ *  confuses an image-fill `src` (→ data:) with an image-primitive `assets/`
+ *  path that happens to share the same Figma hash. */
+const DATA_URI_PREFIX = "__asset-data:";
 
 interface CreateOptions {
   api: FigmaApiSurface;
@@ -61,6 +85,7 @@ export interface CreatedRegistry extends AssetRegistry {
 
 export function createAssetRegistry(opts: CreateOptions): CreatedRegistry {
   const byHash = new Map<string, PendingEntry>();
+  const dataUriByHash = new Map<string, PendingDataUriEntry>();
 
   const reg: CreatedRegistry = {
     registerImageHash(hash) {
@@ -73,15 +98,40 @@ export function createAssetRegistry(opts: CreateOptions): CreatedRegistry {
       return entry.pendingPath;
     },
 
+    registerImageHashAsDataUri(hash) {
+      let entry = dataUriByHash.get(hash);
+      if (!entry) {
+        const placeholder = `${DATA_URI_PREFIX}${hash}`;
+        entry = { figmaHash: hash, placeholder };
+        dataUriByHash.set(hash, entry);
+      }
+      return entry.placeholder;
+    },
+
     rewrites() {
       const out: Record<string, string> = {};
       for (const e of byHash.values()) {
         if (e.resolvedPath) out[e.pendingPath] = e.resolvedPath;
       }
+      for (const e of dataUriByHash.values()) {
+        if (e.resolvedDataUri) out[e.placeholder] = e.resolvedDataUri;
+      }
       return out;
     },
 
     async finalize(): Promise<ExportedAsset[]> {
+      // Resolve data-URI image-fill / mask sources : fetch the bytes once,
+      // inline as `data:image/<mime>;base64,…`. Runs in parallel with the
+      // local-asset path resolution below.
+      await Promise.all(
+        Array.from(dataUriByHash.values()).map(async (entry) => {
+          const handle = opts.api.getImageByHash(entry.figmaHash);
+          if (!handle) return;
+          const bytes = await handle.getBytesAsync();
+          const ext = sniffImageExtension(bytes);
+          entry.resolvedDataUri = bytesToDataUri(bytes, extToMime(ext));
+        }),
+      );
       // Fetch every image's bytes in parallel. Sequential awaits in a
       // for-of loop multiplied per-image latency — on a scene with 100
       // images at ~200ms each, the export blocks for ~20s just on byte

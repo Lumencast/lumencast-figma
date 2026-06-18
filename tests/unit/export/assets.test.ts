@@ -55,6 +55,38 @@ describe("createAssetRegistry", () => {
     expect(assets).toHaveLength(1);
   });
 
+  it("registerImageHashAsDataUri resolves to a data:image/<mime>;base64,… URI (1.2 image-fill src)", async () => {
+    const figma = createMockFigma();
+    figma.__registerImage({ hash: "f1", bytes: pngBytes(7), mimeType: "image/png" });
+
+    const reg = createAssetRegistry({ api: figma });
+    const placeholder = reg.registerImageHashAsDataUri("f1");
+    expect(placeholder).toBe("__asset-data:f1");
+    // Deduped per hash.
+    expect(reg.registerImageHashAsDataUri("f1")).toBe(placeholder);
+
+    await reg.finalize();
+    const rewrites = reg.rewrites();
+    const dataUri = rewrites["__asset-data:f1"];
+    expect(dataUri).toMatch(/^data:image\/png;base64,[A-Za-z0-9+/]+=*$/);
+  });
+
+  it("keeps the local `assets/` path and the data: URI for the same hash distinct", async () => {
+    const figma = createMockFigma();
+    figma.__registerImage({ hash: "shared", bytes: pngBytes(3), mimeType: "image/png" });
+
+    const reg = createAssetRegistry({ api: figma });
+    const localPath = reg.registerImageHash("shared"); // image PRIMITIVE
+    const dataPlaceholder = reg.registerImageHashAsDataUri("shared"); // image-FILL
+    expect(localPath).toBe("assets/shared");
+    expect(dataPlaceholder).toBe("__asset-data:shared");
+
+    await reg.finalize();
+    const rewrites = reg.rewrites();
+    expect(rewrites["assets/shared"]).toBe("assets/shared.png");
+    expect(rewrites["__asset-data:shared"]).toMatch(/^data:image\/png;base64,/);
+  });
+
   it("applyAssetPathRewrites rewrites placeholder paths in nested LSML trees", () => {
     const tree = {
       kind: "frame",

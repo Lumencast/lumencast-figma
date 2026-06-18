@@ -74,7 +74,13 @@ describe("E2E : scoreboard fixture → LSML 1.1 bundle", () => {
       sceneId: "scoreboard",
     });
 
-    expect(result.bundle.lsml).toBe("1.1");
+    // The "Stat panel" gradient carries a non-trivial affine matrix
+    // ([[0,1,0],[-1,0,1]] : a 90° rotation + translation). LSML 1.2 (ADR 002
+    // §3.2 / #H) lowers that to a core `transform` instead of degrading it to
+    // `angle_deg` alone — which promotes the bundle to `lsml: "1.2"`. (A design
+    // with only trivial gradients / no 1.2 family stays 1.1 ; see
+    // non-regression test below.)
+    expect(result.bundle.lsml).toBe("1.2");
     expect(result.bundle.scene_id).toBe("scoreboard");
     expect(result.bundle.scene_version).toMatch(/^sha256:[0-9a-f]{64}$/);
     expect(result.bundle.layout.kind).toBe("frame");

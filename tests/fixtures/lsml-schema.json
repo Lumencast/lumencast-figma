@@ -1,21 +1,30 @@
 {
   "$schema": "https://json-schema.org/draft/2020-12/schema",
   "$id": "https://lumencast.dev/schema/lsml/1.1/schema.json",
-  "title": "LSML 1.1 \u00e2\u20ac\u201d Lumencast Scene Markup Language",
-  "description": "Canonical machine-readable JSON Schema for LSML 1.x scene bundles (1.0, 1.0.1, 1.1). The normative spec lives in spec/LSML-1.md ; this file is its precise mechanical companion. 1.1 adds the `instance` primitive, universal props, multi-fill / gradients, stack wrap, animation extensions, and \u00c2\u00a717 extension mechanisms \u00e2\u20ac\u201d all additive, all opt-in via `lsml: \"1.1\"`.",
+  "title": "LSML 1.1 — Lumencast Scene Markup Language",
+  "description": "Canonical machine-readable JSON Schema for LSML 1.x scene bundles (1.0, 1.0.1, 1.1). The normative spec lives in spec/LSML-1.md ; this file is its precise mechanical companion. 1.1 adds the `instance` primitive, universal props, multi-fill / gradients, stack wrap, animation extensions, and §17 extension mechanisms — all additive, all opt-in via `lsml: \"1.1\"`.",
   "type": "object",
-  "required": ["lsml", "scene_id", "scene_version", "layout"],
+  "required": [
+    "lsml",
+    "scene_id",
+    "scene_version",
+    "layout"
+  ],
   "additionalProperties": true,
   "properties": {
     "$schema": {
       "type": "string",
       "format": "uri",
-      "description": "Recommended for on-disk bundles. URL of the JSON Schema this bundle conforms to. Enables auto-validation and autocomplete in JSON-Schema-aware editors. Ignored by runtimes (informational only). See LSML \u00c2\u00a718.4."
+      "description": "Recommended for on-disk bundles. URL of the JSON Schema this bundle conforms to. Enables auto-validation and autocomplete in JSON-Schema-aware editors. Ignored by runtimes (informational only). See LSML §18.4."
     },
     "lsml": {
       "type": "string",
-      "enum": ["1.0", "1.1"],
-      "description": "Schema version. '1.0' (and the 1.0.1 errata-compat alias) or '1.1' (additive features)."
+      "enum": [
+        "1.0",
+        "1.1",
+        "1.2"
+      ],
+      "description": "Schema version. '1.0' (and the 1.0.1 errata-compat alias), '1.1' (additive features), or '1.2' (additive : blendMode, typed mask, first-class image-fill, gradient transform — ADR 002 §3.2)."
     },
     "scene_id": {
       "type": "string",
@@ -60,15 +69,16 @@
     "metadata": {
       "type": "object",
       "additionalProperties": true,
-      "description": "Authoring metadata (author, description, tags). Not consumed by runtime."
+      "description": "Open-ended authoring metadata (LSML §17.4). Not consumed by runtimes. Vendor-specific keys SHOULD be nested under a vendor identifier sub-object — `metadata.<vendor>.*` where `<vendor>` matches `[a-z][a-z0-9_-]*`. Top-level keys without a vendor namespace (`author`, `description`, `tags`, …) are reserved for generic authoring metadata."
     },
     "profiles": {
       "type": "array",
-      "description": "(1.1+) Capability profiles required for correct rendering. Each entry follows '<vendor>.<name>-<version>' (LSML \u00c2\u00a717.3). Runtimes MUST reject bundles whose profiles are not all supported.",
+      "description": "(1.1+) Capability profiles the bundle declares. Each entry follows 'x-<vendor>.<name>/<version>' where <version> is <major> or <major>.<minor> (LSML §17.3). Two flavours : (a) behavioural profiles — runtimes MUST reject when unsupported, emitting BUNDLE_INCOMPATIBLE ; (b) authoring profiles (identifier ends in '.authoring/<major>') — advisory per §17.5.1, runtimes MUST NOT reject when unsupported and MUST render the underlying primitives as if the profile were absent.",
       "items": {
         "type": "string",
         "minLength": 1,
-        "maxLength": 256
+        "maxLength": 256,
+        "pattern": "^x-[a-z][a-z0-9_-]*\\.[a-z][a-z0-9_-]*/[0-9]+(\\.[0-9]+)?$"
       }
     }
   },
@@ -97,7 +107,10 @@
     },
     "FillStop": {
       "type": "object",
-      "required": ["offset", "color"],
+      "required": [
+        "offset",
+        "color"
+      ],
       "additionalProperties": false,
       "properties": {
         "offset": {
@@ -116,11 +129,14 @@
       }
     },
     "Fill": {
-      "description": "(1.1+) Discriminated fill spec. Used by shape.fills[] and frame.backgrounds[]. See LSML \u00c2\u00a74.12.",
+      "description": "(1.1+) Discriminated fill spec. Used by shape.fills[] and frame.backgrounds[]. See LSML §4.12.",
       "oneOf": [
         {
           "type": "object",
-          "required": ["kind", "color"],
+          "required": [
+            "kind",
+            "color"
+          ],
           "additionalProperties": false,
           "properties": {
             "kind": {
@@ -138,7 +154,10 @@
         },
         {
           "type": "object",
-          "required": ["kind", "stops"],
+          "required": [
+            "kind",
+            "stops"
+          ],
           "additionalProperties": false,
           "properties": {
             "kind": {
@@ -146,6 +165,9 @@
             },
             "angle_deg": {
               "type": "number"
+            },
+            "transform": {
+              "$ref": "#/$defs/GradientTransform"
             },
             "opacity": {
               "type": "number",
@@ -163,7 +185,10 @@
         },
         {
           "type": "object",
-          "required": ["kind", "stops"],
+          "required": [
+            "kind",
+            "stops"
+          ],
           "additionalProperties": false,
           "properties": {
             "kind": {
@@ -175,6 +200,9 @@
             "radius": {
               "type": "number",
               "exclusiveMinimum": 0
+            },
+            "transform": {
+              "$ref": "#/$defs/GradientTransform"
             },
             "opacity": {
               "type": "number",
@@ -189,8 +217,154 @@
               }
             }
           }
+        },
+        {
+          "description": "(1.2+) First-class image-fill (ADR 002 §3.2). `src` is host/scheme-allowlist-gated (T1/T2) before the DOM ; only https: or a bounded data:image/* payload, host in assets.allowedHosts.",
+          "type": "object",
+          "required": [
+            "kind",
+            "src"
+          ],
+          "additionalProperties": false,
+          "properties": {
+            "kind": {
+              "const": "image"
+            },
+            "src": {
+              "$ref": "#/$defs/AssetUrl"
+            },
+            "objectFit": {
+              "$ref": "#/$defs/ObjectFit"
+            },
+            "opacity": {
+              "type": "number",
+              "minimum": 0,
+              "maximum": 1
+            },
+            "transform": {
+              "$ref": "#/$defs/GradientTransform"
+            }
+          }
         }
       ]
+    },
+    "BlendMode": {
+      "type": "string",
+      "description": "(1.2+) CSS mix-blend-mode, closed enum faithful to Figma minus PASS_THROUGH (ADR 002 §3.2). A value outside this set is rejected (diagnostic + omission), never passthrough.",
+      "enum": [
+        "normal",
+        "multiply",
+        "screen",
+        "overlay",
+        "darken",
+        "lighten",
+        "color-dodge",
+        "color-burn",
+        "hard-light",
+        "soft-light",
+        "difference",
+        "exclusion",
+        "hue",
+        "saturation",
+        "color",
+        "luminosity"
+      ]
+    },
+    "ObjectFit": {
+      "type": "string",
+      "description": "(1.2+) How an image-fill / mask image source is fitted into its box (closed enum → CSS object-fit). ADR 002 §3.2.",
+      "enum": [
+        "cover",
+        "contain",
+        "fill",
+        "none",
+        "scale-down"
+      ]
+    },
+    "GradientTransform": {
+      "type": "array",
+      "description": "(1.2+) Affine 2x3 gradient transform [a, b, c, d, e, f] — 6 finite floats, never a free string (ADR 002 §3.2 ; Bastion T4). Runtime builds gradientTransform numerically. Each component is clamped to a bounded range by the compiler.",
+      "minItems": 6,
+      "maxItems": 6,
+      "items": {
+        "type": "number"
+      }
+    },
+    "AssetUrl": {
+      "type": "string",
+      "description": "(1.2+) An asset URL reaching the DOM (image-fill src, mask image source). Bastion T1/T2 : only https: (host MUST be in assets.allowedHosts, exact hostname match) or a bounded data:image/* base64 payload. javascript:/data:text|html/file:/blob:/vbscript: and image/svg+xml are rejected. The pattern below is a coarse schema-level guard ; the normative gate is isHostAllowed (lumencast-js packages/protocol/src/host-allow.ts), enforced at compile AND runtime.",
+      "maxLength": 8192,
+      "pattern": "^(https://|data:image/(png|jpeg|jpg|gif|webp|avif|bmp|x-icon);base64,)"
+    },
+    "Mask": {
+      "type": "object",
+      "description": "(1.2+) Typed mask spec (ADR 002 §3.2 ; Bastion T3). The runtime builds <mask>/<clipPath> from these TYPED fields — there is deliberately no free-form SVG string anywhere in this shape.",
+      "required": [
+        "source",
+        "type",
+        "op"
+      ],
+      "additionalProperties": false,
+      "properties": {
+        "source": {
+          "oneOf": [
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "ref"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "shape"
+                },
+                "ref": {
+                  "type": "string",
+                  "description": "id of a sibling shape providing the mask coverage."
+                }
+              }
+            },
+            {
+              "type": "object",
+              "required": [
+                "kind",
+                "src"
+              ],
+              "additionalProperties": false,
+              "properties": {
+                "kind": {
+                  "const": "image"
+                },
+                "src": {
+                  "$ref": "#/$defs/AssetUrl"
+                }
+              }
+            }
+          ]
+        },
+        "type": {
+          "type": "string",
+          "enum": [
+            "alpha",
+            "luminance"
+          ]
+        },
+        "op": {
+          "type": "string",
+          "enum": [
+            "intersect",
+            "subtract",
+            "union"
+          ]
+        },
+        "position": {
+          "$ref": "#/$defs/Position"
+        },
+        "size": {
+          "$ref": "#/$defs/Size"
+        }
+      }
     },
     "Stroke": {
       "type": "object",
@@ -207,8 +381,12 @@
     },
     "SizingMode": {
       "type": "string",
-      "enum": ["fixed", "hug", "fill"],
-      "description": "(1.1+) Auto-layout sizing intent on a flex axis. See LSML \u00c2\u00a75.4.1."
+      "enum": [
+        "fixed",
+        "hug",
+        "fill"
+      ],
+      "description": "(1.1+) Auto-layout sizing intent on a flex axis. See LSML §5.4.1."
     },
     "Sizing": {
       "type": "object",
@@ -224,7 +402,7 @@
     },
     "BindUniversalMap": {
       "type": "object",
-      "description": "(1.1+) Bindable universal props (visible, opacity, rotation). `sizing` is NOT bindable. See LSML \u00c2\u00a75.4.2.",
+      "description": "(1.1+) Bindable universal props (visible, opacity, rotation). `sizing` is NOT bindable. See LSML §5.4.2.",
       "additionalProperties": false,
       "properties": {
         "visible": {
@@ -240,8 +418,11 @@
     },
     "Keyframes": {
       "type": "object",
-      "description": "(1.1+) Multi-step animation sequence. See LSML \u00c2\u00a76.6.",
-      "required": ["steps", "duration_ms"],
+      "description": "(1.1+) Multi-step animation sequence. See LSML §6.6.",
+      "required": [
+        "steps",
+        "duration_ms"
+      ],
       "additionalProperties": false,
       "properties": {
         "key": {
@@ -252,7 +433,9 @@
           "minItems": 2,
           "items": {
             "type": "object",
-            "required": ["at"],
+            "required": [
+              "at"
+            ],
             "additionalProperties": false,
             "properties": {
               "at": {
@@ -321,7 +504,12 @@
         },
         "easing": {
           "type": "string",
-          "enum": ["linear", "ease-in", "ease-out", "ease-in-out"]
+          "enum": [
+            "linear",
+            "ease-in",
+            "ease-out",
+            "ease-in-out"
+          ]
         }
       }
     },
@@ -344,7 +532,10 @@
     },
     "Size": {
       "type": "object",
-      "required": ["w", "h"],
+      "required": [
+        "w",
+        "h"
+      ],
       "properties": {
         "w": {
           "type": "number",
@@ -359,7 +550,10 @@
     },
     "Position": {
       "type": "object",
-      "required": ["x", "y"],
+      "required": [
+        "x",
+        "y"
+      ],
       "properties": {
         "x": {
           "type": "number"
@@ -385,7 +579,13 @@
             },
             "easing": {
               "type": "string",
-              "enum": ["linear", "ease-in", "ease-out", "ease-in-out", "spring"]
+              "enum": [
+                "linear",
+                "ease-in",
+                "ease-out",
+                "ease-in-out",
+                "spring"
+              ]
             },
             "stiffness": {
               "type": "number",
@@ -472,7 +672,12 @@
             },
             {
               "type": "string",
-              "enum": ["normal", "bold", "lighter", "bolder"]
+              "enum": [
+                "normal",
+                "bold",
+                "lighter",
+                "bolder"
+              ]
             }
           ]
         },
@@ -481,7 +686,11 @@
         },
         "fontStyle": {
           "type": "string",
-          "enum": ["normal", "italic", "oblique"]
+          "enum": [
+            "normal",
+            "italic",
+            "oblique"
+          ]
         },
         "color": {
           "$ref": "#/$defs/Color"
@@ -495,22 +704,38 @@
         },
         "textAlign": {
           "type": "string",
-          "enum": ["start", "center", "end", "justify"]
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "justify"
+          ]
         },
         "textTransform": {
           "type": "string",
-          "enum": ["none", "uppercase", "lowercase", "capitalize"]
+          "enum": [
+            "none",
+            "uppercase",
+            "lowercase",
+            "capitalize"
+          ]
         },
         "textDecoration": {
           "type": "string",
-          "enum": ["none", "underline", "line-through"]
+          "enum": [
+            "none",
+            "underline",
+            "line-through"
+          ]
         }
       }
     },
     "FormatSpec": {
       "type": "object",
       "additionalProperties": false,
-      "required": ["kind"],
+      "required": [
+        "kind"
+      ],
       "properties": {
         "kind": {
           "type": "string",
@@ -569,14 +794,22 @@
       ]
     },
     "VendorPrimitiveNode": {
-      "description": "(1.1+ \u00c2\u00a717.1) Vendor-prefixed primitive. `kind` MUST match `x-<vendor>.<name>` per \u00c2\u00a717.1.1. Schema validation accepts the structure ; runtime support is the consumer's contract. Universal props (\u00c2\u00a75.4) are accepted unprefixed.",
+      "description": "(1.1+ §17.1) Vendor-prefixed primitive. `kind` MUST match `x-<vendor>.<name>` per §17.1.1. Schema validation accepts the structure ; runtime support is the consumer's contract. Universal props (§5.4) are accepted unprefixed.",
       "type": "object",
-      "required": ["kind"],
+      "required": [
+        "kind"
+      ],
       "additionalProperties": true,
       "properties": {
         "kind": {
           "type": "string",
           "pattern": "^x-[a-z][a-z0-9_-]*\\.[a-z][a-z0-9_-]*$"
+        },
+        "blendMode": {
+          "$ref": "#/$defs/BlendMode"
+        },
+        "mask": {
+          "$ref": "#/$defs/Mask"
         },
         "visible": {
           "type": "boolean"
@@ -604,13 +837,17 @@
         "metadata": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Per-primitive metadata escape hatch \u2014 used by lumencast-figma to carry Figma-specific auth info that has no LSML spec home (gradient matrices, raw fontName.style, textAutoResize, etc.). NOT in upstream LSML 1.1 schema ; this is a plugin-side test affordance."
+          "description": "(1.1+) Per-primitive metadata escape hatch (LSML §17.4). Open-ended object. Vendor-specific keys SHOULD nest under `metadata.<vendor>.*`. Renderers ignore unless an authoring profile (§17.5) declares semantics for specific keys."
         }
       }
     },
     "StackNode": {
       "type": "object",
-      "required": ["kind", "direction", "children"],
+      "required": [
+        "kind",
+        "direction",
+        "children"
+      ],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -618,7 +855,10 @@
         },
         "direction": {
           "type": "string",
-          "enum": ["horizontal", "vertical"]
+          "enum": [
+            "horizontal",
+            "vertical"
+          ]
         },
         "gap": {
           "type": "number",
@@ -635,11 +875,22 @@
         },
         "align": {
           "type": "string",
-          "enum": ["start", "center", "end", "stretch"]
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "stretch"
+          ]
         },
         "justify": {
           "type": "string",
-          "enum": ["start", "center", "end", "space-between", "space-around"]
+          "enum": [
+            "start",
+            "center",
+            "end",
+            "space-between",
+            "space-around"
+          ]
         },
         "padding": {
           "$ref": "#/$defs/PaddingValue"
@@ -677,6 +928,12 @@
           "$ref": "#/$defs/Position",
           "description": "(1.1+) Universal prop ; honoured when the parent is in absolute mode."
         },
+        "blendMode": {
+          "$ref": "#/$defs/BlendMode"
+        },
+        "mask": {
+          "$ref": "#/$defs/Mask"
+        },
         "visible": {
           "type": "boolean"
         },
@@ -697,13 +954,17 @@
         "metadata": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Per-primitive metadata escape hatch \u2014 used by lumencast-figma to carry Figma-specific auth info that has no LSML spec home (gradient matrices, raw fontName.style, textAutoResize, etc.). NOT in upstream LSML 1.1 schema ; this is a plugin-side test affordance."
+          "description": "(1.1+) Per-primitive metadata escape hatch (LSML §17.4). Open-ended object. Vendor-specific keys SHOULD nest under `metadata.<vendor>.*`. Renderers ignore unless an authoring profile (§17.5) declares semantics for specific keys."
         }
       }
     },
     "GridNode": {
       "type": "object",
-      "required": ["kind", "columns", "children"],
+      "required": [
+        "kind",
+        "columns",
+        "children"
+      ],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -779,6 +1040,12 @@
           "$ref": "#/$defs/Position",
           "description": "(1.1+) Universal prop ; honoured when the parent is in absolute mode."
         },
+        "blendMode": {
+          "$ref": "#/$defs/BlendMode"
+        },
+        "mask": {
+          "$ref": "#/$defs/Mask"
+        },
         "visible": {
           "type": "boolean"
         },
@@ -799,13 +1066,16 @@
         "metadata": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Per-primitive metadata escape hatch \u2014 used by lumencast-figma to carry Figma-specific auth info that has no LSML spec home (gradient matrices, raw fontName.style, textAutoResize, etc.). NOT in upstream LSML 1.1 schema ; this is a plugin-side test affordance."
+          "description": "(1.1+) Per-primitive metadata escape hatch (LSML §17.4). Open-ended object. Vendor-specific keys SHOULD nest under `metadata.<vendor>.*`. Renderers ignore unless an authoring profile (§17.5) declares semantics for specific keys."
         }
       }
     },
     "FrameNode": {
       "type": "object",
-      "required": ["kind", "children"],
+      "required": [
+        "kind",
+        "children"
+      ],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -849,6 +1119,12 @@
         "ariaLabel": {
           "type": "string"
         },
+        "blendMode": {
+          "$ref": "#/$defs/BlendMode"
+        },
+        "mask": {
+          "$ref": "#/$defs/Mask"
+        },
         "visible": {
           "type": "boolean"
         },
@@ -869,17 +1145,23 @@
         "metadata": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Per-primitive metadata escape hatch \u2014 used by lumencast-figma to carry Figma-specific auth info that has no LSML spec home (gradient matrices, raw fontName.style, textAutoResize, etc.). NOT in upstream LSML 1.1 schema ; this is a plugin-side test affordance."
+          "description": "(1.1+) Per-primitive metadata escape hatch (LSML §17.4). Open-ended object. Vendor-specific keys SHOULD nest under `metadata.<vendor>.*`. Renderers ignore unless an authoring profile (§17.5) declares semantics for specific keys."
         }
       },
       "not": {
         "description": "background and backgrounds are mutually exclusive.",
-        "required": ["background", "backgrounds"]
+        "required": [
+          "background",
+          "backgrounds"
+        ]
       }
     },
     "TextNode": {
       "type": "object",
-      "required": ["kind", "bind"],
+      "required": [
+        "kind",
+        "bind"
+      ],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -887,7 +1169,9 @@
         },
         "bind": {
           "type": "object",
-          "required": ["value"],
+          "required": [
+            "value"
+          ],
           "properties": {
             "value": {
               "$ref": "#/$defs/LeafPath"
@@ -916,11 +1200,22 @@
         },
         "role": {
           "type": "string",
-          "enum": ["heading", "paragraph", "label", "presentation"]
+          "enum": [
+            "heading",
+            "paragraph",
+            "label",
+            "presentation"
+          ]
         },
         "position": {
           "$ref": "#/$defs/Position",
           "description": "(1.1+) Universal prop ; honoured when the parent is in absolute mode."
+        },
+        "blendMode": {
+          "$ref": "#/$defs/BlendMode"
+        },
+        "mask": {
+          "$ref": "#/$defs/Mask"
         },
         "visible": {
           "type": "boolean"
@@ -942,13 +1237,18 @@
         "metadata": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Per-primitive metadata escape hatch \u2014 used by lumencast-figma to carry Figma-specific auth info that has no LSML spec home (gradient matrices, raw fontName.style, textAutoResize, etc.). NOT in upstream LSML 1.1 schema ; this is a plugin-side test affordance."
+          "description": "(1.1+) Per-primitive metadata escape hatch (LSML §17.4). Open-ended object. Vendor-specific keys SHOULD nest under `metadata.<vendor>.*`. Renderers ignore unless an authoring profile (§17.5) declares semantics for specific keys."
         }
       }
     },
     "ImageNode": {
       "type": "object",
-      "required": ["kind", "bind", "alt", "size"],
+      "required": [
+        "kind",
+        "bind",
+        "alt",
+        "size"
+      ],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -956,7 +1256,9 @@
         },
         "bind": {
           "type": "object",
-          "required": ["src"],
+          "required": [
+            "src"
+          ],
           "properties": {
             "src": {
               "$ref": "#/$defs/LeafPath"
@@ -973,7 +1275,12 @@
         },
         "fit": {
           "type": "string",
-          "enum": ["contain", "cover", "fill", "none"]
+          "enum": [
+            "contain",
+            "cover",
+            "fill",
+            "none"
+          ]
         },
         "animate": {
           "$ref": "#/$defs/AnimateDirective"
@@ -984,6 +1291,12 @@
         "position": {
           "$ref": "#/$defs/Position",
           "description": "(1.1+) Universal prop ; same as the legacy image.position field, kept here for clarity."
+        },
+        "blendMode": {
+          "$ref": "#/$defs/BlendMode"
+        },
+        "mask": {
+          "$ref": "#/$defs/Mask"
         },
         "visible": {
           "type": "boolean"
@@ -1005,13 +1318,16 @@
         "metadata": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Per-primitive metadata escape hatch \u2014 used by lumencast-figma to carry Figma-specific auth info that has no LSML spec home (gradient matrices, raw fontName.style, textAutoResize, etc.). NOT in upstream LSML 1.1 schema ; this is a plugin-side test affordance."
+          "description": "(1.1+) Per-primitive metadata escape hatch (LSML §17.4). Open-ended object. Vendor-specific keys SHOULD nest under `metadata.<vendor>.*`. Renderers ignore unless an authoring profile (§17.5) declares semantics for specific keys."
         }
       }
     },
     "ShapeNode": {
       "type": "object",
-      "required": ["kind", "geometry"],
+      "required": [
+        "kind",
+        "geometry"
+      ],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -1019,7 +1335,11 @@
         },
         "geometry": {
           "type": "string",
-          "enum": ["rect", "circle", "path"]
+          "enum": [
+            "rect",
+            "circle",
+            "path"
+          ]
         },
         "size": {
           "$ref": "#/$defs/Size"
@@ -1033,7 +1353,9 @@
           "description": "(1.1+) Multi-subpath geometry. Required when geometry === 'path' and `pathData` is absent. Each entry has its own winding rule. Mutually exclusive with `pathData`.",
           "items": {
             "type": "object",
-            "required": ["data"],
+            "required": [
+              "data"
+            ],
             "additionalProperties": false,
             "properties": {
               "data": {
@@ -1042,7 +1364,10 @@
               },
               "windingRule": {
                 "type": "string",
-                "enum": ["NONZERO", "EVENODD"],
+                "enum": [
+                  "NONZERO",
+                  "EVENODD"
+                ],
                 "description": "Default NONZERO when omitted."
               }
             }
@@ -1089,6 +1414,12 @@
           "$ref": "#/$defs/Position",
           "description": "(1.1+) Universal prop ; honoured when the parent is in absolute mode."
         },
+        "blendMode": {
+          "$ref": "#/$defs/BlendMode"
+        },
+        "mask": {
+          "$ref": "#/$defs/Mask"
+        },
         "visible": {
           "type": "boolean"
         },
@@ -1109,7 +1440,7 @@
         "metadata": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Per-primitive metadata escape hatch \u2014 used by lumencast-figma to carry Figma-specific auth info that has no LSML spec home (gradient matrices, raw fontName.style, textAutoResize, etc.). NOT in upstream LSML 1.1 schema ; this is a plugin-side test affordance."
+          "description": "(1.1+) Per-primitive metadata escape hatch (LSML §17.4). Open-ended object. Vendor-specific keys SHOULD nest under `metadata.<vendor>.*`. Renderers ignore unless an authoring profile (§17.5) declares semantics for specific keys."
         }
       },
       "allOf": [
@@ -1124,10 +1455,14 @@
           "then": {
             "oneOf": [
               {
-                "required": ["pathData"]
+                "required": [
+                  "pathData"
+                ]
               },
               {
-                "required": ["paths"]
+                "required": [
+                  "paths"
+                ]
               }
             ]
           }
@@ -1136,37 +1471,54 @@
           "if": {
             "properties": {
               "geometry": {
-                "enum": ["rect", "circle"]
+                "enum": [
+                  "rect",
+                  "circle"
+                ]
               }
             }
           },
           "then": {
-            "required": ["size"]
+            "required": [
+              "size"
+            ]
           }
         },
         {
           "description": "fill and fills are mutually exclusive.",
           "not": {
-            "required": ["fill", "fills"]
+            "required": [
+              "fill",
+              "fills"
+            ]
           }
         },
         {
           "description": "stroke and strokes are mutually exclusive.",
           "not": {
-            "required": ["stroke", "strokes"]
+            "required": [
+              "stroke",
+              "strokes"
+            ]
           }
         },
         {
           "description": "(1.1+) pathData and paths are mutually exclusive.",
           "not": {
-            "required": ["pathData", "paths"]
+            "required": [
+              "pathData",
+              "paths"
+            ]
           }
         }
       ]
     },
     "MediaNode": {
       "type": "object",
-      "required": ["kind", "bind"],
+      "required": [
+        "kind",
+        "bind"
+      ],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -1174,17 +1526,25 @@
         },
         "media_kind": {
           "type": "string",
-          "enum": ["video", "audio"],
+          "enum": [
+            "video",
+            "audio"
+          ],
           "description": "Canonical name as of LSML 1.0.1. Either media_kind or kind_hint MUST be present."
         },
         "kind_hint": {
           "type": "string",
-          "enum": ["video", "audio"],
+          "enum": [
+            "video",
+            "audio"
+          ],
           "description": "Deprecated synonym for media_kind. Accepted for backward compatibility ; new bundles SHOULD use media_kind."
         },
         "bind": {
           "type": "object",
-          "required": ["src"],
+          "required": [
+            "src"
+          ],
           "properties": {
             "src": {
               "$ref": "#/$defs/LeafPath"
@@ -1220,6 +1580,12 @@
           "$ref": "#/$defs/Position",
           "description": "(1.1+) Universal prop ; honoured when the parent is in absolute mode."
         },
+        "blendMode": {
+          "$ref": "#/$defs/BlendMode"
+        },
+        "mask": {
+          "$ref": "#/$defs/Mask"
+        },
         "visible": {
           "type": "boolean"
         },
@@ -1240,21 +1606,30 @@
         "metadata": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Per-primitive metadata escape hatch \u2014 used by lumencast-figma to carry Figma-specific auth info that has no LSML spec home (gradient matrices, raw fontName.style, textAutoResize, etc.). NOT in upstream LSML 1.1 schema ; this is a plugin-side test affordance."
+          "description": "(1.1+) Per-primitive metadata escape hatch (LSML §17.4). Open-ended object. Vendor-specific keys SHOULD nest under `metadata.<vendor>.*`. Renderers ignore unless an authoring profile (§17.5) declares semantics for specific keys."
         }
       },
       "anyOf": [
         {
-          "required": ["media_kind"]
+          "required": [
+            "media_kind"
+          ]
         },
         {
-          "required": ["kind_hint"]
+          "required": [
+            "kind_hint"
+          ]
         }
       ]
     },
     "RepeatNode": {
       "type": "object",
-      "required": ["kind", "bind", "scope", "template"],
+      "required": [
+        "kind",
+        "bind",
+        "scope",
+        "template"
+      ],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -1262,7 +1637,9 @@
         },
         "bind": {
           "type": "object",
-          "required": ["items"],
+          "required": [
+            "items"
+          ],
           "properties": {
             "items": {
               "$ref": "#/$defs/LeafPath"
@@ -1294,14 +1671,18 @@
         "metadata": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Per-primitive metadata escape hatch \u2014 used by lumencast-figma to carry Figma-specific auth info that has no LSML spec home (gradient matrices, raw fontName.style, textAutoResize, etc.). NOT in upstream LSML 1.1 schema ; this is a plugin-side test affordance."
+          "description": "(1.1+) Per-primitive metadata escape hatch (LSML §17.4). Open-ended object. Vendor-specific keys SHOULD nest under `metadata.<vendor>.*`. Renderers ignore unless an authoring profile (§17.5) declares semantics for specific keys."
         }
       }
     },
     "InstanceNode": {
       "type": "object",
-      "description": "(1.1+) Mounts a sub-scene by id. See LSML \u00c2\u00a74.9.",
-      "required": ["kind", "scene_id", "scene_version"],
+      "description": "(1.1+) Mounts a sub-scene by id. See LSML §4.9.",
+      "required": [
+        "kind",
+        "scene_id",
+        "scene_version"
+      ],
       "additionalProperties": false,
       "properties": {
         "kind": {
@@ -1319,7 +1700,7 @@
         },
         "params": {
           "type": "object",
-          "description": "Free-form params injected under the instance's __params.* namespace. Values follow LSDP \u00c2\u00a73.2.1 LeafValue rules.",
+          "description": "Free-form params injected under the instance's __params.* namespace. Values follow LSDP §3.2.1 LeafValue rules.",
           "additionalProperties": {
             "oneOf": [
               {
@@ -1352,7 +1733,12 @@
         },
         "fit": {
           "type": "string",
-          "enum": ["contain", "cover", "fill", "none"]
+          "enum": [
+            "contain",
+            "cover",
+            "fill",
+            "none"
+          ]
         },
         "size": {
           "$ref": "#/$defs/Size"
@@ -1368,6 +1754,12 @@
         },
         "ariaLabel": {
           "type": "string"
+        },
+        "blendMode": {
+          "$ref": "#/$defs/BlendMode"
+        },
+        "mask": {
+          "$ref": "#/$defs/Mask"
         },
         "visible": {
           "type": "boolean"
@@ -1389,7 +1781,7 @@
         "metadata": {
           "type": "object",
           "additionalProperties": true,
-          "description": "Per-primitive metadata escape hatch \u2014 used by lumencast-figma to carry Figma-specific auth info that has no LSML spec home (gradient matrices, raw fontName.style, textAutoResize, etc.). NOT in upstream LSML 1.1 schema ; this is a plugin-side test affordance."
+          "description": "(1.1+) Per-primitive metadata escape hatch (LSML §17.4). Open-ended object. Vendor-specific keys SHOULD nest under `metadata.<vendor>.*`. Renderers ignore unless an authoring profile (§17.5) declares semantics for specific keys."
         }
       }
     },
@@ -1410,16 +1802,24 @@
     },
     "OperatorInputRole": {
       "type": "string",
-      "enum": ["operator", "service"]
+      "enum": [
+        "operator",
+        "service"
+      ]
     },
     "OperatorInput": {
       "type": "object",
-      "required": ["path", "label", "type", "writable_by"],
+      "required": [
+        "path",
+        "label",
+        "type",
+        "writable_by"
+      ],
       "additionalProperties": false,
       "properties": {
         "path": {
           "type": "string",
-          "description": "LeafPath under the __inputs.* reserved namespace (LSML \u00c2\u00a78). Must declare the full prefix.",
+          "description": "LeafPath under the __inputs.* reserved namespace (LSML §8). Must declare the full prefix.",
           "pattern": "^__inputs\\.[A-Za-z0-9_]+(?:\\.[A-Za-z0-9_]+)*$",
           "minLength": 9,
           "maxLength": 512
@@ -1433,7 +1833,7 @@
         },
         "constraints": {
           "type": "object",
-          "description": "Closed constraint vocabulary per LSML 1.0.1 \u00c2\u00a78.1. Per-type subset of these keys.",
+          "description": "Closed constraint vocabulary per LSML 1.0.1 §8.1. Per-type subset of these keys.",
           "additionalProperties": false,
           "properties": {
             "minLength": {
@@ -1448,7 +1848,7 @@
             },
             "pattern": {
               "type": "string",
-              "description": "string only \u00e2\u20ac\u201d RFC 5234 PCRE"
+              "description": "string only — RFC 5234 PCRE"
             },
             "min": {
               "oneOf": [
@@ -1493,7 +1893,7 @@
               "items": {
                 "type": "string"
               },
-              "description": "enum only \u00e2\u20ac\u201d closed set of allowed values"
+              "description": "enum only — closed set of allowed values"
             }
           }
         },
@@ -1501,7 +1901,10 @@
           "type": "array",
           "description": "Deprecated: prefer constraints.values. Accepted for backward compatibility with LSML 1.0 bundles.",
           "items": {
-            "type": ["string", "number"]
+            "type": [
+              "string",
+              "number"
+            ]
           }
         },
         "writable_by": {
@@ -1516,8 +1919,14 @@
           "description": "UI grouping label."
         },
         "default": {
-          "description": "Initial value for the operator input. Equivalent to declaring the path in the bundle's `defaults` map (LSML \u00c2\u00a710) ; conflict resolution: `defaults` wins.",
-          "type": ["string", "number", "boolean", "null", "array"]
+          "description": "Initial value for the operator input. Equivalent to declaring the path in the bundle's `defaults` map (LSML §10) ; conflict resolution: `defaults` wins.",
+          "type": [
+            "string",
+            "number",
+            "boolean",
+            "null",
+            "array"
+          ]
         }
       },
       "allOf": [
@@ -1533,15 +1942,21 @@
           "then": {
             "anyOf": [
               {
-                "required": ["values"]
+                "required": [
+                  "values"
+                ]
               },
               {
                 "properties": {
                   "constraints": {
-                    "required": ["values"]
+                    "required": [
+                      "values"
+                    ]
                   }
                 },
-                "required": ["constraints"]
+                "required": [
+                  "constraints"
+                ]
               }
             ]
           }
@@ -1549,7 +1964,7 @@
       ]
     },
     "AdapterDecl": {
-      "description": "Discriminated union over `kind`. Per-kind shape for the 5 standard kinds is enforced by spec/adapters/<kind>.json (LSML \u00c2\u00a79.1). Vendor-prefixed kinds (\u00c2\u00a717.2) are accepted with arbitrary additional properties \u00e2\u20ac\u201d the vendor's own schema is the contract. Validators MUST resolve every $ref via a registry preloaded with the adapter schemas \u00e2\u20ac\u201d see scripts/validate-bundle.py for the canonical wiring.",
+      "description": "Discriminated union over `kind`. Per-kind shape for the 5 standard kinds is enforced by spec/adapters/<kind>.json (LSML §9.1). Vendor-prefixed kinds (§17.2) are accepted with arbitrary additional properties — the vendor's own schema is the contract. Validators MUST resolve every $ref via a registry preloaded with the adapter schemas — see scripts/validate-bundle.py for the canonical wiring.",
       "oneOf": [
         {
           "$ref": "https://lumencast.dev/schema/lsml/1.0/adapters/http_poll.json"
@@ -1572,9 +1987,12 @@
       ]
     },
     "VendorAdapterDecl": {
-      "description": "(1.1+ \u00c2\u00a717.2) Vendor-prefixed adapter. `kind` MUST match `x-<vendor>.<name>`. `writes_to` is required (same constraint as standard adapters).",
+      "description": "(1.1+ §17.2) Vendor-prefixed adapter. `kind` MUST match `x-<vendor>.<name>`. `writes_to` is required (same constraint as standard adapters).",
       "type": "object",
-      "required": ["kind", "writes_to"],
+      "required": [
+        "kind",
+        "writes_to"
+      ],
       "additionalProperties": true,
       "properties": {
         "kind": {
@@ -1601,7 +2019,10 @@
           "type": "array",
           "items": {
             "type": "object",
-            "required": ["family", "url"],
+            "required": [
+              "family",
+              "url"
+            ],
             "additionalProperties": false,
             "properties": {
               "family": {
@@ -1620,7 +2041,10 @@
               },
               "style": {
                 "type": "string",
-                "enum": ["normal", "italic"]
+                "enum": [
+                  "normal",
+                  "italic"
+                ]
               }
             }
           }

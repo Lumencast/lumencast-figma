@@ -14,9 +14,10 @@ import { mapStack } from "./stack";
 import { mapInstance } from "./instance";
 import type { MappingContext, MappingResult } from "./types";
 import { OPERATOR_INPUT_COMPONENT_NAME } from "~shared/constants";
-import { asArray, asNumber } from "./figma-mixed";
+import { asArray, asBoolean, asNumber, asString } from "./figma-mixed";
 import { paintToFill, type FigmaPaint } from "./color";
-import type { Fill, Stroke } from "~shared/lsml-types";
+import { mapMaskType } from "./lsml-1_2";
+import type { Fill, LSMLMask, Stroke } from "~shared/lsml-types";
 
 interface AnyFigmaNode {
   type: string;
@@ -222,6 +223,69 @@ export function walk(
   }
 }
 
+/** Lower Figma image-mask groups to typed `mask` fields (ADR 002 §3.2).
+ *
+ *  Walks the container's children in source order. A child with `isMask:true`
+ *  that carries a visible IMAGE paint becomes the active mask source for every
+ *  sibling that FOLLOWS it (Figma masking semantics) ; the mask node itself is
+ *  consumed (omitted from the rendered children — only its coverage matters).
+ *  Each masked sibling's primitive gains `mask:{ source:{kind:"image",src},
+ *  type, op:"intersect" }`. A later `isMask` sibling replaces the active mask.
+ *
+ *  Returns the filtered children (mask nodes removed). The mask node's image
+ *  asset stays registered via `childResults[i].assetRefs`, which the caller
+ *  merges regardless of tree membership, so the data-URI `src` still resolves.
+ *
+ *  Non-image masks (shape/vector masks) are left untouched here — they need a
+ *  primitive-`id` + runtime ref mechanism not yet present (residual gap #J) ;
+ *  their `metadata.figma.isMask`/`maskType` capture round-trips meanwhile. */
+function applyImageMaskGroups(
+  pairs: { src: AnyFigmaNode; result: MappingResult }[],
+  ctx: MappingContext,
+): PrimitiveNode[] {
+  const register = ctx.registerImageHashAsDataUri;
+  const out: PrimitiveNode[] = [];
+  let activeMask: LSMLMask | null = null;
+  for (const { src, result } of pairs) {
+    const isMaskNode = asBoolean((src as { isMask?: unknown }).isMask) === true;
+    const imageSrc = isMaskNode && register ? maskImageSrc(src, register) : null;
+
+    if (isMaskNode && imageSrc) {
+      // Mask node : becomes the active source for following siblings, and is
+      // consumed (omitted from the rendered children — only coverage matters).
+      // Its image asset stays registered via `result.assetRefs`, which the
+      // caller merges regardless of tree membership.
+      activeMask = {
+        source: { kind: "image", src: imageSrc },
+        type: mapMaskType((src as { maskType?: unknown }).maskType),
+        op: "intersect",
+      };
+      continue;
+    }
+
+    // A normal sibling : attach the active mask (if any) and keep it.
+    if (activeMask) {
+      (result.node as { mask?: LSMLMask }).mask = activeMask;
+    }
+    out.push(result.node);
+  }
+  return out;
+}
+
+/** Read a visible IMAGE paint off a (mask) node and register its hash as a
+ *  data-URI `src`. Returns null when the node carries no usable image fill. */
+function maskImageSrc(node: AnyFigmaNode, register: (hash: string) => string): string | null {
+  const fills = asArray<FigmaPaint>((node as { fills?: unknown }).fills);
+  if (!fills) return null;
+  for (const p of fills) {
+    if (p.type !== "IMAGE") continue;
+    if (asBoolean(p.visible) === false) continue;
+    const hash = asString(p.imageHash);
+    if (hash && hash !== "") return register(hash);
+  }
+  return null;
+}
+
 function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOptions): MappingResult {
   const isStack =
     (node.type === "FRAME" || node.type === "COMPONENT" || node.type === "INSTANCE") &&
@@ -284,6 +348,9 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
 
   const childDepth = (opts.depth ?? 0) + 1;
   const childNodes = asArray<AnyFigmaNode>(node.children) ?? [];
+  // Exact source↔result pairing : a skipped child yields no result, so we
+  // record the (srcNode, result) pairs the mask post-pass needs.
+  const childPairs: { src: AnyFigmaNode; result: MappingResult }[] = [];
   for (const child of childNodes) {
     const childOpts: WalkOptions = {
       isRoot: false,
@@ -295,9 +362,27 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
     if (isTransparentGroup) childOpts.parentIsTransparent = true;
     if (childChain) childOpts.groupChainTransform = childChain;
     const r = walk(child, ctx, childOpts);
-    if (r) childResults.push(r);
+    if (r) {
+      childResults.push(r);
+      childPairs.push({ src: child, result: r });
+    }
   }
-  const children = childResults.map((r) => r.node) as PrimitiveNode[];
+  let children = childResults.map((r) => r.node) as PrimitiveNode[];
+
+  // 1.2 mask groups (ADR 002 §3.2). A Figma child with `isMask:true` masks
+  // the siblings that FOLLOW it within the group. We lower the proven
+  // image-mask case (`817:1991` : an image — e.g. an ellipse asset — used as
+  // an alpha/luminance mask) into a typed `mask` on each masked sibling and
+  // CONSUME the mask node (it's not painted as content, only its coverage
+  // matters). The mask node's image asset stays registered (its `assetRefs`
+  // are kept), so the data-URI `src` resolves at finalize.
+  //
+  // Residual gap (#J) : a *shape* mask (vector/ellipse with no image fill)
+  // would lower to `{ source:{ kind:"shape", ref:<id> } }`, but LSML
+  // primitives don't yet carry a stable `id` and the runtime resolves the
+  // ref by element id — so shape-source masks are left in `metadata.figma`
+  // (round-trip preserved) and flagged for the structural follow-up.
+  children = applyImageMaskGroups(childPairs, ctx);
 
   // BOOLEAN_OPERATION render-fidelity, UNION-only fallback.
   //

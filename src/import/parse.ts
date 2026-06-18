@@ -43,13 +43,14 @@ export async function parseBundle(input: string | Uint8Array): Promise<SceneBund
   }
 
   const bundle = parsed as SceneBundle;
-  if (bundle.lsml !== "1.0" && bundle.lsml !== "1.1") {
+  if (bundle.lsml !== "1.0" && bundle.lsml !== "1.1" && bundle.lsml !== "1.2") {
     fail(
       "UNSUPPORTED_LSML_VERSION",
-      `Unknown lsml version "${String(bundle.lsml)}". Supported : 1.0, 1.1.`,
+      `Unknown lsml version "${String(bundle.lsml)}". Supported : 1.0, 1.1, 1.2.`,
     );
   }
-  // The plugin only authors 1.1 — but it MAY import 1.0 bundles for back-compat.
+  // The plugin authors 1.1 (and 1.2 when the design uses 1.2 constructs) ;
+  // it MAY import 1.0 bundles for back-compat.
 
   const v = validateBundle(bundle);
   if (!v.ok) {

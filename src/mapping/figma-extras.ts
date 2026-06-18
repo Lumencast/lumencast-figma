@@ -12,6 +12,7 @@
 // covers the universal ones to avoid copy-paste.
 
 import { asArray, asBoolean, asNumber, asObject, asString } from "./figma-mixed";
+import { mapBlendMode } from "./lsml-1_2";
 import {
   withFigmaMetadata,
   type FigmaBlendMode,
@@ -210,15 +211,24 @@ export function captureFigmaExtras<T extends { metadata?: Record<string, unknown
     if (sw !== undefined) figma.strokeWeight = sw;
   }
 
-  // Blend mode (skip default)
-  const blend = asString(node.blendMode);
-  if (
-    blend &&
-    BLEND_MODES.has(blend as FigmaBlendMode) &&
-    blend !== "PASS_THROUGH" &&
-    blend !== "NORMAL"
-  ) {
-    figma.blendMode = blend as FigmaBlendMode;
+  // Blend mode → core 1.2 `blendMode` (LSML 1.2 §2, ADR 002 §3.3). A Figma
+  // blend that maps to a CSS keyword is lowered to the rendable core field
+  // (no longer stashed in metadata — the field is *promoted*). An unmappable
+  // value (or PASS_THROUGH / NORMAL) is omitted (T4), and the raw Figma name
+  // still round-trips via `metadata.figma.blendMode` for the non-promoted case.
+  const coreBlend = mapBlendMode(node.blendMode);
+  if (coreBlend) {
+    (prim as { blendMode?: string }).blendMode = coreBlend;
+  } else {
+    const blend = asString(node.blendMode);
+    if (
+      blend &&
+      BLEND_MODES.has(blend as FigmaBlendMode) &&
+      blend !== "PASS_THROUGH" &&
+      blend !== "NORMAL"
+    ) {
+      figma.blendMode = blend as FigmaBlendMode;
+    }
   }
 
   // Mask

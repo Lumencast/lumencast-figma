@@ -25,6 +25,12 @@ export interface MappingContext {
    *  `assets/9f3e...png`). The bundle assembler uses this map to populate the
    *  `assets` directory. */
   registerImageHash?(hash: string): string;
+  /** Register an image hash and return a placeholder the export pipeline
+   *  rewrites to a `data:image/<mime>;base64,…` URI. Used for 1.2 image-fill /
+   *  mask-image `src`, where the AssetUrl schema (LSML 1.2 §5) forbids a
+   *  relative `assets/<sha>` path. A data: URI carries no remote host, so
+   *  `assets.allowedHosts` stays `[]`-coherent (Bastion T6). */
+  registerImageHashAsDataUri?(hash: string): string;
   /** Optional Figma variable resolver. When present, mappers consult it for
    *  paint / size / color binds and emit token-LeafPath bindings instead of
    *  static values (LSML §17.0 composition). */
