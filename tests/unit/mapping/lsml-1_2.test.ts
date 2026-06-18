@@ -261,3 +261,85 @@ describe("layoutUsesLsml12 — version gate", () => {
     ).toBe(false);
   });
 });
+
+describe("per-fill blendMode (#L) — paint-level blend lowered onto the Fill (§4.3)", () => {
+  it("a solid paint with a per-paint blend emits a per-fill blendMode", () => {
+    const fill = paintToFill({
+      type: "SOLID",
+      color: { r: 1, g: 0, b: 0 },
+      blendMode: "MULTIPLY",
+    });
+    expect(fill).toEqual({ kind: "solid", color: "#ff0000", blendMode: "multiply" });
+  });
+
+  it("a gradient paint carries its own per-fill blend", () => {
+    const fill = paintToFill({
+      type: "GRADIENT_LINEAR",
+      blendMode: "SCREEN",
+      gradientStops: [
+        { position: 0, color: { r: 1, g: 0, b: 0, a: 1 } },
+        { position: 1, color: { r: 0, g: 0, b: 1, a: 1 } },
+      ],
+    });
+    expect((fill as { blendMode?: string }).blendMode).toBe("screen");
+  });
+
+  it("an image paint carries its own per-fill blend", () => {
+    const fill = imagePaintToFill(
+      { type: "IMAGE", imageHash: "h", scaleMode: "FILL", blendMode: "LUMINOSITY" },
+      (h) => `__asset-data:${h}`,
+    );
+    expect(fill).toMatchObject({ kind: "image", blendMode: "luminosity" });
+  });
+
+  it("a no-op / unknown paint blend omits the field (T4 — retro-compat normal)", () => {
+    expect(
+      (
+        paintToFill({ type: "SOLID", color: { r: 0, g: 0, b: 0 }, blendMode: "PASS_THROUGH" }) as {
+          blendMode?: string;
+        }
+      ).blendMode,
+    ).toBeUndefined();
+    expect(
+      (
+        paintToFill({ type: "SOLID", color: { r: 0, g: 0, b: 0 }, blendMode: "WAT" }) as {
+          blendMode?: string;
+        }
+      ).blendMode,
+    ).toBeUndefined();
+    // no blend field at all → no blendMode (unchanged 1.1/1.2 pre-#L output)
+    expect(
+      "blendMode" in (paintToFill({ type: "SOLID", color: { r: 0, g: 0, b: 0 } }) as object),
+    ).toBe(false);
+  });
+
+  it("stacked paints each emit their own blend on shape.fills[]", () => {
+    const r = mapShape({
+      type: "RECTANGLE",
+      id: "1:1",
+      name: "Stacked",
+      width: 10,
+      height: 10,
+      fills: [
+        { type: "SOLID", color: { r: 1, g: 0, b: 0 }, blendMode: "MULTIPLY" },
+        { type: "SOLID", color: { r: 0, g: 0, b: 1 }, blendMode: "SCREEN" },
+      ],
+    } as never);
+    const fills = (r.node as { fills: { blendMode?: string }[] }).fills;
+    expect(fills.map((f) => f.blendMode)).toEqual(["multiply", "screen"]);
+  });
+
+  it("a single solid with a per-fill blend keeps the fills[] form (no legacy collapse)", () => {
+    const r = mapShape({
+      type: "RECTANGLE",
+      id: "1:2",
+      name: "Blended",
+      width: 10,
+      height: 10,
+      fills: [{ type: "SOLID", color: { r: 1, g: 1, b: 1 }, blendMode: "OVERLAY" }],
+    } as never);
+    const node = r.node as { fill?: string; fills?: { blendMode?: string }[] };
+    expect(node.fill).toBeUndefined();
+    expect(node.fills).toEqual([{ kind: "solid", color: "#ffffff", blendMode: "overlay" }]);
+  });
+});
