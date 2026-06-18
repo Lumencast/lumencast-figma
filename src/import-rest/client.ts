@@ -1,7 +1,10 @@
 // Figma REST API client.
 //
 // Endpoints used (ADR ZabCanvas 002 §3.3):
-//   - structure : GET /v1/files/:key/nodes?ids=:nodeId
+//   - structure : GET /v1/files/:key/nodes?ids=:nodeId&geometry=paths
+//                 (`geometry=paths` is REQUIRED — without it Figma omits every
+//                  VECTOR's `fillGeometry`, so vector shapes lower with an empty
+//                  path and render as their bounding box. RC4 fidelity defect.)
 //   - image map : GET /v1/files/:key/images          (imageRef → CDN URL)
 //   - bytes     : GET <CDN URL>                       (the raster bytes)
 //
@@ -133,7 +136,14 @@ export function createFigmaRestClient(opts: CreateClientOptions = {}): FigmaRest
     async getNode(fileKey, nodeId) {
       const key = safePathSegment(fileKey, "fileKey");
       const id = safePathSegment(nodeId, "nodeId");
-      const body = await apiGet<RestNodesResponse>(`/v1/files/${key}/nodes`, { ids: id });
+      // `geometry: "paths"` makes Figma flatten every VECTOR's outline into
+      // `fillGeometry[]` (RC4) — the adapter renames it to the LSML `pathData`
+      // the runtime needs. Omitting it is the root cause of vectors painting
+      // as bounding-box rectangles over content.
+      const body = await apiGet<RestNodesResponse>(`/v1/files/${key}/nodes`, {
+        ids: id,
+        geometry: "paths",
+      });
       const entry = body.nodes?.[id];
       if (!entry?.document) {
         throw new FigmaRestError(`Node "${id}" not present in file "${key}" response.`);

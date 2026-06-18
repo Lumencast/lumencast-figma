@@ -54,6 +54,8 @@ describe("createFigmaRestClient — auth + endpoints", () => {
     expect(node.id).toBe("1:2");
     expect(seenUrl).toContain("https://api.figma.com/v1/files/FILEKEY/nodes");
     expect(seenUrl).toContain("ids=1%3A2");
+    // RC4 — vector outlines are only returned when geometry=paths is requested.
+    expect(seenUrl).toContain("geometry=paths");
     expect(seenToken).toBe("tok");
   });
 
