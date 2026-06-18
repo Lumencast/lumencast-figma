@@ -17,6 +17,7 @@
 // error, surfacing them in the UI.
 
 import type { OperatorInputType, SceneBundle } from "~shared/lsml-types";
+import { gateBundle, type GateError } from "./authoring-gate";
 
 export interface ValidationError {
   code:
@@ -24,7 +25,8 @@ export interface ValidationError {
     | "INVALID_FIELD"
     | "INVALID_PRIMITIVE"
     | "INVALID_OPERATOR_INPUT"
-    | "ASSETS_MISSING_ALLOWED_HOSTS";
+    | "ASSETS_MISSING_ALLOWED_HOSTS"
+    | GateError["code"];
   path: string; // JSON pointer-ish path
   message: string;
 }
@@ -122,6 +124,17 @@ export function validateBundle(bundle: SceneBundle): ValidationResult {
       message:
         "Bundle references local assets/ but does not declare assets.allowedHosts (LSML §11.1).",
     });
+  }
+
+  // ADR 002 §3.4 T6 / #I — authoring validation gate (early author feedback).
+  // The same security / 0-loss invariants Orion enforces at the
+  // authoring→Orion frontier, surfaced HERE at export so the author learns
+  // before the round-trip. Orion remains the authoritative barrier (it
+  // re-gates independently) and Solar re-gates at render — this is defence in
+  // depth, not the only check. A gate error fails the export exactly like a
+  // structural error: the bundle is never written.
+  for (const ge of gateBundle(bundle)) {
+    errors.push({ code: ge.code, path: ge.path, message: ge.message });
   }
 
   return errors.length === 0 ? { ok: true } : { ok: false, errors };
