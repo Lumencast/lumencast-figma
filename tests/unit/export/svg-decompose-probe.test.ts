@@ -12,7 +12,6 @@ import {
 import {
   sanitizeSvg,
   emitSanitizedSvgDataUri,
-  SanitizeError,
   MAX_SVG_BYTES,
 } from "../../../src/export/svg-sanitize";
 
@@ -158,11 +157,11 @@ describe("A3 — emitter uniqueness: only SanitizedSvg brand can reach data:imag
     );
     // DecomposedSvg has no `markup` property — it cannot be passed to emitSanitizedSvgDataUri
     // (TypeScript brand; runtime check confirms the structural absence).
-    const asObj = d as Record<string, unknown>;
+    const asObj = d as unknown as Record<string, unknown>;
     expect(asObj["markup"]).toBeUndefined();
     // The shapes themselves have no markup either
     for (const shape of d.shapes) {
-      expect((shape as Record<string, unknown>)["markup"]).toBeUndefined();
+      expect((shape as unknown as Record<string, unknown>)["markup"]).toBeUndefined();
     }
   });
 });
@@ -352,7 +351,7 @@ describe("A5 — decomposed output: no dangerous content in LSML fields", () => 
     );
     const pd = d.shapes[0]!.pathData!;
     // Output must only contain path commands, numbers, spaces — no injectable content.
-    expect(/^[MmLlHhVvCcSsQqTtAaZz\s0-9.\-]+$/.test(pd)).toBe(true);
+    expect(/^[MmLlHhVvCcSsQqTtAaZz\s0-9.-]+$/.test(pd)).toBe(true);
     expect(pd).not.toContain("javascript");
     expect(pd).not.toContain("url");
     expect(pd).not.toContain("data:");
@@ -976,7 +975,6 @@ describe("svg-sanitize utf8Bytes — multi-byte character encoding paths", () =>
   it("4-byte UTF-8 sequence (surrogate pair) — emoji in title triggers 4-byte path", () => {
     // '😀' = U+1F600, JS string = '😀' (surrogate pair).
     // utf8Bytes detects the high surrogate and reads the low surrogate to emit 4 bytes.
-    const emojiSvg = `<svg xmlns="http://www.w3.org/2000/svg"><title>😀</title><path d="M0 0"/></svg>`;
     // sanitizeSvg runs on raw bytes: the emoji's code point chars are in the markup
     // after serialise(). We need to feed these through emitSanitizedSvgDataUri.
     // The simplest path: construct a SanitizedSvg with emoji in markup directly,
