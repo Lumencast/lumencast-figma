@@ -87,6 +87,12 @@ export interface RestNode {
   strokes?: RestStroke[];
   strokeWeight?: number;
   cornerRadius?: number;
+  /** True when this node masks its following siblings (Figma mask group). */
+  isMask?: boolean;
+  /** Mask channel — `ALPHA` / `LUMINANCE` / `VECTOR` / `OUTLINE`. */
+  maskType?: string;
+  /** BOOLEAN_OPERATION operator. */
+  booleanOperation?: string;
   fillGeometry?: RestVectorPath[];
   strokeGeometry?: RestVectorPath[];
   characters?: string;
