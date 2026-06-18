@@ -7,6 +7,7 @@
 
 import type { Bind, Fill, ShapePathEntry, ShapePrimitive, Stroke } from "~shared/lsml-types";
 import { paintToFill, rawGradientTransform, type FigmaPaint, paintToSolidCss } from "./color";
+import { imagePaintToFill } from "./lsml-1_2";
 import { extractUniversal } from "./universal";
 import { parseLayerName } from "../export/bindings";
 import { resolveVariable } from "./variables";
@@ -62,10 +63,36 @@ export function mapShape(
 ): MappingResult {
   const parsed = parseLayerName(node.name, { primitiveKind: "shape" });
   const fillsArr = asArray<FigmaPaint>(node.fills) ?? [];
-  const fills = fillsArr
-    .filter((p) => p.type !== "IMAGE")
-    .map((p) => paintToFill(p))
-    .filter((f): f is Fill => f !== null);
+
+  // Build `fills[]` in source order. IMAGE paints lower to a 1.2 first-class
+  // image-fill `{ kind:"image"; src; objectFit }` (LSML 1.2 §4.1) — they are
+  // no longer dropped (the historic `shape.ts:65` drop is gone). `src` is a
+  // host-less `data:image/*` URI resolved at finalize ; the host/scheme gate
+  // runs downstream (compiler + runtime). Other paint types map via
+  // `paintToFill` as before. `gradientTransforms` is stashed only for the
+  // non-image paints (parallel-indexed with those), preserving 1.1 round-trip.
+  const fills: Fill[] = [];
+  const gradientTransformsAligned: (number[][] | null)[] = [];
+  const imageAssetRefs: string[] = [];
+  const register = ctx?.registerImageHashAsDataUri;
+  for (const paint of fillsArr) {
+    if (paint.type === "IMAGE") {
+      if (!register) continue; // no registry (e.g. import-only ctx) → skip
+      const imageFill = imagePaintToFill(paint, register);
+      if (imageFill === null) continue;
+      fills.push(imageFill);
+      gradientTransformsAligned.push(null);
+      if (typeof paint.imageHash === "string" && paint.imageHash !== "") {
+        imageAssetRefs.push(paint.imageHash);
+      }
+      continue;
+    }
+    const fill = paintToFill(paint);
+    if (fill !== null) {
+      fills.push(fill);
+      gradientTransformsAligned.push(rawGradientTransform(paint));
+    }
+  }
 
   const prim: ShapePrimitive = {
     kind: "shape",
@@ -123,13 +150,11 @@ export function mapShape(
   }
 
   // Stash raw gradient matrices parallel-indexed with the fills we just
-  // emitted. The withFigmaMetadata helper drops the array when every entry
-  // is null (no gradients) so single-solid shapes carry no metadata.
+  // emitted (null for image / solid entries). The withFigmaMetadata helper
+  // drops the array when every entry is null (no gradients) so single-solid
+  // and image-only shapes carry no metadata.
   if (fills.length > 0) {
-    const transforms = fillsArr
-      .filter((p) => p.type !== "IMAGE")
-      .map((p) => rawGradientTransform(p));
-    withFigmaMetadata(prim, { gradientTransforms: transforms });
+    withFigmaMetadata(prim, { gradientTransforms: gradientTransformsAligned });
   }
 
   const strokes = mapStrokes(node);
@@ -180,8 +205,10 @@ export function mapShape(
   }
   if (Object.keys(bind).length > 0) prim.bind = bind;
 
-  if (defaults) return { node: prim, defaults };
-  return { node: prim };
+  const result: MappingResult = { node: prim };
+  if (defaults) result.defaults = defaults;
+  if (imageAssetRefs.length > 0) result.assetRefs = imageAssetRefs;
+  return result;
 }
 
 function geometryFor(node: MockShapeNode): ShapePrimitive["geometry"] {

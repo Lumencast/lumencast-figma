@@ -14,9 +14,10 @@
 
 import type { ExportedAsset, PluginWarning } from "../main/messages";
 import type { OperatorInputSpec, SceneBundle } from "~shared/lsml-types";
-import { FIGMA_AUTHORING_PROFILE, LSML_VERSION } from "~shared/constants";
-import { DEFAULT_SCHEMA_URL } from "~shared/lsml-schema";
+import { FIGMA_AUTHORING_PROFILE, LSML_VERSION, LSML_VERSION_1_2 } from "~shared/constants";
+import { schemaUrlForVersion } from "~shared/lsml-schema";
 import { mapTree, type MappingContext } from "../mapping";
+import { layoutUsesLsml12 } from "../mapping/lsml-1_2";
 import { preloadMainComponents } from "../mapping/preload";
 import { createMappingTrace } from "../mapping/trace";
 import type { VariableResolverApi } from "../mapping/variables";
@@ -80,7 +81,10 @@ export interface BuildBundleResult {
 
 export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundleResult> {
   const warnings: PluginWarning[] = [];
-  const registry = createAssetRegistry({ api: opts.api });
+  const registry = createAssetRegistry({
+    api: opts.api,
+    onDiagnostic: (code, message) => warnings.push({ code, message }),
+  });
   // Mapping trace is ALWAYS captured : per-node push is cheap and the
   // trace is the only persistent record of warnings + per-node decisions
   // for the `_debug/mapping-trace.json` archive entry. The heavy raw-
@@ -103,6 +107,7 @@ export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundle
       warnings.push(w);
     },
     registerImageHash: (hash) => registry.registerImageHash(hash),
+    registerImageHashAsDataUri: (hash) => registry.registerImageHashAsDataUri(hash),
     ...(opts.variables ? { variables: opts.variables } : {}),
     trace,
     mainComponentMap,
@@ -146,9 +151,18 @@ export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundle
   // 4. Assemble.
   const operator_inputs = mergeOperatorInputs(mapped.operatorInputs ?? [], opInputs.inputs);
   const sceneId = opts.sceneId ?? deriveSceneId(opts.root);
+
+  // Version gating : a bundle upgrades to 1.2 ONLY when its layout actually
+  // carries a 1.2 construct (blendMode / mask / image-fill / gradient
+  // transform). A design with none of those stays 1.1 — byte-identical to
+  // the previous mapper output (non-regression). `$schema` tracks the
+  // emitted version (ADR 002 §3.2).
+  const uses12 = layoutUsesLsml12(mapped.node);
+  const lsmlVersion = uses12 ? LSML_VERSION_1_2 : LSML_VERSION;
+
   const draft: SceneBundle = {
-    $schema: DEFAULT_SCHEMA_URL,
-    lsml: LSML_VERSION,
+    $schema: schemaUrlForVersion(lsmlVersion),
+    lsml: lsmlVersion,
     scene_id: sceneId,
     scene_version: "sha256:placeholder", // overwritten by sealBundle
     profiles: [FIGMA_AUTHORING_PROFILE],
@@ -158,10 +172,17 @@ export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundle
     draft.defaults = mapped.defaults;
   }
   if (operator_inputs.length > 0) draft.operator_inputs = operator_inputs;
-  if (assets.length > 0) {
-    // Bundle uses content-addressed relative paths (`assets/<sha256>.<ext>`),
-    // no remote URLs. `allowedHosts: []` allows no remote hostnames — the
-    // user adds their CDN host once they upload assets (LSML §11.1).
+  // `allowedHosts` policy (Bastion T6 — coherent with the `src` the mapper
+  // produces) : the mapper emits only host-less asset sources — local
+  // `assets/<sha256>.<ext>` paths (image primitive) and `data:image/*;base64`
+  // URIs (1.2 image-fill / mask-image). Neither references a remote host, so
+  // `allowedHosts: []` is the coherent, deny-by-default value : no `src`
+  // whose host is absent from the allowlist is ever emitted. Downstream
+  // tooling (Prism) may swap in a real CDN host + re-host the assets ; until
+  // then nothing remote is referenced, so nothing is denied. The block is
+  // emitted whenever the bundle references local assets OR carries a 1.2
+  // image-fill — so the gate is always armed for asset sources.
+  if (assets.length > 0 || uses12) {
     draft.assets = { allowedHosts: [] };
   }
 

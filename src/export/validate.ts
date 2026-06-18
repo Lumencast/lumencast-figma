@@ -59,8 +59,11 @@ const VALID_TYPES = new Set<OperatorInputType>([
 export function validateBundle(bundle: SceneBundle): ValidationResult {
   const errors: ValidationError[] = [];
 
-  if (typeof bundle.lsml !== "string" || (bundle.lsml !== "1.0" && bundle.lsml !== "1.1")) {
-    errors.push({ code: "INVALID_FIELD", path: "/lsml", message: "lsml must be 1.0 or 1.1" });
+  if (
+    typeof bundle.lsml !== "string" ||
+    (bundle.lsml !== "1.0" && bundle.lsml !== "1.1" && bundle.lsml !== "1.2")
+  ) {
+    errors.push({ code: "INVALID_FIELD", path: "/lsml", message: "lsml must be 1.0, 1.1 or 1.2" });
   }
   if (typeof bundle.scene_id !== "string" || bundle.scene_id.length === 0) {
     errors.push({ code: "MISSING_FIELD", path: "/scene_id", message: "scene_id is required" });

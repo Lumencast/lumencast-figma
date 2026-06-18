@@ -11,11 +11,21 @@
 // downstream tooling (Prism) replaces it with the real CDN host.
 
 import type { ExportedAsset } from "../main/messages";
+import { bytesToDataUri } from "./base64";
 
 interface FigmaImageHandle {
   hash: string;
   getBytesAsync(): Promise<Uint8Array>;
 }
+
+/** Raster MIME allowlist for the `data:` URI path. Bounded to formats a CEF
+ *  host renders as an image and that carry no executable surface. SVG is
+ *  deliberately excluded: an inline `data:image/svg+xml` can carry
+ *  `<script>` / event-handler attributes that execute in the host (Bastion
+ *  VETO, XSS). The downstream `data:image/*` gate does NOT save us — `data:`
+ *  is host-less and `image/svg+xml` matches `image/*` — so the bound is
+ *  enforced HERE, at the source, before any `data:` URI is emitted. */
+const RASTER_DATA_URI_EXTS = new Set(["png", "jpg", "gif", "webp"]);
 
 interface FigmaApiSurface {
   getImageByHash(hash: string): FigmaImageHandle | null;
@@ -25,6 +35,15 @@ export interface AssetRegistry {
   /** Returns the canonical `assets/<sha256>.<ext>` path for a Figma image hash.
    *  Multiple calls with the same hash return the same path. */
   registerImageHash(hash: string): string;
+  /** Returns a placeholder that `finalize` rewrites to a `data:image/<mime>;
+   *  base64,<bytes>` URI. Used for 1.2 image-fill / mask-image `src`, where
+   *  the AssetUrl schema (LSML 1.2 §5) forbids a relative `assets/<sha>` path
+   *  and only admits `https:` or a bounded `data:image/*` payload. A data:
+   *  URI carries no remote host, so `assets.allowedHosts` stays `[]`-coherent
+   *  (Bastion T6). The same hash also registered via `registerImageHash`
+   *  (e.g. an image-primitive) keeps its local `assets/<sha>` path — the two
+   *  placeholders are distinct. */
+  registerImageHashAsDataUri(hash: string): string;
   /** Resolves all registered hashes to bytes + sha256 paths. */
   finalize(): Promise<ExportedAsset[]>;
 }
@@ -39,13 +58,31 @@ interface PendingEntry {
   resolvedPath?: string;
 }
 
+interface PendingDataUriEntry {
+  figmaHash: string;
+  /** Placeholder returned synchronously to the mapper. Rewritten to a
+   *  `data:image/<mime>;base64,<bytes>` URI at finalize-time. */
+  placeholder: string;
+  /** Resolved later. */
+  resolvedDataUri?: string;
+}
+
 /** Pre-allocate a placeholder asset path from the Figma hash so the bundle
  *  can be assembled before bytes are fetched. We use the figma hash itself
  *  as the placeholder ; finalize() rewrites paths to sha256-based ones. */
 const ASSET_DIR = "assets";
 
+/** Distinct namespace for data-URI placeholders so the rewrite walker never
+ *  confuses an image-fill `src` (→ data:) with an image-primitive `assets/`
+ *  path that happens to share the same Figma hash. */
+const DATA_URI_PREFIX = "__asset-data:";
+
 interface CreateOptions {
   api: FigmaApiSurface;
+  /** Optional sink for omit-on-miss diagnostics. Called when a `data:` URI
+   *  asset is rejected (non-raster MIME, or no fetchable bytes) so the
+   *  caller can surface a warning. The referencing fill/mask is dropped. */
+  onDiagnostic?: (code: string, message: string) => void;
   /** When true (the default), placeholder paths are rewritten in the bundle
    *  by `applyAssetPathRewrites` after finalize. When false, the registry
    *  emits sha256-based paths up front (only safe if bytes can be fetched
@@ -61,6 +98,7 @@ export interface CreatedRegistry extends AssetRegistry {
 
 export function createAssetRegistry(opts: CreateOptions): CreatedRegistry {
   const byHash = new Map<string, PendingEntry>();
+  const dataUriByHash = new Map<string, PendingDataUriEntry>();
 
   const reg: CreatedRegistry = {
     registerImageHash(hash) {
@@ -73,15 +111,54 @@ export function createAssetRegistry(opts: CreateOptions): CreatedRegistry {
       return entry.pendingPath;
     },
 
+    registerImageHashAsDataUri(hash) {
+      let entry = dataUriByHash.get(hash);
+      if (!entry) {
+        const placeholder = `${DATA_URI_PREFIX}${hash}`;
+        entry = { figmaHash: hash, placeholder };
+        dataUriByHash.set(hash, entry);
+      }
+      return entry.placeholder;
+    },
+
     rewrites() {
       const out: Record<string, string> = {};
       for (const e of byHash.values()) {
         if (e.resolvedPath) out[e.pendingPath] = e.resolvedPath;
       }
+      for (const e of dataUriByHash.values()) {
+        if (e.resolvedDataUri) out[e.placeholder] = e.resolvedDataUri;
+      }
       return out;
     },
 
     async finalize(): Promise<ExportedAsset[]> {
+      // Resolve data-URI image-fill / mask sources : fetch the bytes once,
+      // inline as `data:image/<mime>;base64,…`. Runs in parallel with the
+      // local-asset path resolution below.
+      await Promise.all(
+        Array.from(dataUriByHash.values()).map(async (entry) => {
+          const handle = opts.api.getImageByHash(entry.figmaHash);
+          if (!handle) return;
+          const bytes = await handle.getBytesAsync();
+          const ext = sniffImageExtension(bytes);
+          // Bound the `data:` URI to the raster allowlist BEFORE inlining.
+          // A non-raster (SVG, unknown/binary) is omitted, not emitted —
+          // `resolvedDataUri` stays undefined, the referencing fill/mask is
+          // dropped at rewrite time, and no placeholder leaks into the
+          // bundle (Bastion VETO: no `data:image/svg+xml` / executable SVG,
+          // no `data:application/octet-stream`).
+          if (!RASTER_DATA_URI_EXTS.has(ext)) {
+            opts.onDiagnostic?.(
+              "asset-data-uri-omitted",
+              `Image fill/mask source omitted: non-raster payload (sniffed "${ext}") ` +
+                `cannot be emitted as a data: URI; referencing fill/mask dropped.`,
+            );
+            return;
+          }
+          entry.resolvedDataUri = bytesToDataUri(bytes, extToMime(ext));
+        }),
+      );
       // Fetch every image's bytes in parallel. Sequential awaits in a
       // for-of loop multiplied per-image latency — on a scene with 100
       // images at ~200ms each, the export blocks for ~20s just on byte
@@ -127,10 +204,52 @@ export function applyAssetPathRewrites<T extends object>(
   return node;
 }
 
+/** True if `v` is a data-URI placeholder that `finalize` did NOT resolve
+ *  (i.e. omitted because the payload is non-raster / unfetchable). A resolved
+ *  placeholder has an entry in `rewrites`; an omitted one does not, and is a
+ *  rejected asset whose referencing fill/mask must be dropped — never leaked
+ *  into the bundle. */
+function isOmittedDataUriPlaceholder(v: unknown, rewrites: Record<string, string>): boolean {
+  return typeof v === "string" && v.startsWith(DATA_URI_PREFIX) && rewrites[v] === undefined;
+}
+
+/** True if an object node references an OMITTED data-URI placeholder and must
+ *  be pruned. Covers the two LSML shapes that carry a data-URI `src`:
+ *   - an image fill / background  `{ kind:"image", src }`            (direct `src`),
+ *   - a mask                       `{ source:{ kind:"image", src }, … }` (nested).
+ *  Pruning at the mask level (not just its `source`) avoids leaving a broken
+ *  `{ type, op }` mask behind. A resolved (raster) placeholder is left for the
+ *  in-place string rewrite below — only omitted ones trigger a drop. */
+function referencesOmittedAsset(
+  obj: Record<string, unknown>,
+  rewrites: Record<string, string>,
+): boolean {
+  if (isOmittedDataUriPlaceholder(obj.src, rewrites)) return true;
+  const source = obj.source;
+  if (source !== null && typeof source === "object" && !Array.isArray(source)) {
+    return isOmittedDataUriPlaceholder((source as Record<string, unknown>).src, rewrites);
+  }
+  return false;
+}
+
 function walk(value: unknown, rewrites: Record<string, string>): void {
   if (value === null || typeof value !== "object") return;
   if (Array.isArray(value)) {
-    for (const v of value) walk(v, rewrites);
+    // Prune array entries (e.g. fills[] / backgrounds[]) that reference an
+    // omitted data-URI placeholder, then recurse into survivors.
+    for (let i = value.length - 1; i >= 0; i--) {
+      const v = value[i];
+      if (
+        v !== null &&
+        typeof v === "object" &&
+        !Array.isArray(v) &&
+        referencesOmittedAsset(v as Record<string, unknown>, rewrites)
+      ) {
+        value.splice(i, 1);
+        continue;
+      }
+      walk(v, rewrites);
+    }
     return;
   }
   const obj = value as Record<string, unknown>;
@@ -139,6 +258,13 @@ function walk(value: unknown, rewrites: Record<string, string>): void {
     if (typeof v === "string" && rewrites[v]) {
       obj[key] = rewrites[v];
     } else if (v && typeof v === "object") {
+      // Drop a non-array sub-object whose `src` references an omitted asset
+      // (e.g. `mask.source`, `mask`). Removing the property prevents the
+      // placeholder from surviving in the emitted LSML.
+      if (referencesOmittedAsset(v as Record<string, unknown>, rewrites)) {
+        delete obj[key];
+        continue;
+      }
       walk(v, rewrites);
     }
   }
@@ -175,9 +301,6 @@ function sniffImageExtension(bytes: Uint8Array): string {
   ) {
     return "webp";
   }
-  if (bytes.length >= 4 && bytes[0] === 0x3c && bytes[1] === 0x3f && bytes[2] === 0x78) {
-    return "svg";
-  }
   return "bin";
 }
 
@@ -191,9 +314,10 @@ function extToMime(ext: string): string {
       return "image/gif";
     case "webp":
       return "image/webp";
-    case "svg":
-      return "image/svg+xml";
     default:
+      // Unknown / binary bytes. Only ever used for the stored-asset path
+      // (a content-addressed file, NOT a data: URI) — the data: URI path is
+      // bounded to `RASTER_DATA_URI_EXTS` and omits anything that lands here.
       return "application/octet-stream";
   }
 }

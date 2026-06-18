@@ -69,6 +69,51 @@ export interface UniversalProps {
   rotation?: number;
 }
 
+// ---------- Blend / mask / gradient-transform (LSML 1.2, ADR 002 §3.2) ----------
+
+/** 1.2+ — closed `mix-blend-mode` enum, faithful to Figma minus
+ *  `PASS_THROUGH` (LSML 1.2 §2). Source of truth :
+ *  `lumencast-js/packages/compiler/src/lsml-types.ts` (`LSMLBlendMode`). A
+ *  value outside this set is a diagnostic + omission, never passthrough. */
+export type BlendMode =
+  | "normal"
+  | "multiply"
+  | "screen"
+  | "overlay"
+  | "darken"
+  | "lighten"
+  | "color-dodge"
+  | "color-burn"
+  | "hard-light"
+  | "soft-light"
+  | "difference"
+  | "exclusion"
+  | "hue"
+  | "saturation"
+  | "color"
+  | "luminosity";
+
+/** 1.2+ — how an image-fill / mask image source is fitted into its box
+ *  (closed enum → CSS `object-fit` ; LSML 1.2 §4.1). */
+export type ObjectFit = "cover" | "contain" | "fill" | "none" | "scale-down";
+
+/** 1.2+ — the 6 finite floats of an affine 2×3 matrix `[a, b, c, d, e, f]`,
+ *  rendered via SVG `gradientTransform` (LSML 1.2 §4.2). Carried as typed
+ *  numbers, never a free string ; supersedes `angle_deg` when present. */
+export type GradientTransform = [number, number, number, number, number, number];
+
+/** 1.2+ — typed mask spec (LSML 1.2 §3). Every field is typed : there is
+ *  deliberately NO free-form SVG string anywhere in this shape (Bastion T3).
+ *  An `source.kind === "image"` `src` is host/scheme-allowlist-gated (T1/T2)
+ *  before the DOM, downstream — the mapper only emits the typed fields. */
+export interface LSMLMask {
+  source: { kind: "shape"; ref: string } | { kind: "image"; src: string };
+  type: "alpha" | "luminance";
+  op: "intersect" | "subtract" | "union";
+  position?: { x: number; y: number };
+  size?: { w: number; h: number };
+}
+
 // ---------- Fill / stroke (LSML §4.12) ----------
 
 export interface GradientStop {
@@ -86,6 +131,9 @@ export interface SolidFill {
 export interface LinearGradientFill {
   kind: "linear-gradient";
   angle_deg?: number; // default 0 = bottom-to-top
+  /** 1.2+ — full affine gradient transform (6 floats). Supersedes
+   *  `angle_deg` when present (LSML 1.2 §4.2). */
+  transform?: GradientTransform;
   stops: GradientStop[];
   opacity?: number;
 }
@@ -94,11 +142,26 @@ export interface RadialGradientFill {
   kind: "radial-gradient";
   center?: { x: number; y: number }; // default {0.5, 0.5}
   radius?: number; // default 0.5
+  /** 1.2+ — full affine gradient transform (6 floats) (LSML 1.2 §4.2). */
+  transform?: GradientTransform;
   stops: GradientStop[];
   opacity?: number;
 }
 
-export type Fill = SolidFill | LinearGradientFill | RadialGradientFill;
+/** 1.2+ — first-class image-fill (LSML 1.2 §4.1). Valid anywhere a fill is :
+ *  `shape.fills[]` and `frame.backgrounds[]`. Unifies the frame image-
+ *  background and unblocks the shape image-fill that 1.1 dropped. `src` is a
+ *  gated asset URL (`https:` or a bounded `data:image/*` payload) — the host/
+ *  scheme allowlist gate runs downstream (compiler + runtime). */
+export interface ImageFill {
+  kind: "image";
+  src: string;
+  objectFit?: ObjectFit;
+  opacity?: number;
+  transform?: GradientTransform;
+}
+
+export type Fill = SolidFill | LinearGradientFill | RadialGradientFill | ImageFill;
 
 export interface Stroke {
   color: string;
@@ -160,6 +223,10 @@ export interface BasePrimitive extends UniversalProps {
   bindUniversal?: BindUniversal;
   animate?: AnimateBlock;
   keyframes?: KeyframesBlock;
+  /** 1.2+ — per-primitive blend mode → CSS `mix-blend-mode` (LSML 1.2 §2). */
+  blendMode?: BlendMode;
+  /** 1.2+ — typed mask spec → SVG `<mask>`/`<clipPath>` (LSML 1.2 §3). */
+  mask?: LSMLMask;
   /** Free-form authoring metadata. Runtime ignores. */
   metadata?: Record<string, unknown>;
 }
@@ -457,8 +524,10 @@ export interface I18nDecl {
 export interface SceneBundle {
   /** Recommended for on-disk bundles. URL of the JSON Schema this bundle conforms to. */
   $schema?: string;
-  /** Schema version. The plugin emits `"1.1"` strictly. */
-  lsml: "1.0" | "1.1";
+  /** Schema version. The plugin emits `"1.1"` by default, and `"1.2"` only
+   *  when the layout actually carries a 1.2 construct (blendMode / mask /
+   *  image-fill / gradient transform) — a 1.1-only design keeps `"1.1"`. */
+  lsml: "1.0" | "1.1" | "1.2";
   scene_id: SceneId;
   scene_version: SceneVersion;
   layout: PrimitiveNode;

@@ -15,6 +15,15 @@ export const LSML_SCHEMA_URL_CANONICAL =
   `https://lumencast.dev/schema/lsml/${LSML_VERSION}/schema.json` as const;
 
 /**
+ * Canonical $schema URL for a given LSML version. The plugin emits the
+ * 1.2 schema URL when the bundle carries a 1.2 construct, the 1.1 URL
+ * otherwise — so `$schema` always tracks the version actually emitted.
+ */
+export function schemaUrlForVersion(version: string): string {
+  return `https://lumencast.dev/schema/lsml/${version}/schema.json`;
+}
+
+/**
  * GitHub raw URL pinned to the protocol repo `main` branch — equivalent
  * bytes to the canonical URL while lumencast.dev hosting is being set up.
  * Suitable for the floating-on-main editor experience.

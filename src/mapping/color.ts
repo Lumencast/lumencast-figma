@@ -5,6 +5,7 @@
 // translucent — keeping the on-disk LSML compact when possible.
 
 import type { Fill, GradientStop } from "~shared/lsml-types";
+import { matrixToGradientTransform } from "./lsml-1_2";
 
 interface RGB {
   r: number;
@@ -121,8 +122,17 @@ export function paintToFill(paint: FigmaPaint): Fill | null {
       kind: "linear-gradient",
       stops,
     };
-    const angle = gradientTransformToAngleDeg(paint.gradientTransform);
-    if (angle !== 0) fill.angle_deg = angle;
+    // 1.2 : emit the full affine matrix when it's non-trivial (LSML 1.2
+    // §4.2) — it supersedes `angle_deg` and carries translation / scale /
+    // shear that the angle alone loses. A trivial / identity matrix yields
+    // null, so plain authored gradients keep `angle_deg` only (1.1 form).
+    const transform = matrixToGradientTransform(paint.gradientTransform);
+    if (transform) {
+      fill.transform = transform;
+    } else {
+      const angle = gradientTransformToAngleDeg(paint.gradientTransform);
+      if (angle !== 0) fill.angle_deg = angle;
+    }
     if (paint.opacity !== undefined && paint.opacity !== 1) fill.opacity = paint.opacity;
     return fill;
   }
@@ -133,6 +143,8 @@ export function paintToFill(paint: FigmaPaint): Fill | null {
       kind: "radial-gradient",
       stops,
     };
+    const transform = matrixToGradientTransform(paint.gradientTransform);
+    if (transform) fill.transform = transform;
     if (paint.opacity !== undefined && paint.opacity !== 1) fill.opacity = paint.opacity;
     return fill;
   }
