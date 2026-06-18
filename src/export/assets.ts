@@ -12,6 +12,7 @@
 
 import type { ExportedAsset } from "../main/messages";
 import { bytesToDataUri } from "./base64";
+import { emitSanitizedSvgDataUri, looksLikeSvg, sanitizeSvg, SanitizeError } from "./svg-sanitize";
 
 interface FigmaImageHandle {
   hash: string;
@@ -81,8 +82,10 @@ interface CreateOptions {
   api: FigmaApiSurface;
   /** Optional sink for omit-on-miss diagnostics. Called when a `data:` URI
    *  asset is rejected (non-raster MIME, or no fetchable bytes) so the
-   *  caller can surface a warning. The referencing fill/mask is dropped. */
-  onDiagnostic?: (code: string, message: string) => void;
+   *  caller can surface a warning. The referencing fill/mask is dropped.
+   *  `severity` defaults to "warn"; an SVG that could not be sanitized is
+   *  surfaced as "error" (Bastion #N §7) to feed the authoring gate. */
+  onDiagnostic?: (code: string, message: string, severity?: "warn" | "error") => void;
   /** When true (the default), placeholder paths are rewritten in the bundle
    *  by `applyAssetPathRewrites` after finalize. When false, the registry
    *  emits sha256-based paths up front (only safe if bytes can be fetched
@@ -141,6 +144,29 @@ export function createAssetRegistry(opts: CreateOptions): CreatedRegistry {
           const handle = opts.api.getImageByHash(entry.figmaHash);
           if (!handle) return;
           const bytes = await handle.getBytesAsync();
+          // SVG path (Bastion contract #N): an SVG asset is NOT a raster and
+          // never reaches `RASTER_DATA_URI_EXTS` / `extToMime`. It is routed
+          // to the geometry-only sanitizer, which parses-then-rebuilds a typed
+          // allowlisted document and re-embeds it via the SINGLE emitter
+          // `emitSanitizedSvgDataUri` (the only path to `data:image/svg+xml`).
+          // A non-sanitizable SVG (DTD/entity, parse failure, empty rebuild,
+          // DoS bound exceeded) is OMITTED with an `error`-severity diagnostic
+          // (§7) so the authoring gate (#I) refuses the bundle — never a silent
+          // drop, never a raw-byte SVG data: URI.
+          if (looksLikeSvg(bytes)) {
+            try {
+              entry.resolvedDataUri = emitSanitizedSvgDataUri(sanitizeSvg(bytes));
+            } catch (err) {
+              const reason = err instanceof SanitizeError ? err.message : String(err);
+              opts.onDiagnostic?.(
+                "asset-svg-unsanitizable",
+                `Image fill/mask SVG source omitted: could not sanitize (${reason}); ` +
+                  `referencing fill/mask dropped. Authoring gate must refuse the bundle.`,
+                "error",
+              );
+            }
+            return;
+          }
           const ext = sniffImageExtension(bytes);
           // Bound the `data:` URI to the raster allowlist BEFORE inlining.
           // A non-raster (SVG, unknown/binary) is omitted, not emitted —

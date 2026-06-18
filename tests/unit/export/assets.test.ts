@@ -102,29 +102,54 @@ describe("createAssetRegistry", () => {
 
   // --- Bastion VETO: data: URI MIME bound to the raster allowlist (ADR 002 #H) ---
 
-  it("omits any data: URI for an SVG payload (no data:image/svg+xml emitted)", async () => {
+  it("sanitizes an SVG with no geometry survivor to nothing → error diagnostic, no data:svg", async () => {
     const figma = createMockFigma();
     figma.__registerImage({
       hash: "svg1",
-      bytes: bytesFromString('<?xml version="1.0"?><svg onload="alert(1)"></svg>'),
+      bytes: bytesFromString(
+        '<?xml version="1.0"?><svg onload="alert(1)"><script>x</script></svg>',
+      ),
       mimeType: "image/svg+xml",
     });
-    const diagnostics: { code: string; message: string }[] = [];
+    const diagnostics: { code: string; message: string; severity: string | undefined }[] = [];
     const reg = createAssetRegistry({
       api: figma,
-      onDiagnostic: (code, message) => diagnostics.push({ code, message }),
+      onDiagnostic: (code, message, severity) => diagnostics.push({ code, message, severity }),
     });
     const placeholder = reg.registerImageHashAsDataUri("svg1");
 
     await reg.finalize();
     const rewrites = reg.rewrites();
-    // No resolution at all → placeholder is NOT rewritten.
+    // Empty-after-rebuild → omitted; no data:image/svg+xml ever emitted.
     expect(rewrites[placeholder]).toBeUndefined();
     expect(JSON.stringify(rewrites)).not.toContain("data:image/svg+xml");
-    expect(JSON.stringify(rewrites)).not.toContain("svg");
-    // Omit-on-miss diagnostic surfaced.
+    // §7: surfaced as an ERROR (feeds the authoring gate #I), not a warn.
     expect(diagnostics).toHaveLength(1);
-    expect(diagnostics[0]?.code).toBe("asset-data-uri-omitted");
+    expect(diagnostics[0]?.code).toBe("asset-svg-unsanitizable");
+    expect(diagnostics[0]?.severity).toBe("error");
+  });
+
+  it("sanitizes a legitimate SVG fill and emits data:image/svg+xml via the sanitizer", async () => {
+    const figma = createMockFigma();
+    figma.__registerImage({
+      hash: "svgok",
+      bytes: bytesFromString(
+        '<svg xmlns="http://www.w3.org/2000/svg"><path d="M0 0 L1 1" fill="#ff0000"/></svg>',
+      ),
+      mimeType: "image/svg+xml",
+    });
+    const diagnostics: { code: string }[] = [];
+    const reg = createAssetRegistry({
+      api: figma,
+      onDiagnostic: (code) => diagnostics.push({ code }),
+    });
+    const placeholder = reg.registerImageHashAsDataUri("svgok");
+
+    await reg.finalize();
+    const rewrites = reg.rewrites();
+    // Sanitized SVG round-trips to a data:image/svg+xml URI (0-loss restored).
+    expect(rewrites[placeholder]).toMatch(/^data:image\/svg\+xml;base64,/);
+    expect(diagnostics).toHaveLength(0);
   });
 
   it("omits any data: URI for unknown/binary bytes (no data:application/octet-stream emitted)", async () => {
