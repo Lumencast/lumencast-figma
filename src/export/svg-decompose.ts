@@ -304,6 +304,7 @@ function walkGeometry(
 
     if (GEOMETRY_ELEMENTS.has(tag)) {
       assertKnownAttrs(child);
+      assertLeaf(child); // a geometry leaf nesting an element (e.g. <path><animate/>) → N2
       const merged = mergeContext(ctx, child);
       const shape = geometryToShape(tag, child, merged, gradients);
       if (shape) out.push(shape);
@@ -313,6 +314,23 @@ function walkGeometry(
     // Anything else (text, image, filter, pattern, use, symbol, clipPath,
     // mask, …) is NOT decomposable → abort to N2 (A3.4 all-or-nothing).
     throw new DecomposeError(`element <${tag}> is not decomposable to native geometry`);
+  }
+}
+
+/** A geometry primitive (path/rect/circle/ellipse/line/polyline/polygon) is a
+ *  LEAF: it carries geometry, never nested markup. ANY element child is outside
+ *  the decomposable set — `<animate>` (SMIL), `<script>`, `<foreignObject>`, a
+ *  nested `<path>`, … — and silently decomposing the parent would drop that
+ *  child's semantics. All-or-nothing (A3.4): a leaf with an element child is not
+ *  decomposable → bail to N2, where the #N sanitizer neutralises it. Text /
+ *  whitespace children are inert and ignored. */
+function assertLeaf(el: XmlElement): void {
+  for (const c of el.children) {
+    if (isElement(c)) {
+      throw new DecomposeError(
+        `<${el.local}> nests element <${c.name}> — geometry leaf must have no element child`,
+      );
+    }
   }
 }
 

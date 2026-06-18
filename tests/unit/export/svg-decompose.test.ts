@@ -208,6 +208,70 @@ describe("decomposeSvg — N1 native geometry (ADR 002 #M)", () => {
       ),
     ).toThrow(DecomposeError);
   });
+
+  // --- geometry LEAF with an ELEMENT child → bail to N2 (A3.4 all-or-nothing).
+  // A leaf primitive is geometry only; a nested element (animate/script/…) is
+  // outside the decomposable set and must NOT be silently dropped (the trap
+  // Probe found: <path><animate/></path> was passing to N1 mute). ---
+
+  it("bails on <path><animate/></path> — SMIL child must not be silently dropped", () => {
+    expect(() =>
+      decomposeSvg(
+        bytes(
+          '<svg viewBox="0 0 10 10"><path d="M0 0 L1 1" fill="#000">' +
+            '<animate attributeName="fill" to="#fff" dur="1s"/></path></svg>',
+        ),
+      ),
+    ).toThrow(DecomposeError);
+  });
+
+  it("bails on <rect><script/></rect> — element child on a geometry leaf", () => {
+    expect(() =>
+      decomposeSvg(
+        bytes(
+          '<svg viewBox="0 0 10 10"><rect width="5" height="5" fill="#000">' +
+            "<script>alert(1)</script></rect></svg>",
+        ),
+      ),
+    ).toThrow(DecomposeError);
+  });
+
+  it("bails on <circle><foreignObject/></circle> — element child on a geometry leaf", () => {
+    expect(() =>
+      decomposeSvg(
+        bytes(
+          '<svg viewBox="0 0 20 20"><circle cx="10" cy="10" r="5" fill="#000">' +
+            "<foreignObject></foreignObject></circle></svg>",
+        ),
+      ),
+    ).toThrow(DecomposeError);
+  });
+
+  it("produces NO partial native geometry when a leaf hides a forbidden child", () => {
+    // A perfectly valid <path> sits beside a poisoned one; the WHOLE document
+    // must bail — never emit the good path while dropping the animate.
+    let caught: unknown;
+    try {
+      decomposeSvg(
+        bytes(
+          '<svg viewBox="0 0 10 10"><path d="M0 0 L1 1" fill="#000"/>' +
+            '<path d="M2 2 L3 3" fill="#000"><animate attributeName="d" dur="1s"/></path></svg>',
+        ),
+      );
+    } catch (e) {
+      caught = e;
+    }
+    expect(caught).toBeInstanceOf(DecomposeError);
+  });
+
+  it("keeps legitimate leaves green — a normal <path>/<rect>/<circle> with only text is fine", () => {
+    // text/whitespace children are inert and must NOT trigger the leaf guard.
+    expect(() =>
+      decomposeSvg(
+        bytes('<svg viewBox="0 0 10 10"><path d="M0 0 L1 1" fill="#000">  </path></svg>'),
+      ),
+    ).not.toThrow();
+  });
 });
 
 describe("fitDecomposedToBox — viewBox → host box fit", () => {
