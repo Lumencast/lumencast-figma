@@ -58,6 +58,25 @@ export function mapMaskType(raw: unknown): "alpha" | "luminance" {
   return s === "LUMINANCE" ? "luminance" : "alpha";
 }
 
+/** Sanitise a Figma node id to the safe SVG-id token class the runtime ref
+ *  resolver accepts (`mask.tsx` `safeIdRef`, `[A-Za-z0-9_:-]+`). A Figma id
+ *  like `817:1991` is already within the class (the `:` is allowed), so it is
+ *  preserved verbatim. A character outside the class (defensive : Figma ids are
+ *  numeric+`:`, but a synthetic/mock id could differ) → null, no id emitted. */
+export function safeIdRef(figmaNodeId: string): string | null {
+  return /^[A-Za-z0-9_:-]+$/.test(figmaNodeId) ? figmaNodeId : null;
+}
+
+/** Deterministic, stable, unique `id` for a shape primitive referenced by a
+ *  shape-source mask (ADR 002 A2.1 #K) : `"fig-" + safeIdRef(figmaNodeId)`.
+ *  Same frame → same id every run ; distinct Figma nodes → distinct ids (the
+ *  Figma id is unique by construction). Returns null when the source id is not
+ *  a safe token (the mask then stays unlowered, no broken ref emitted). */
+export function stableShapeId(figmaNodeId: string): string | null {
+  const safe = safeIdRef(figmaNodeId);
+  return safe === null ? null : `fig-${safe}`;
+}
+
 /** Figma image `scaleMode` → CSS `object-fit`. Closed map ; an unknown mode
  *  returns null so the caller omits `objectFit` (CSS default `fill` applies).
  *  `CROP` is a panned/zoomed cover in Figma → `cover`. `TILE` has no
