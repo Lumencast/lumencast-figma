@@ -51,6 +51,32 @@ describe("adaptNode — structural normalization", () => {
     expect(shown.visible).toBeUndefined();
   });
 
+  it("carries isMask / maskType / booleanOperation through (mask lowering, RC2)", () => {
+    const out = adaptNode({
+      id: "m",
+      name: "Mask",
+      type: "RECTANGLE",
+      isMask: true,
+      maskType: "ALPHA",
+      fills: [{ type: "IMAGE", imageRef: "abc", scaleMode: "FILL" }],
+    });
+    expect(out.isMask).toBe(true);
+    expect(out.maskType).toBe("ALPHA");
+
+    const bo = adaptNode({
+      id: "b",
+      name: "BO",
+      type: "BOOLEAN_OPERATION",
+      booleanOperation: "SUBTRACT",
+    });
+    expect(bo.booleanOperation).toBe("SUBTRACT");
+
+    // A plain node carries none of them.
+    const plain = adaptNode({ id: "p", name: "P", type: "RECTANGLE" });
+    expect(plain.isMask).toBeUndefined();
+    expect(plain.maskType).toBeUndefined();
+  });
+
   it("rewrites imageRef → imageHash so the gated registry path fires", () => {
     const out = adaptNode({
       id: "i",

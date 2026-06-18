@@ -62,6 +62,14 @@ export interface AdaptedNode {
   cornerRadius?: number;
   vectorPaths?: { data: string; windingRule: "NONZERO" | "EVENODD" }[];
   fillGeometry?: { data: string; windingRule: "NONZERO" | "EVENODD" }[];
+  /** Figma mask semantics — a node with `isMask:true` masks its following
+   *  siblings. Read by the mapper's `applyImageMaskGroups` (traverse.ts). REST
+   *  exposes these on the node exactly as the plugin API does. */
+  isMask?: boolean;
+  maskType?: string;
+  /** BOOLEAN_OPERATION operator (UNION / SUBTRACT / …) — the mapper reads it to
+   *  decide the union fallback vs a real boolean node. */
+  booleanOperation?: string;
   characters?: string;
   fontName?: { family: string; style: string };
   fontSize?: number;
@@ -162,6 +170,11 @@ export function adaptNode(node: RestNode): AdaptedNode {
   }
   if (node.strokeWeight !== undefined) out.strokeWeight = node.strokeWeight;
   if (node.cornerRadius !== undefined) out.cornerRadius = node.cornerRadius;
+  // Mask semantics — without these the mapper can't lower a Figma mask group
+  // (RC2: `mask` channel). REST carries `isMask` / `maskType` on the node.
+  if (node.isMask !== undefined) out.isMask = node.isMask;
+  if (node.maskType !== undefined) out.maskType = node.maskType;
+  if (node.booleanOperation !== undefined) out.booleanOperation = node.booleanOperation;
   // REST exposes flattened geometry as `fillGeometry[].path` ; the mapper reads
   // `fillGeometry[].data`. Rename the field, keep winding rule.
   if (node.fillGeometry) {

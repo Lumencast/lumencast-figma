@@ -39,6 +39,45 @@ client; the export registry's `finalize()` then runs those bytes through the
 **existing gated path** — the raster MIME allowlist and the SVG sanitizer
 (contract #N). No asset bypasses that gate.
 
+## Structural-diff checker (`structural-diff.ts`, RC2)
+
+`structuralDiff(restRoot, lsmlLayout, opts)` is the **instrument for RC2** ("diff
+structurel NUL", ADR 002 §6). It walks the Figma REST tree (ground truth) and the
+LSML bundle `layout` in parallel and returns a typed list of every divergence —
+**0 entries = structural fidelity**. Reused by the final-proof harness (#67): feed
+it `client.getNode(...)` and the bundle, gate on an empty result.
+
+```ts
+import { structuralDiff, summarizeDiff } from "./structural-diff";
+const divs = structuralDiff(restRoot, bundle.layout, { defaults: bundle.defaults });
+if (divs.length) throw new Error(JSON.stringify(summarizeDiff(divs)));
+```
+
+How it compares the two trees:
+
+- **Child correspondence by order.** REST and LSML share source order. An
+  **image-mask** node (`isMask` + a visible IMAGE fill) is _consumed_ by the
+  mapper (it becomes `mask:{source:{kind:"image"}}` on its followers and is
+  removed). The walker detects consumption from the child-count delta, so the
+  indices stay aligned in both the pre-fix (mask dropped) and post-fix (mask
+  consumed) states — no cascade of false position mismatches.
+- **Position space.** REST is absolute (`absoluteBoundingBox`). LSML `position`
+  is absolute under a **coord-system** parent (FRAME/COMPONENT/INSTANCE/SECTION)
+  and **parent-relative** under a transparent GROUP/BOOLEAN_OPERATION — the
+  walker adds the group origin back only for groups (mirrors the mapper's
+  `COORD_SYSTEM_TYPES`). Tolerance ~0.5px.
+- **Text** content lives in a literal bind (`bind.value = "__lit…"`) resolved
+  through the bundle `defaults` map (pass it in `opts.defaults`).
+- **Checks per node:** presence/hierarchy (`missing`/`extra`), `position`,
+  `size`, `visibility`, `mask` (a follower of an `isMask` node missing its mask),
+  `image-fill` (a REST IMAGE paint dropped/converted), `gradient`, `blend`,
+  `stroke`, `text`, `geometry`. It is tolerant of LSML-only enrichment — it only
+  flags a REST property that failed to round-trip.
+
+A live run lives in `tests/integration/structural-diff-817.live.test.ts`
+(token-gated, mock-only CI). The divergence list is written to
+`.local-exports/structural-diff-817.json` (git-ignored).
+
 ## Token (secret, étage-1)
 
 The REST token is read from **`process.env.FIGMA_REST_TOKEN`** and sent as the
