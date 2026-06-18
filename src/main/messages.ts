@@ -103,6 +103,11 @@ export interface PluginWarning {
   message: string;
   nodeId?: string;
   primitivePath?: string;
+  /** Severity. Absent ⇒ "warn" (non-blocking). "error" marks a condition the
+   *  authoring gate (#I) must refuse at the antenna — e.g. an SVG asset that
+   *  could not be sanitized and was therefore omitted (never a silent drop,
+   *  Bastion contract #N §7). */
+  severity?: "warn" | "error";
 }
 
 export type PluginErrorCode =
