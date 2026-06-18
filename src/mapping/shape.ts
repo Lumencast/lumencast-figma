@@ -143,7 +143,14 @@ export function mapShape(
   const relY = roundTo3(py - parentY);
   if (relX !== 0 || relY !== 0) prim.position = { x: relX, y: relY };
 
-  if (fills.length === 1 && fills[0]?.kind === "solid" && fills[0].opacity === undefined) {
+  if (
+    fills.length === 1 &&
+    fills[0]?.kind === "solid" &&
+    fills[0].opacity === undefined &&
+    // #L — a per-fill blend cannot survive the legacy single-`fill` string
+    // collapse, so keep the `fills[]` form when the solid carries a blendMode.
+    fills[0].blendMode === undefined
+  ) {
     prim.fill = fills[0].color;
   } else if (fills.length > 0) {
     prim.fills = fills;

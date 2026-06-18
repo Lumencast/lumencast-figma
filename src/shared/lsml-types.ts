@@ -126,6 +126,10 @@ export interface SolidFill {
   kind: "solid";
   color: string;
   opacity?: number;
+  /** 1.2+ (#L) — per-fill-layer blend (closed `BlendMode` enum, no new value),
+   *  applied as a per-layer `mix-blend-mode` independent of the node-level
+   *  blend (#D). Absent = `normal` (retro-compatible). */
+  blendMode?: BlendMode;
 }
 
 export interface LinearGradientFill {
@@ -136,6 +140,8 @@ export interface LinearGradientFill {
   transform?: GradientTransform;
   stops: GradientStop[];
   opacity?: number;
+  /** 1.2+ (#L) — per-fill-layer blend (see SolidFill.blendMode). */
+  blendMode?: BlendMode;
 }
 
 export interface RadialGradientFill {
@@ -146,6 +152,8 @@ export interface RadialGradientFill {
   transform?: GradientTransform;
   stops: GradientStop[];
   opacity?: number;
+  /** 1.2+ (#L) — per-fill-layer blend (see SolidFill.blendMode). */
+  blendMode?: BlendMode;
 }
 
 /** 1.2+ — first-class image-fill (LSML 1.2 §4.1). Valid anywhere a fill is :
@@ -159,6 +167,8 @@ export interface ImageFill {
   objectFit?: ObjectFit;
   opacity?: number;
   transform?: GradientTransform;
+  /** 1.2+ (#L) — per-fill-layer blend (see SolidFill.blendMode). */
+  blendMode?: BlendMode;
 }
 
 export type Fill = SolidFill | LinearGradientFill | RadialGradientFill | ImageFill;
@@ -217,6 +227,11 @@ export interface KeyframesBlock {
 
 export interface BasePrimitive extends UniversalProps {
   kind: PrimitiveKind;
+  /** Stable identifier (LSML §2 `LSMLBaseNode.id`). The mapper emits this
+   *  ONLY on a shape primitive referenced by a `mask.source.kind:"shape"` of
+   *  the same bundle (ADR 002 A2.1 #K) : `id = "fig-" + safeIdRef(figmaNodeId)`,
+   *  deterministic ⇒ stable + unique. No id is emitted on unreferenced nodes. */
+  id?: string;
   bind?: Bind;
   bindStyle?: BindStyle;
   bindAnimate?: BindAnimate;

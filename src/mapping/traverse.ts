@@ -16,7 +16,7 @@ import type { MappingContext, MappingResult } from "./types";
 import { OPERATOR_INPUT_COMPONENT_NAME } from "~shared/constants";
 import { asArray, asBoolean, asNumber, asString } from "./figma-mixed";
 import { paintToFill, type FigmaPaint } from "./color";
-import { mapMaskType } from "./lsml-1_2";
+import { mapMaskType, stableShapeId } from "./lsml-1_2";
 import type { Fill, LSMLMask, Stroke } from "~shared/lsml-types";
 
 interface AnyFigmaNode {
@@ -223,22 +223,28 @@ export function walk(
   }
 }
 
-/** Lower Figma image-mask groups to typed `mask` fields (ADR 002 §3.2).
+/** Lower Figma mask groups to typed `mask` fields (ADR 002 §3.2 + A2.1 #K).
  *
  *  Walks the container's children in source order. A child with `isMask:true`
- *  that carries a visible IMAGE paint becomes the active mask source for every
- *  sibling that FOLLOWS it (Figma masking semantics) ; the mask node itself is
- *  consumed (omitted from the rendered children — only its coverage matters).
- *  Each masked sibling's primitive gains `mask:{ source:{kind:"image",src},
- *  type, op:"intersect" }`. A later `isMask` sibling replaces the active mask.
+ *  becomes the active mask source for every sibling that FOLLOWS it (Figma
+ *  masking semantics). Two source channels :
  *
- *  Returns the filtered children (mask nodes removed). The mask node's image
- *  asset stays registered via `childResults[i].assetRefs`, which the caller
- *  merges regardless of tree membership, so the data-URI `src` still resolves.
+ *   - **image mask** (visible IMAGE paint) → `mask:{source:{kind:"image",src}}`.
+ *     The mask node is CONSUMED (omitted from the rendered children — only its
+ *     coverage matters) ; its image asset stays registered via
+ *     `result.assetRefs`, merged by the caller regardless of tree membership.
  *
- *  Non-image masks (shape/vector masks) are left untouched here — they need a
- *  primitive-`id` + runtime ref mechanism not yet present (residual gap #J) ;
- *  their `metadata.figma.isMask`/`maskType` capture round-trips meanwhile. */
+ *   - **shape mask** (#K — a vector/shape mask, no image fill) →
+ *     `mask:{source:{kind:"shape",ref:<id>}}`. The mask node is a decomposable
+ *     shape primitive : it is KEPT in the rendered children (the runtime
+ *     resolves the ref against its `id → shape` index, so the target must be in
+ *     the tree) and gains a STABLE deterministic `id` = `fig-<safeIdRef(figId)>`.
+ *     The `id` is emitted ONLY here, on the actually-referenced shape (no
+ *     inflation). Activating #K supersedes the #M data:svg fallback for
+ *     decomposable shape masks (see the per-pass note in `walkContainer`).
+ *
+ *  A later `isMask` sibling replaces the active mask. Returns the filtered
+ *  children (image-mask nodes removed ; shape-mask nodes kept). */
 function applyImageMaskGroups(
   pairs: { src: AnyFigmaNode; result: MappingResult }[],
   ctx: MappingContext,
@@ -251,16 +257,31 @@ function applyImageMaskGroups(
     const imageSrc = isMaskNode && register ? maskImageSrc(src, register) : null;
 
     if (isMaskNode && imageSrc) {
-      // Mask node : becomes the active source for following siblings, and is
-      // consumed (omitted from the rendered children — only coverage matters).
-      // Its image asset stays registered via `result.assetRefs`, which the
-      // caller merges regardless of tree membership.
+      // Image mask : active source for following siblings ; node consumed.
       activeMask = {
         source: { kind: "image", src: imageSrc },
         type: mapMaskType((src as { maskType?: unknown }).maskType),
         op: "intersect",
       };
       continue;
+    }
+
+    if (isMaskNode && result.node.kind === "shape") {
+      // #K — shape mask : emit a stable id on the referenced shape and keep it
+      // in the tree (the runtime indexes it to inline its geometry). A mask
+      // node whose id is not a safe token is left as a plain sibling (no broken
+      // ref) ; the #M data:svg path still covers that residual case.
+      const id = stableShapeId(src.id);
+      if (id !== null) {
+        result.node.id = id;
+        activeMask = {
+          source: { kind: "shape", ref: id },
+          type: mapMaskType((src as { maskType?: unknown }).maskType),
+          op: "intersect",
+        };
+        out.push(result.node);
+        continue;
+      }
     }
 
     // A normal sibling : attach the active mask (if any) and keep it.
@@ -369,19 +390,16 @@ function walkContainer(node: AnyFigmaNode, ctx: MappingContext, opts: WalkOption
   }
   let children = childResults.map((r) => r.node) as PrimitiveNode[];
 
-  // 1.2 mask groups (ADR 002 §3.2). A Figma child with `isMask:true` masks
-  // the siblings that FOLLOW it within the group. We lower the proven
-  // image-mask case (`817:1991` : an image — e.g. an ellipse asset — used as
-  // an alpha/luminance mask) into a typed `mask` on each masked sibling and
-  // CONSUME the mask node (it's not painted as content, only its coverage
-  // matters). The mask node's image asset stays registered (its `assetRefs`
-  // are kept), so the data-URI `src` resolves at finalize.
-  //
-  // Residual gap (#J) : a *shape* mask (vector/ellipse with no image fill)
-  // would lower to `{ source:{ kind:"shape", ref:<id> } }`, but LSML
-  // primitives don't yet carry a stable `id` and the runtime resolves the
-  // ref by element id — so shape-source masks are left in `metadata.figma`
-  // (round-trip preserved) and flagged for the structural follow-up.
+  // 1.2 mask groups (ADR 002 §3.2 + A2.1 #K). A Figma child with `isMask:true`
+  // masks the siblings that FOLLOW it within the group. Two channels :
+  //   - image mask (`817:1991` : an image used as an alpha/luminance mask) →
+  //     typed `mask:{source:{kind:"image",src}}` ; the mask node is CONSUMED
+  //     (only its coverage matters) and its image asset stays registered.
+  //   - shape mask (#K : a vector/ellipse mask with no image fill) →
+  //     `mask:{source:{kind:"shape",ref:<id>}}` ; the mask shape gains a STABLE
+  //     `id` (`fig-<safeIdRef>`) and is KEPT in the tree so the runtime index
+  //     resolves the ref. This activates the native shape-mask channel : a
+  //     decomposable shape mask no longer falls back to the #M data:svg path.
   children = applyImageMaskGroups(childPairs, ctx);
 
   // BOOLEAN_OPERATION render-fidelity, UNION-only fallback.

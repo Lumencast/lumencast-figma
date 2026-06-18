@@ -5,7 +5,7 @@
 // translucent — keeping the on-disk LSML compact when possible.
 
 import type { Fill, GradientStop } from "~shared/lsml-types";
-import { matrixToGradientTransform } from "./lsml-1_2";
+import { matrixToGradientTransform, mapBlendMode } from "./lsml-1_2";
 
 interface RGB {
   r: number;
@@ -17,6 +17,10 @@ interface FigmaPaint {
   type: "SOLID" | "GRADIENT_LINEAR" | "GRADIENT_RADIAL" | "IMAGE" | string;
   visible?: boolean;
   opacity?: number;
+  /** Per-paint blend mode (distinct from the node-level `node.blendMode`).
+   *  Figma exposes a blend mode on each paint of `fills[]` ; #L lowers it to
+   *  the matching fill's `blendMode` (LSML 1.2 §4.3). */
+  blendMode?: string;
   color?: RGB;
   gradientStops?: {
     position: number;
@@ -110,9 +114,14 @@ export function gradientTransformToAngleDeg(t: number[][] | undefined): number {
  *  paints (image fills are extracted upstream, not as Fill). */
 export function paintToFill(paint: FigmaPaint): Fill | null {
   if (paint.visible === false) return null;
+  // #L (LSML 1.2 §4.3) — the per-paint blend mode, mapped through the same
+  // closed table as the node-level blend (`mapBlendMode`). A no-op / unknown
+  // mode yields null → no `blendMode` field (the layer renders `normal`).
+  const blendMode = mapBlendMode(paint.blendMode);
   if (paint.type === "SOLID" && paint.color) {
     const fill: Fill = { kind: "solid", color: rgbToCss(paint.color) };
     if (paint.opacity !== undefined && paint.opacity !== 1) fill.opacity = paint.opacity;
+    if (blendMode) fill.blendMode = blendMode;
     return fill;
   }
   if (paint.type === "GRADIENT_LINEAR" && paint.gradientStops) {
@@ -134,6 +143,7 @@ export function paintToFill(paint: FigmaPaint): Fill | null {
       if (angle !== 0) fill.angle_deg = angle;
     }
     if (paint.opacity !== undefined && paint.opacity !== 1) fill.opacity = paint.opacity;
+    if (blendMode) fill.blendMode = blendMode;
     return fill;
   }
   if (paint.type === "GRADIENT_RADIAL" && paint.gradientStops) {
@@ -146,6 +156,7 @@ export function paintToFill(paint: FigmaPaint): Fill | null {
     const transform = matrixToGradientTransform(paint.gradientTransform);
     if (transform) fill.transform = transform;
     if (paint.opacity !== undefined && paint.opacity !== 1) fill.opacity = paint.opacity;
+    if (blendMode) fill.blendMode = blendMode;
     return fill;
   }
   return null;
