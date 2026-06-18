@@ -124,7 +124,14 @@ export function mapFrame(
     fills.push(fill);
     gradientTransformsAligned.push(rawGradientTransform(paint));
   }
-  if (fills.length === 1 && fills[0]?.kind === "solid" && fills[0].opacity === undefined) {
+  if (
+    fills.length === 1 &&
+    fills[0]?.kind === "solid" &&
+    fills[0].opacity === undefined &&
+    // #L — keep the `backgrounds[]` form when the solid carries a per-fill
+    // blend ; the legacy `background` string would drop it.
+    fills[0].blendMode === undefined
+  ) {
     const single = fillsArr.find((p) => p.type === "SOLID");
     if (single) {
       const css = paintToSolidCss(single);

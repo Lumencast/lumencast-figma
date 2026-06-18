@@ -102,6 +102,8 @@ export interface FigmaImagePaintLike {
   scaleMode?: unknown;
   opacity?: unknown;
   visible?: unknown;
+  /** Per-paint blend mode (#L, LSML 1.2 §4.3). */
+  blendMode?: unknown;
 }
 
 /** Lower a Figma `ImagePaint` to a 1.2 `{ kind:"image" }` fill (LSML 1.2
@@ -123,6 +125,10 @@ export function imagePaintToFill(
   if (objectFit) fill.objectFit = objectFit;
   const opacity = asNumber(paint.opacity);
   if (opacity !== undefined && opacity !== 1) fill.opacity = opacity;
+  // #L (LSML 1.2 §4.3) — per-paint blend, mapped through the same closed table
+  // as the node-level blend. A no-op / unknown mode omits the field.
+  const blendMode = mapBlendMode(paint.blendMode);
+  if (blendMode) fill.blendMode = blendMode;
   return fill;
 }
 

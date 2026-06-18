@@ -126,6 +126,10 @@ export interface SolidFill {
   kind: "solid";
   color: string;
   opacity?: number;
+  /** 1.2+ (#L) — per-fill-layer blend (closed `BlendMode` enum, no new value),
+   *  applied as a per-layer `mix-blend-mode` independent of the node-level
+   *  blend (#D). Absent = `normal` (retro-compatible). */
+  blendMode?: BlendMode;
 }
 
 export interface LinearGradientFill {
@@ -136,6 +140,8 @@ export interface LinearGradientFill {
   transform?: GradientTransform;
   stops: GradientStop[];
   opacity?: number;
+  /** 1.2+ (#L) — per-fill-layer blend (see SolidFill.blendMode). */
+  blendMode?: BlendMode;
 }
 
 export interface RadialGradientFill {
@@ -146,6 +152,8 @@ export interface RadialGradientFill {
   transform?: GradientTransform;
   stops: GradientStop[];
   opacity?: number;
+  /** 1.2+ (#L) — per-fill-layer blend (see SolidFill.blendMode). */
+  blendMode?: BlendMode;
 }
 
 /** 1.2+ — first-class image-fill (LSML 1.2 §4.1). Valid anywhere a fill is :
@@ -159,6 +167,8 @@ export interface ImageFill {
   objectFit?: ObjectFit;
   opacity?: number;
   transform?: GradientTransform;
+  /** 1.2+ (#L) — per-fill-layer blend (see SolidFill.blendMode). */
+  blendMode?: BlendMode;
 }
 
 export type Fill = SolidFill | LinearGradientFill | RadialGradientFill | ImageFill;
