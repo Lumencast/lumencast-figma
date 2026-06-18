@@ -376,7 +376,11 @@ const ENUM_ATTRS: Record<string, ReadonlySet<string>> = {
 // the prologue, which is ignored anyway) and comments.
 // ---------------------------------------------------------------------------
 
-interface XmlElement {
+// Exported so the geometry-decomposer (#M, `svg-decompose.ts`) can REUSE this
+// audited parser rather than introduce a second, separately-attackable XML
+// reader. The parse contract (DTD/entity rejection §4, anti-DoS bounds §5) is
+// shared by both consumers — there is exactly one SVG parser in the codebase.
+export interface XmlElement {
   name: string;
   /** Local name (prefix stripped). */
   local: string;
@@ -384,12 +388,12 @@ interface XmlElement {
   attrs: { name: string; value: string }[];
   children: XmlNode[];
 }
-interface XmlText {
+export interface XmlText {
   text: string;
 }
-type XmlNode = XmlElement | XmlText;
+export type XmlNode = XmlElement | XmlText;
 
-function isElement(n: XmlNode): n is XmlElement {
+export function isElement(n: XmlNode): n is XmlElement {
   return (n as XmlElement).name !== undefined;
 }
 
@@ -446,8 +450,11 @@ function decodeEntities(s: string): string {
   return out;
 }
 
-/** Parse the raw bytes into a bounded XML tree, or throw SanitizeError. */
-function parseXml(input: string): XmlElement {
+/** Parse the raw bytes into a bounded XML tree, or throw SanitizeError. The
+ *  SINGLE SVG parser in the codebase — exported for reuse by `svg-decompose.ts`
+ *  (#M) so geometry decomposition shares the same DTD/entity rejection (§4) and
+ *  anti-DoS bounds (§5) Bastion already audited. Returns the root `<svg>`. */
+export function parseXml(input: string): XmlElement {
   if (input.length > MAX_SVG_BYTES) {
     throw new SanitizeError(`SVG exceeds byte cap (${input.length} > ${MAX_SVG_BYTES})`);
   }
@@ -602,12 +609,12 @@ function isSpace(c: string): boolean {
   return c === " " || c === "\t" || c === "\n" || c === "\r";
 }
 
-function localName(name: string): string {
+export function localName(name: string): string {
   const colon = name.indexOf(":");
   return colon === -1 ? name : name.slice(colon + 1);
 }
 
-function prefixOf(name: string): string | null {
+export function prefixOf(name: string): string | null {
   const colon = name.indexOf(":");
   return colon === -1 ? null : name.slice(0, colon);
 }
@@ -760,13 +767,13 @@ function cleanAttribute(
 // Value re-emitters: parse to finite bounded numeric tokens, then re-emit.
 // ---------------------------------------------------------------------------
 
-function clampFinite(n: number): number | null {
+export function clampFinite(n: number): number | null {
   if (!Number.isFinite(n)) return null;
   if (n > NUMERIC_ABS_MAX || n < -NUMERIC_ABS_MAX) return null;
   return n;
 }
 
-function fmt(n: number): string {
+export function fmt(n: number): string {
   // Trim to a stable decimal form; -0 normalised to 0.
   const v = Object.is(n, -0) ? 0 : n;
   return String(v);
@@ -780,7 +787,7 @@ const SINGLE_NUMBER_RE = /^-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
 /** Split a whitespace/comma/`/`-separated numeric value into its tokens, each
  *  of which MUST be a complete finite number. Returns the parsed numbers, or
  *  `null` if ANY token is not wholly a finite number (no partial extraction). */
-function splitNumericArgs(value: string): number[] | null {
+export function splitNumericArgs(value: string): number[] | null {
   const tokens = value.split(/[\s,/]+/).filter((t) => t.length > 0);
   const out: number[] = [];
   for (const t of tokens) {
@@ -795,7 +802,7 @@ function splitNumericArgs(value: string): number[] | null {
 /** Re-parse a whitespace/comma separated numeric list (`viewBox`, `points`,
  *  `stroke-dasharray`) into finite bounded tokens, re-emitted space-joined. A
  *  token that is not wholly a finite number drops the whole attribute (§3). */
-function reemitNumericList(value: string): string | null {
+export function reemitNumericList(value: string): string | null {
   if (value.length > MAX_PATH_DATA_LEN) return null;
   if (value === "none" || value === "inherit") return value;
   const nums = splitNumericArgs(value);
@@ -810,7 +817,7 @@ function reemitNumericList(value: string): string | null {
   return out.map(fmt).join(" ");
 }
 
-function reemitScalar(value: string): string | null {
+export function reemitScalar(value: string): string | null {
   const v = value.trim();
   // Percentages are valid for some scalars (offset, opacity, gradient coords).
   const pct = v.endsWith("%");
@@ -824,7 +831,7 @@ function reemitScalar(value: string): string | null {
 /** Re-emit a `transform` / `gradientTransform` as a sequence of recognised
  *  function calls with finite bounded numeric arguments. Unknown functions
  *  drop the whole attribute (we do not partially trust a transform string). */
-function reemitTransform(value: string): string | null {
+export function reemitTransform(value: string): string | null {
   if (value.length > MAX_PATH_DATA_LEN) return null;
   const re = /([a-zA-Z]+)\s*\(([^)]*)\)/g;
   const parts: string[] = [];
@@ -857,7 +864,7 @@ function reemitTransform(value: string): string | null {
 /** Re-emit path `d`: tokenize into command letters + finite bounded numbers,
  *  re-serialise. Anything else (letters outside the SVG path grammar) drops
  *  the attribute. */
-function reemitPathData(value: string): string | null {
+export function reemitPathData(value: string): string | null {
   if (value.length > MAX_PATH_DATA_LEN) return null;
   const COMMANDS = "MmLlHhVvCcSsQqTtAaZz";
   const tokenRe = /([MmLlHhVvCcSsQqTtAaZz])|(-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?)|([,\s]+)/g;
@@ -897,7 +904,7 @@ function validateUrlRef(value: string): string | null {
  *  Anything else — including a bare `[a-zA-Z]+` word that is not a real named
  *  colour (`javascript`, `url`, `data`, `script`, `expression`, …) — is
  *  DROPPED, never passed through. Anchored at both ends. */
-function validatePaintColor(value: string): string | null {
+export function validatePaintColor(value: string): string | null {
   const v = value.trim();
   if (v === "none" || v === "inherit" || v === "currentColor") return v;
   if (/^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(v)) return v;
@@ -961,7 +968,7 @@ export function looksLikeSvg(bytes: Uint8Array): boolean {
   return /<\s*svg[\s>]/i.test(s) || (/^\s*<\?xml/i.test(s) && /<\s*svg/i.test(s));
 }
 
-function bytesToString(bytes: Uint8Array): string {
+export function bytesToString(bytes: Uint8Array): string {
   let s = "";
   for (const b of bytes) s += String.fromCharCode(b);
   return s;

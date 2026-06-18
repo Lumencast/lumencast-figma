@@ -146,8 +146,9 @@ export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundle
   // 3. Resolve asset hashes → bytes + content-addressed names.
   const assets = await registry.finalize();
   const rewrites = registry.rewrites();
-  applyAssetPathRewrites(mapped.node as unknown as object, rewrites);
-  if (mapped.defaults) applyAssetPathRewrites(mapped.defaults, rewrites);
+  const decompositions = registry.decompositions();
+  applyAssetPathRewrites(mapped.node as unknown as object, rewrites, decompositions);
+  if (mapped.defaults) applyAssetPathRewrites(mapped.defaults, rewrites, decompositions);
 
   // 4. Assemble.
   const operator_inputs = mergeOperatorInputs(mapped.operatorInputs ?? [], opInputs.inputs);
