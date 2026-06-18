@@ -18,6 +18,15 @@ interface FigmaImageHandle {
   getBytesAsync(): Promise<Uint8Array>;
 }
 
+/** Raster MIME allowlist for the `data:` URI path. Bounded to formats a CEF
+ *  host renders as an image and that carry no executable surface. SVG is
+ *  deliberately excluded: an inline `data:image/svg+xml` can carry
+ *  `<script>` / event-handler attributes that execute in the host (Bastion
+ *  VETO, XSS). The downstream `data:image/*` gate does NOT save us — `data:`
+ *  is host-less and `image/svg+xml` matches `image/*` — so the bound is
+ *  enforced HERE, at the source, before any `data:` URI is emitted. */
+const RASTER_DATA_URI_EXTS = new Set(["png", "jpg", "gif", "webp"]);
+
 interface FigmaApiSurface {
   getImageByHash(hash: string): FigmaImageHandle | null;
 }
@@ -70,6 +79,10 @@ const DATA_URI_PREFIX = "__asset-data:";
 
 interface CreateOptions {
   api: FigmaApiSurface;
+  /** Optional sink for omit-on-miss diagnostics. Called when a `data:` URI
+   *  asset is rejected (non-raster MIME, or no fetchable bytes) so the
+   *  caller can surface a warning. The referencing fill/mask is dropped. */
+  onDiagnostic?: (code: string, message: string) => void;
   /** When true (the default), placeholder paths are rewritten in the bundle
    *  by `applyAssetPathRewrites` after finalize. When false, the registry
    *  emits sha256-based paths up front (only safe if bytes can be fetched
@@ -129,6 +142,20 @@ export function createAssetRegistry(opts: CreateOptions): CreatedRegistry {
           if (!handle) return;
           const bytes = await handle.getBytesAsync();
           const ext = sniffImageExtension(bytes);
+          // Bound the `data:` URI to the raster allowlist BEFORE inlining.
+          // A non-raster (SVG, unknown/binary) is omitted, not emitted —
+          // `resolvedDataUri` stays undefined, the referencing fill/mask is
+          // dropped at rewrite time, and no placeholder leaks into the
+          // bundle (Bastion VETO: no `data:image/svg+xml` / executable SVG,
+          // no `data:application/octet-stream`).
+          if (!RASTER_DATA_URI_EXTS.has(ext)) {
+            opts.onDiagnostic?.(
+              "asset-data-uri-omitted",
+              `Image fill/mask source omitted: non-raster payload (sniffed "${ext}") ` +
+                `cannot be emitted as a data: URI; referencing fill/mask dropped.`,
+            );
+            return;
+          }
           entry.resolvedDataUri = bytesToDataUri(bytes, extToMime(ext));
         }),
       );
@@ -177,10 +204,52 @@ export function applyAssetPathRewrites<T extends object>(
   return node;
 }
 
+/** True if `v` is a data-URI placeholder that `finalize` did NOT resolve
+ *  (i.e. omitted because the payload is non-raster / unfetchable). A resolved
+ *  placeholder has an entry in `rewrites`; an omitted one does not, and is a
+ *  rejected asset whose referencing fill/mask must be dropped — never leaked
+ *  into the bundle. */
+function isOmittedDataUriPlaceholder(v: unknown, rewrites: Record<string, string>): boolean {
+  return typeof v === "string" && v.startsWith(DATA_URI_PREFIX) && rewrites[v] === undefined;
+}
+
+/** True if an object node references an OMITTED data-URI placeholder and must
+ *  be pruned. Covers the two LSML shapes that carry a data-URI `src`:
+ *   - an image fill / background  `{ kind:"image", src }`            (direct `src`),
+ *   - a mask                       `{ source:{ kind:"image", src }, … }` (nested).
+ *  Pruning at the mask level (not just its `source`) avoids leaving a broken
+ *  `{ type, op }` mask behind. A resolved (raster) placeholder is left for the
+ *  in-place string rewrite below — only omitted ones trigger a drop. */
+function referencesOmittedAsset(
+  obj: Record<string, unknown>,
+  rewrites: Record<string, string>,
+): boolean {
+  if (isOmittedDataUriPlaceholder(obj.src, rewrites)) return true;
+  const source = obj.source;
+  if (source !== null && typeof source === "object" && !Array.isArray(source)) {
+    return isOmittedDataUriPlaceholder((source as Record<string, unknown>).src, rewrites);
+  }
+  return false;
+}
+
 function walk(value: unknown, rewrites: Record<string, string>): void {
   if (value === null || typeof value !== "object") return;
   if (Array.isArray(value)) {
-    for (const v of value) walk(v, rewrites);
+    // Prune array entries (e.g. fills[] / backgrounds[]) that reference an
+    // omitted data-URI placeholder, then recurse into survivors.
+    for (let i = value.length - 1; i >= 0; i--) {
+      const v = value[i];
+      if (
+        v !== null &&
+        typeof v === "object" &&
+        !Array.isArray(v) &&
+        referencesOmittedAsset(v as Record<string, unknown>, rewrites)
+      ) {
+        value.splice(i, 1);
+        continue;
+      }
+      walk(v, rewrites);
+    }
     return;
   }
   const obj = value as Record<string, unknown>;
@@ -189,6 +258,13 @@ function walk(value: unknown, rewrites: Record<string, string>): void {
     if (typeof v === "string" && rewrites[v]) {
       obj[key] = rewrites[v];
     } else if (v && typeof v === "object") {
+      // Drop a non-array sub-object whose `src` references an omitted asset
+      // (e.g. `mask.source`, `mask`). Removing the property prevents the
+      // placeholder from surviving in the emitted LSML.
+      if (referencesOmittedAsset(v as Record<string, unknown>, rewrites)) {
+        delete obj[key];
+        continue;
+      }
       walk(v, rewrites);
     }
   }
@@ -225,9 +301,6 @@ function sniffImageExtension(bytes: Uint8Array): string {
   ) {
     return "webp";
   }
-  if (bytes.length >= 4 && bytes[0] === 0x3c && bytes[1] === 0x3f && bytes[2] === 0x78) {
-    return "svg";
-  }
   return "bin";
 }
 
@@ -241,9 +314,10 @@ function extToMime(ext: string): string {
       return "image/gif";
     case "webp":
       return "image/webp";
-    case "svg":
-      return "image/svg+xml";
     default:
+      // Unknown / binary bytes. Only ever used for the stored-asset path
+      // (a content-addressed file, NOT a data: URI) — the data: URI path is
+      // bounded to `RASTER_DATA_URI_EXTS` and omits anything that lands here.
       return "application/octet-stream";
   }
 }

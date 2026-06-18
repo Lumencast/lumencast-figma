@@ -81,7 +81,10 @@ export interface BuildBundleResult {
 
 export async function buildBundle(opts: BuildBundleOptions): Promise<BuildBundleResult> {
   const warnings: PluginWarning[] = [];
-  const registry = createAssetRegistry({ api: opts.api });
+  const registry = createAssetRegistry({
+    api: opts.api,
+    onDiagnostic: (code, message) => warnings.push({ code, message }),
+  });
   // Mapping trace is ALWAYS captured : per-node push is cheap and the
   // trace is the only persistent record of warnings + per-node decisions
   // for the `_debug/mapping-trace.json` archive entry. The heavy raw-
