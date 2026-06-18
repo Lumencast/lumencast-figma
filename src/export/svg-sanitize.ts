@@ -198,6 +198,164 @@ const SCALAR_NUMERIC_ATTRS = new Set([
 // Reference-valued attributes restricted to `url(#localid)` / `none` / `inherit`.
 const URL_REF_ATTRS = new Set(["clip-path", "mask"]);
 
+// Closed allowlist of CSS <named-color> keywords (the 148 CSS Color Module
+// Level 4 names + the legacy `transparent`). A bare paint value that is not in
+// this table, nor a `#hex`, `rgb()/rgba()/hsl()/hsla()`, `url(#localid)`, nor a
+// CSS-wide keyword (`currentColor`/`inherit`/`none`) is DROPPED — never passed
+// through. This closes the gap where any `[a-zA-Z]{1,32}` (e.g. `javascript`,
+// `url`, `data`, `expression`, `script`) survived as a "named colour".
+const CSS_NAMED_COLORS = new Set<string>([
+  "aliceblue",
+  "antiquewhite",
+  "aqua",
+  "aquamarine",
+  "azure",
+  "beige",
+  "bisque",
+  "black",
+  "blanchedalmond",
+  "blue",
+  "blueviolet",
+  "brown",
+  "burlywood",
+  "cadetblue",
+  "chartreuse",
+  "chocolate",
+  "coral",
+  "cornflowerblue",
+  "cornsilk",
+  "crimson",
+  "cyan",
+  "darkblue",
+  "darkcyan",
+  "darkgoldenrod",
+  "darkgray",
+  "darkgreen",
+  "darkgrey",
+  "darkkhaki",
+  "darkmagenta",
+  "darkolivegreen",
+  "darkorange",
+  "darkorchid",
+  "darkred",
+  "darksalmon",
+  "darkseagreen",
+  "darkslateblue",
+  "darkslategray",
+  "darkslategrey",
+  "darkturquoise",
+  "darkviolet",
+  "deeppink",
+  "deepskyblue",
+  "dimgray",
+  "dimgrey",
+  "dodgerblue",
+  "firebrick",
+  "floralwhite",
+  "forestgreen",
+  "fuchsia",
+  "gainsboro",
+  "ghostwhite",
+  "gold",
+  "goldenrod",
+  "gray",
+  "green",
+  "greenyellow",
+  "grey",
+  "honeydew",
+  "hotpink",
+  "indianred",
+  "indigo",
+  "ivory",
+  "khaki",
+  "lavender",
+  "lavenderblush",
+  "lawngreen",
+  "lemonchiffon",
+  "lightblue",
+  "lightcoral",
+  "lightcyan",
+  "lightgoldenrodyellow",
+  "lightgray",
+  "lightgreen",
+  "lightgrey",
+  "lightpink",
+  "lightsalmon",
+  "lightseagreen",
+  "lightskyblue",
+  "lightslategray",
+  "lightslategrey",
+  "lightsteelblue",
+  "lightyellow",
+  "lime",
+  "limegreen",
+  "linen",
+  "magenta",
+  "maroon",
+  "mediumaquamarine",
+  "mediumblue",
+  "mediumorchid",
+  "mediumpurple",
+  "mediumseagreen",
+  "mediumslateblue",
+  "mediumspringgreen",
+  "mediumturquoise",
+  "mediumvioletred",
+  "midnightblue",
+  "mintcream",
+  "mistyrose",
+  "moccasin",
+  "navajowhite",
+  "navy",
+  "oldlace",
+  "olive",
+  "olivedrab",
+  "orange",
+  "orangered",
+  "orchid",
+  "palegoldenrod",
+  "palegreen",
+  "paleturquoise",
+  "palevioletred",
+  "papayawhip",
+  "peachpuff",
+  "peru",
+  "pink",
+  "plum",
+  "powderblue",
+  "purple",
+  "rebeccapurple",
+  "red",
+  "rosybrown",
+  "royalblue",
+  "saddlebrown",
+  "salmon",
+  "sandybrown",
+  "seagreen",
+  "seashell",
+  "sienna",
+  "silver",
+  "skyblue",
+  "slateblue",
+  "slategray",
+  "slategrey",
+  "snow",
+  "springgreen",
+  "steelblue",
+  "tan",
+  "teal",
+  "thistle",
+  "tomato",
+  "turquoise",
+  "violet",
+  "wheat",
+  "white",
+  "whitesmoke",
+  "yellow",
+  "yellowgreen",
+  "transparent",
+]);
+
 // Enumerated attributes restricted to a fixed token set.
 const ENUM_ATTRS: Record<string, ReadonlySet<string>> = {
   "fill-rule": new Set(["nonzero", "evenodd", "inherit"]),
@@ -614,19 +772,38 @@ function fmt(n: number): string {
   return String(v);
 }
 
-const NUMBER_RE = /-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?/g;
+// A SINGLE complete finite number, anchored. Used to validate each token in a
+// list — a token that is not WHOLLY a number (e.g. `Infinity`, `0x1F`, `1e`,
+// `foo`) fails this test and triggers a drop of the whole attribute.
+const SINGLE_NUMBER_RE = /^-?(?:\d+\.?\d*|\.\d+)(?:[eE][+-]?\d+)?$/;
+
+/** Split a whitespace/comma/`/`-separated numeric value into its tokens, each
+ *  of which MUST be a complete finite number. Returns the parsed numbers, or
+ *  `null` if ANY token is not wholly a finite number (no partial extraction). */
+function splitNumericArgs(value: string): number[] | null {
+  const tokens = value.split(/[\s,/]+/).filter((t) => t.length > 0);
+  const out: number[] = [];
+  for (const t of tokens) {
+    if (!SINGLE_NUMBER_RE.test(t)) return null;
+    const n = parseFloat(t);
+    if (!Number.isFinite(n)) return null;
+    out.push(n);
+  }
+  return out;
+}
 
 /** Re-parse a whitespace/comma separated numeric list (`viewBox`, `points`,
- *  `stroke-dasharray`) into finite bounded tokens, re-emitted space-joined. */
+ *  `stroke-dasharray`) into finite bounded tokens, re-emitted space-joined. A
+ *  token that is not wholly a finite number drops the whole attribute (§3). */
 function reemitNumericList(value: string): string | null {
   if (value.length > MAX_PATH_DATA_LEN) return null;
   if (value === "none" || value === "inherit") return value;
-  const tokens = value.match(NUMBER_RE);
-  if (!tokens || tokens.length === 0) return null;
-  if (tokens.length > MAX_NUMERIC_TOKENS) return null;
+  const nums = splitNumericArgs(value);
+  if (nums === null || nums.length === 0) return null;
+  if (nums.length > MAX_NUMERIC_TOKENS) return null;
   const out: number[] = [];
-  for (const t of tokens) {
-    const c = clampFinite(parseFloat(t));
+  for (const n of nums) {
+    const c = clampFinite(n);
     if (c === null) return null;
     out.push(c);
   }
@@ -658,11 +835,13 @@ function reemitTransform(value: string): string | null {
     consumed = re.lastIndex;
     const fn = m[1]!;
     if (!ALLOWED_FN.has(fn)) return null;
-    const args = m[2]!.match(NUMBER_RE);
-    if (!args || args.length === 0 || args.length > 6) return null;
+    const args = splitNumericArgs(m[2]!);
+    // A non-finite / non-parsable token (e.g. `Infinity`, `NaN`, `1e9999`, a
+    // bare word) makes the ENTIRE attribute drop — no partial digit extraction.
+    if (args === null || args.length === 0 || args.length > 6) return null;
     const nums: number[] = [];
     for (const a of args) {
-      const c = clampFinite(parseFloat(a));
+      const c = clampFinite(a);
       if (c === null) return null;
       nums.push(c);
     }
@@ -712,17 +891,22 @@ function validateUrlRef(value: string): string | null {
   return m ? `url(#${m[1]})` : null;
 }
 
-/** Paint color: `none`, `inherit`, `#rgb`/`#rrggbb`/`#rgba`/`#rrggbbaa`,
- *  `url(#id)` (internal gradient ref), `rgb()/rgba()`, or a bare CSS named
- *  colour (letters only — no `url(http…)`, no `javascript:`). Anchored. */
+/** Paint color: a CSS-wide keyword (`none`/`inherit`/`currentColor`), a
+ *  `#hex`, `rgb()/rgba()/hsl()/hsla()` with a bounded body, `url(#localid)`
+ *  (internal gradient ref), or a member of the CLOSED CSS <named-color> table.
+ *  Anything else — including a bare `[a-zA-Z]+` word that is not a real named
+ *  colour (`javascript`, `url`, `data`, `script`, `expression`, …) — is
+ *  DROPPED, never passed through. Anchored at both ends. */
 function validatePaintColor(value: string): string | null {
   const v = value.trim();
-  if (v === "none" || v === "inherit" || v === "transparent" || v === "currentColor") return v;
+  if (v === "none" || v === "inherit" || v === "currentColor") return v;
   if (/^#(?:[0-9a-fA-F]{3,4}|[0-9a-fA-F]{6}|[0-9a-fA-F]{8})$/.test(v)) return v;
   if (/^url\(\s*#[A-Za-z_][\w.-]*\s*\)$/.test(v)) return v.replace(/\s+/g, "");
-  const rgb = /^rgba?\(\s*[\d.%,\s/]+\)$/.exec(v);
-  if (rgb) return v.replace(/\s+/g, " ");
-  if (/^[a-zA-Z]{1,32}$/.test(v)) return v; // named colour
+  // rgb()/rgba()/hsl()/hsla() — body restricted to digits, sign, dot, %, comma,
+  // whitespace and the `/` alpha separator. No identifiers, no nested calls.
+  if (/^(?:rgba?|hsla?)\(\s*[-\d.%,\s/]+\)$/.test(v)) return v.replace(/\s+/g, " ");
+  // Closed named-colour allowlist (case-insensitive per CSS).
+  if (CSS_NAMED_COLORS.has(v.toLowerCase())) return v;
   return null;
 }
 

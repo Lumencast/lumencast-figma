@@ -95,8 +95,7 @@ function hasAttr(p: Parsed, name: string) {
 
 describe("V1 — numeric re-emitter: fuzz & boundary tokens", () => {
   it("scientific notation 1e10 in viewBox → clamped to null → attr dropped", () => {
-    const p = out(`<rect x="0" y="0" width="1" height="1" viewBox="0 0 1e10 1e10"/>`);
-    // viewBox is on svg, not rect, but let's test on svg element directly
+    // viewBox is on svg, not rect — test it on the svg element directly.
     const p2 = reparse(
       sanitizeSvg(
         bytes(
@@ -122,24 +121,18 @@ describe("V1 — numeric re-emitter: fuzz & boundary tokens", () => {
     // Must be numeric-only tokens; no 'e-400' string in the output
     expect(vb).toBeDefined();
     if (vb !== undefined) {
-      expect(/[^0-9\s.\-]/.test(vb)).toBe(false);
+      expect(/[^0-9\s.-]/.test(vb)).toBe(false);
       expect(vb.includes("e")).toBe(false);
     }
   });
 
-  it("'Infinity' token in transform: non-digit text is discarded, only numeric '0' survives — no string passthrough", () => {
-    // 'translate(Infinity 0)': NUMBER_RE extracts ['0'] (the '0'), 'Infinity' letters are
-    // not matched by NUMBER_RE and therefore silently discarded.
-    // Result: translate(0) — a no-op transform. 'Infinity' does NOT appear in the output.
-    // This is CORRECT behavior (no string passthrough), but Forge should be aware that
-    // NUMBER_RE silently drops non-numeric tokens rather than rejecting the whole argument list.
+  it("'Infinity' token in transform: a non-finite arg drops the WHOLE attribute — no partial digit extraction", () => {
+    // 'translate(Infinity 0)': 'Infinity' is not a wholly-finite number token, so
+    // splitNumericArgs() rejects the argument list and reemitTransform() drops the
+    // ENTIRE transform attribute — it does NOT silently extract the '0' into a
+    // no-op translate(0). The element itself still survives (only the attr drops).
     const p = out(`<rect x="0" y="0" width="1" height="1" transform="translate(Infinity 0)"/>`);
-    const t = attrVal(p, "rect", "transform");
-    // The 'Infinity' text is NOT in the output — only the numeric '0' token
-    if (t !== undefined) {
-      expect(t).not.toContain("Infinity");
-      expect(t).not.toContain("infinity");
-    }
+    expect(attrVal(p, "rect", "transform")).toBeUndefined();
     expect(hasEl(p, "rect")).toBe(true);
   });
 
@@ -278,9 +271,7 @@ describe("V2 — parsing bypass vectors", () => {
   it("CDATA inside <title> → content becomes escaped text, not injected element", () => {
     const p = out(`<title><![CDATA[<script>alert(1)</script>]]></title><path d="M0 0"/>`);
     expect(hasEl(p, "script")).toBe(false);
-    // The CDATA text itself is escaped in the output
-    expect(p.markup ?? sanitize(`<title><![CDATA[<script>]]></title><path d="M0 0"/>`).markup).not
-      .toBeUndefined;
+    // The CDATA text itself is escaped in the output.
     const markup = sanitize(
       `<title><![CDATA[<script>alert(1)</script>]]></title><path d="M0 0"/>`,
     ).markup;
@@ -437,48 +428,42 @@ describe("V3 — URL attribute injection", () => {
     expect(fill).toBe("url(#g)");
   });
 
-  // Named-color constraint gap: Probe flags this to Forge.
-  // 'javascript' (bare word, no colon) passes [a-zA-Z]{1,32} — it is NOT a CSS named color.
-  // This is NOT a VETO-level bypass (no execution path in SVG/CEF) but violates the spirit
-  // of the contract (should be restricted to actual CSS named colors).
-  // Expected behavior per contract intent: 'javascript' should be dropped.
-  // Current behavior: it PASSES (this test will FAIL until Forge tightens the regex).
-  it.fails(
-    "FORGE-DEFECT: fill='javascript' (not a CSS color) should be dropped — named-color regex too broad",
-    () => {
-      const p = out(`<path d="M0 0" fill="javascript"/>`);
-      // Current code: /^[a-zA-Z]{1,32}$/.test('javascript') → true → fill='javascript' survives
-      // Expected: should be dropped (not a real CSS named color)
-      expect(attrVal(p, "path", "fill")).toBeUndefined();
-    },
-  );
+  // Named-color constraint CLOSED (Forge fix): validatePaintColor now uses a
+  // closed CSS <named-color> allowlist. A bare word that is NOT a real named
+  // colour (`javascript`, `url`, `data`, `expression`, …) is DROPPED.
+  it("fill='javascript' (not a CSS color) is dropped — closed named-color allowlist", () => {
+    const p = out(`<path d="M0 0" fill="javascript"/>`);
+    expect(attrVal(p, "path", "fill")).toBeUndefined();
+  });
 
-  it.fails(
-    "FORGE-DEFECT: fill='url' (bare word, not url() function) should be dropped — named-color regex too broad",
-    () => {
-      const p = out(`<path d="M0 0" fill="url"/>`);
-      expect(attrVal(p, "path", "fill")).toBeUndefined();
-    },
-  );
+  it("fill='url' (bare word, not url() function) is dropped — closed named-color allowlist", () => {
+    const p = out(`<path d="M0 0" fill="url"/>`);
+    expect(attrVal(p, "path", "fill")).toBeUndefined();
+  });
 
-  it.fails(
-    "FORGE-DEFECT: stop-color='data' should be dropped — not a valid CSS named color",
-    () => {
-      const p = out(
-        `<linearGradient id="g"><stop offset="0" stop-color="data"/></linearGradient><path d="M0 0"/>`,
-      );
-      expect(
-        p.attrs.find((a) => a.el === "stop" && a.name === "stop-color")?.value,
-      ).toBeUndefined();
-    },
-  );
+  it("stop-color='data' is dropped — not a valid CSS named color", () => {
+    const p = out(
+      `<linearGradient id="g"><stop offset="0" stop-color="data"/></linearGradient><path d="M0 0"/>`,
+    );
+    expect(p.attrs.find((a) => a.el === "stop" && a.name === "stop-color")?.value).toBeUndefined();
+  });
 
-  it("fill='currentColor' → passes through (explicit allowlist in validatePaintColor)", () => {
+  it("fill='expression(alert(1))' is dropped — not a CSS color (IE-expression vector)", () => {
+    const p = out(`<path d="M0 0" fill="expression(alert(1))"/>`);
+    expect(attrVal(p, "path", "fill")).toBeUndefined();
+  });
+
+  it("fill='rebeccapurple' survives — a real CSS named color in the allowlist", () => {
+    const p = out(`<path d="M0 0" fill="rebeccapurple"/>`);
+    expect(attrVal(p, "path", "fill")).toBe("rebeccapurple");
+  });
+
+  it("fill='currentColor' → passes through (CSS-wide keyword)", () => {
     const p = out(`<path d="M0 0" fill="currentColor"/>`);
     expect(attrVal(p, "path", "fill")).toBe("currentColor");
   });
 
-  it("fill='transparent' → passes through", () => {
+  it("fill='transparent' → passes through (named-color allowlist)", () => {
     const p = out(`<path d="M0 0" fill="transparent"/>`);
     expect(attrVal(p, "path", "fill")).toBe("transparent");
   });
