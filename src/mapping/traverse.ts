@@ -284,6 +284,24 @@ function applyImageMaskGroups(
       }
     }
 
+    if (isMaskNode && result.node.kind === "frame") {
+      // #O (ADR 002 A4.3) — group/frame mask : a GROUP or FRAME container masks
+      // its following siblings. Emit a stable id on the CONTAINER (only the
+      // referenced node — no id on its children) and keep it in the tree ; the
+      // runtime indexes it and composites the coverage of its visible children.
+      const id = stableShapeId(src.id);
+      if (id !== null) {
+        result.node.id = id;
+        activeMask = {
+          source: { kind: "group", ref: id },
+          type: mapMaskType((src as { maskType?: unknown }).maskType),
+          op: "intersect",
+        };
+        out.push(result.node);
+        continue;
+      }
+    }
+
     // A normal sibling : attach the active mask (if any) and keep it.
     if (activeMask) {
       (result.node as { mask?: LSMLMask }).mask = activeMask;
