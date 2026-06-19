@@ -100,6 +100,7 @@ export function mapShape(
     ...extractUniversal(node, {
       parentRotation: opts?.parentRotation ?? 0,
       parentIsTransparent: opts?.parentIsTransparent === true,
+      groupChainTransform: opts?.groupChainTransform,
     }),
   };
 
@@ -133,14 +134,37 @@ export function mapShape(
     }
   }
 
-  // Universal `position` (LSML §5.4) — relative to parent's coordinate
+  // Universal `position` (LSML §5.4) — relative to the parent FRAME's coord
   // origin. Only emitted when non-zero ; the document root sits at (0,0).
-  const px = asNumber(node.x) ?? 0;
-  const py = asNumber(node.y) ?? 0;
-  const parentX = opts?.parentX ?? 0;
-  const parentY = opts?.parentY ?? 0;
-  const relX = roundTo3(px - parentX);
-  const relY = roundTo3(py - parentY);
+  //
+  // A node with NO own rotation that nonetheless sits inside a rotated FRAME
+  // (it INHERITS the tilt via DOM nesting, e.g. the picto W/P paths under the
+  // 8.09°-tilted PICTO FINAL 2) must be placed at its UN-rotated local position
+  // — its `relTranslation` mapped through the transparent-group chain. The AABB
+  // delta (`px − parentX`) is the rotated/inflated position, which the frame
+  // then rotates AGAIN → the mark sat ~1.5° under-rotated + drifted. A node WITH
+  // its own (decomposed-chain) rotation keeps the AABB anchor (the caramel's
+  // −114° wrapper pivots around its own centre — the AABB centre is correct).
+  // For an un-rotated frame both forms coincide, so this is safe.
+  // The LSML position is relative to the IMMEDIATE LSML parent (transparent
+  // groups are kept in the tree, lowered to frames) — which is exactly what
+  // `relTranslation` (rt[*][2], the node's origin in its immediate parent's
+  // un-rotated space) expresses. Use it directly for a node with NO own rotation.
+  const rtl = (node as { relTranslation?: { x: number; y: number } }).relTranslation;
+  const ownRotation = typeof prim.rotation === "number" ? Math.abs(prim.rotation) : 0;
+  let relX: number;
+  let relY: number;
+  if (rtl && ownRotation < 0.01) {
+    relX = roundTo3(rtl.x);
+    relY = roundTo3(rtl.y);
+  } else {
+    const px = asNumber(node.x) ?? 0;
+    const py = asNumber(node.y) ?? 0;
+    const parentX = opts?.parentX ?? 0;
+    const parentY = opts?.parentY ?? 0;
+    relX = roundTo3(px - parentX);
+    relY = roundTo3(py - parentY);
+  }
   if (relX !== 0 || relY !== 0) prim.position = { x: relX, y: relY };
 
   if (

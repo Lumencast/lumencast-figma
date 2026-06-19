@@ -68,6 +68,8 @@ export function mapFrame(
     ...extractUniversal(node, {
       parentRotation: opts.parentRotation ?? 0,
       parentIsTransparent: opts.parentIsTransparent === true,
+      groupChainTransform: opts.groupChainTransform,
+      nodeIsTransparent: node.type === "GROUP" || node.type === "BOOLEAN_OPERATION",
     }),
   };
 
@@ -94,7 +96,12 @@ export function mapFrame(
   // scalingFactor / rotation) — a legitimate round-trip channel for the
   // non-promoted Figma-only fields (ADR 002 §3.3). `gradientTransforms` stays
   // parallel-indexed with the emitted `backgrounds` (null for image entries).
-  const fillsArr = asArray<FigmaPaint>(node.fills) ?? [];
+  // A BOOLEAN_OPERATION's fill belongs to the UNION RESULT — walkContainer
+  // already pushes it onto each operand shape so the union renders. Emitting it
+  // ALSO as the container's background paints an opaque rectangle over the whole
+  // bounding box (the "design" wordmark rendered as a solid white box). Skip it.
+  const fillsArr =
+    node.type === "BOOLEAN_OPERATION" ? [] : (asArray<FigmaPaint>(node.fills) ?? []);
   const fills: Fill[] = [];
   const gradientTransformsAligned: (number[][] | null)[] = [];
   const imageAssetRefs: string[] = [];
@@ -140,6 +147,12 @@ export function mapFrame(
   } else if (fills.length > 0) {
     prim.backgrounds = fills;
   }
+
+  // Rounded container (Figma pills, the rounded picto square). LSML `frame`
+  // carries `cornerRadius` ; the compiler forwards it to the runtime's
+  // `border-radius`. Without it a rounded frame renders as a sharp rectangle.
+  const cr = asNumber((node as { cornerRadius?: unknown }).cornerRadius);
+  if (cr !== undefined && cr > 0) (prim as { cornerRadius?: number }).cornerRadius = cr;
 
   // Preserve raw gradient matrices parallel-indexed with the emitted fills
   // for byte-stable round-trip. Helper drops the array when every entry is

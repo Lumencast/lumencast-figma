@@ -165,13 +165,110 @@ export function adaptNode(node: RestNode, coordOrigin: { x: number; y: number } 
   // Carry it explicitly so a hidden node lowers to `visible: false` (RC2).
   if (node.visible !== undefined) out.visible = node.visible;
   if (node.opacity !== undefined) out.opacity = node.opacity;
-  if (node.rotation !== undefined) out.rotation = node.rotation;
+  // A transparent GROUP/BOOLEAN is NOT a rendered box : its rotation/mirror is
+  // already baked into every descendant's `absoluteBoundingBox` (= our AABB
+  // positions). Emitting it on the group frame too would DOUBLE-apply the
+  // transform on top of those final positions — fine for a single rotation about
+  // a shared centre (picto) but it drifts for nested mirrors about different
+  // centres (texture tiles). So a group carries NO transform of its own ; its
+  // matrix flows down the `groupChainTransform` chain and `extractUniversal`
+  // decomposes the NET rotation/mirror onto each LEAF, about the leaf's own
+  // centre, leaving the AABB position untouched. Net texture = identity (the two
+  // mirrors cancel → tiles upright) ; net picto = 8.63° (the square tilts).
+  const isTransparentGroup = node.type === "GROUP" || node.type === "BOOLEAN_OPERATION";
+  // REST `rotation` is in RADIANS ; the mapper + LSML §5.4 use DEGREES (the
+  // plugin's `node.rotation` is degrees) — convert (the picto's ~8.6° tilt).
+  if (node.rotation !== undefined && !isTransparentGroup) {
+    out.rotation = (node.rotation * 180) / Math.PI;
+  }
+  // A negative `relativeTransform` determinant means the node is MIRRORED ; carry
+  // the flip — but only on real leaves (groups bake it into descendant AABBs and
+  // pass it down the chain instead).
+  const rt = (node as { relativeTransform?: number[][] }).relativeTransform;
+  const r0 = rt?.[0];
+  const r1 = rt?.[1];
+  if (rt && r0 && r1 && r0.length >= 2 && r1.length >= 2) {
+    // Matrix rows [[a c e],[b d f]] ; `?? 0` only satisfies noUncheckedIndexedAccess
+    // (the length guard already proved a/b/c/d exist — a real 0 is preserved by `??`).
+    const a = r0[0] ?? 0;
+    const c = r0[1] ?? 0;
+    const b = r1[0] ?? 0;
+    const d = r1[1] ?? 0;
+    const det = a * d - c * b;
+    if (det < 0 && !isTransparentGroup) (out as { flipY?: boolean }).flipY = true;
+    // Pass the local matrix so the mapper can compose the transparent-GROUP
+    // chain (`groupChainTransform`) and decompose its NET onto each leaf.
+    (out as { relativeTransform?: number[][] }).relativeTransform = rt;
+    // Carry the LOCAL translation (origin in the parent's un-rotated space) when
+    // present — the mapper uses it to place an image mask EXACTLY relative to a
+    // sibling. AABB positions fold in rotation + AABB inflation and drift.
+    if (r0.length >= 3 && r1.length >= 3) {
+      (out as { relTranslation?: { x: number; y: number } }).relTranslation = {
+        x: r0[2] ?? 0,
+        y: r1[2] ?? 0,
+      };
+    }
+  }
   if (node.blendMode !== undefined) out.blendMode = node.blendMode;
+  // LAYER_BLUR → CSS `filter: blur()`. Without it the bg-shine glows render as
+  // SHARP solid circles (130px-blurred in Figma) and, under the additive blend,
+  // blow out the whole corner. Carry the radius through.
+  const effects = (
+    node as {
+      effects?: {
+        type?: string;
+        visible?: boolean;
+        radius?: number;
+        color?: { r: number; g: number; b: number; a: number };
+        offset?: { x: number; y: number };
+        spread?: number;
+      }[];
+    }
+  ).effects;
+  const layerBlur = effects?.find((e) => e.type === "LAYER_BLUR" && e.visible !== false);
+  if (layerBlur && typeof layerBlur.radius === "number" && layerBlur.radius > 0) {
+    (out as { blur?: number }).blur = layerBlur.radius;
+  }
+  // DROP_SHADOW / INNER_SHADOW → structured shadow specs (the picto square's
+  // depth + its orange/red inner rim were dropped — no shadow support). Colour
+  // is emitted as a validated-on-render rgba() string ; geometry as numbers.
+  const shadows = effects?.filter(
+    (e) => (e.type === "DROP_SHADOW" || e.type === "INNER_SHADOW") && e.visible !== false,
+  );
+  if (shadows && shadows.length > 0) {
+    const r3 = (n: number) => Math.round(n * 1000) / 1000;
+    (out as { shadow?: unknown[] }).shadow = shadows.map((e) => {
+      const c = e.color;
+      const color = c
+        ? `rgba(${Math.round(c.r * 255)},${Math.round(c.g * 255)},${Math.round(c.b * 255)},${r3(c.a)})`
+        : "rgba(0,0,0,0)";
+      return {
+        inset: e.type === "INNER_SHADOW",
+        color,
+        x: r3(e.offset?.x ?? 0),
+        y: r3(e.offset?.y ?? 0),
+        blur: r3(e.radius ?? 0),
+        spread: r3(e.spread ?? 0),
+      };
+    });
+  }
+  let originX = box ? box.x : coordOrigin.x;
+  let originY = box ? box.y : coordOrigin.y;
   if (box) {
-    out.x = box.x - coordOrigin.x;
-    out.y = box.y - coordOrigin.y;
-    out.width = box.width;
-    out.height = box.height;
+    // `absoluteBoundingBox` is the AABB (post-rotation) ; the node's own `size`
+    // is the UNROTATED box. In a rotated context the AABB is larger AND its
+    // top-left is offset — but rotation PRESERVES the centre. Size from `size`
+    // and anchor on the AABB centre. For a node with no rotation in its chain
+    // `size == AABB` → no-op (logo/pills untouched).
+    const sz = (node as { size?: { x?: number; y?: number } }).size;
+    const w = typeof sz?.x === "number" ? sz.x : box.width;
+    const h = typeof sz?.y === "number" ? sz.y : box.height;
+    originX = box.x + box.width / 2 - w / 2;
+    originY = box.y + box.height / 2 - h / 2;
+    out.x = originX - coordOrigin.x;
+    out.y = originY - coordOrigin.y;
+    out.width = w;
+    out.height = h;
   }
   if (node.fills) out.fills = node.fills.map(adaptPaint);
   if (node.strokes) {
@@ -212,12 +309,34 @@ export function adaptNode(node: RestNode, coordOrigin: { x: number; y: number } 
     if (node.style.fontSize !== undefined) out.fontSize = node.style.fontSize;
     if (node.style.fontWeight !== undefined) out.fontWeight = node.style.fontWeight;
     if (node.style.textAlignHorizontal) out.textAlignHorizontal = node.style.textAlignHorizontal;
+    // REST exposes letterSpacing/lineHeight as flat fields ; the mapper expects
+    // the plugin's discriminated-union shape ({ unit, value }). Without this the
+    // 2.88px tracking on the BRANDING/Wellplayed text was dropped → letters
+    // packed tight → the whole run drifted left (the "doubled text" diff).
+    if (typeof node.style.letterSpacing === "number") {
+      out.letterSpacing = { unit: "PIXELS", value: node.style.letterSpacing };
+    }
+    // REST line-height fields aren't on the narrow inline TypeStyle — read them
+    // off a local widening cast.
+    const ts = node.style as {
+      lineHeightUnit?: string;
+      lineHeightPx?: number;
+      lineHeightPercentFontSize?: number;
+    };
+    if (ts.lineHeightUnit === "PIXELS" && typeof ts.lineHeightPx === "number") {
+      out.lineHeight = { unit: "PIXELS", value: ts.lineHeightPx };
+    } else if (
+      (ts.lineHeightUnit === "FONT_SIZE_%" || ts.lineHeightUnit === "INTRINSIC_%") &&
+      typeof ts.lineHeightPercentFontSize === "number"
+    ) {
+      out.lineHeight = { unit: "PERCENT", value: ts.lineHeightPercentFontSize };
+    }
   }
   // Children's coord origin : a coord-system container (FRAME/etc.) redefines
   // the origin to its own absolute box ; a transparent GROUP/BOOLEAN keeps the
   // outer frame's origin (matches the mapper's transparent-group handling).
   const childOrigin =
-    COORD_SYSTEM_TYPES.has(node.type) && box ? { x: box.x, y: box.y } : coordOrigin;
+    COORD_SYSTEM_TYPES.has(node.type) && box ? { x: originX, y: originY } : coordOrigin;
   if (node.children) out.children = node.children.map((c) => adaptNode(c, childOrigin));
   return out;
 }

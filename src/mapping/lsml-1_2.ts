@@ -29,7 +29,10 @@ const FIGMA_BLEND_TO_CSS: Record<string, BlendMode> = {
   DARKEN: "darken",
   LIGHTEN: "lighten",
   COLOR_DODGE: "color-dodge",
-  LINEAR_DODGE: "color-dodge",
+  // LINEAR_DODGE (add) ≈ base+source. Over a DARK backdrop the additive glow
+  // must brighten ; `color-dodge` (a/(1−b) ≈ a·b for dark a) collapses to black.
+  // `screen` (1−(1−a)(1−b) ≈ a+b for dark a) preserves the additive warmth.
+  LINEAR_DODGE: "screen",
   COLOR_BURN: "color-burn",
   LINEAR_BURN: "color-burn",
   HARD_LIGHT: "hard-light",

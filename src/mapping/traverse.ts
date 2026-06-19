@@ -249,15 +249,37 @@ function applyImageMaskGroups(
   pairs: { src: AnyFigmaNode; result: MappingResult }[],
   ctx: MappingContext,
 ): PrimitiveNode[] {
-  const register = ctx.registerImageHashAsDataUri;
+  // Prefer the content-addressed asset registry (`assets/<hash>.png`, served by
+  // URL) over an inline data:URI : a mask source image is full-resolution and
+  // routinely exceeds the data:URI length cap, which would silently drop the
+  // mask. Content-addressing routes it through the same gated asset path as any
+  // other image. Fall back to data:URI only when no asset registry is wired.
+  const register = ctx.registerImageHash ?? ctx.registerImageHashAsDataUri;
   const out: PrimitiveNode[] = [];
   let activeMask: LSMLMask | null = null;
+  // The active IMAGE mask's source box (FRAME-relative, AABB-centred) — used to
+  // place the CSS mask EXACTLY per masked sibling (`source.x − sibling.x`), not
+  // centred. Reset by any non-image mask. Null for shape/group masks.
+  let maskImgSrcGeom: { x: number; y: number; w: number; h: number } | null = null;
   for (const { src, result } of pairs) {
     const isMaskNode = asBoolean((src as { isMask?: unknown }).isMask) === true;
     const imageSrc = isMaskNode && register ? maskImageSrc(src, register) : null;
 
     if (isMaskNode && imageSrc) {
       // Image mask : active source for following siblings ; node consumed.
+      // Carry the mask source's OWN box (position + size) so the runtime places
+      // the CSS mask EXACTLY where the source sits relative to each masked
+      // sibling — the caramel gradient (1146) and 3d-render (930) share one 930
+      // wavy mask. A per-box `cover` blew the gradient's mask up (orange halo) ;
+      // a CENTRED 930 was off by ~29px (mask pulled down). The exact offset
+      // (source − sibling) is computed per-sibling below.
+      const sw = asNumber((src as { width?: unknown }).width);
+      const sh = asNumber((src as { height?: unknown }).height);
+      const stl = (src as { relTranslation?: { x: number; y: number } }).relTranslation;
+      maskImgSrcGeom =
+        sw !== undefined && sh !== undefined && stl
+          ? { x: stl.x, y: stl.y, w: sw, h: sh }
+          : null;
       activeMask = {
         source: { kind: "image", src: imageSrc },
         type: mapMaskType((src as { maskType?: unknown }).maskType),
@@ -274,6 +296,11 @@ function applyImageMaskGroups(
       const id = stableShapeId(src.id);
       if (id !== null) {
         result.node.id = id;
+        // A mask shape is COVERAGE, not content : its own fill (often a flat
+        // #0a0a0a) must not paint. Hide it from the render — the shape-index
+        // still resolves its geometry by id for the mask.
+        (result.node as { visible?: boolean }).visible = false;
+        maskImgSrcGeom = null;
         activeMask = {
           source: { kind: "shape", ref: id },
           type: mapMaskType((src as { maskType?: unknown }).maskType),
@@ -292,6 +319,12 @@ function applyImageMaskGroups(
       const id = stableShapeId(src.id);
       if (id !== null) {
         result.node.id = id;
+        // Consumed as the mask, NOT rendered : the bg-texture mask group paints
+        // a flat #0a0a0a ellipse otherwise, covering the texture/Sunshine below
+        // it. The coverage builder reads the group's children's geometry by id
+        // regardless of this `visible:false`.
+        (result.node as { visible?: boolean }).visible = false;
+        maskImgSrcGeom = null;
         activeMask = {
           source: { kind: "group", ref: id },
           type: mapMaskType((src as { maskType?: unknown }).maskType),
@@ -302,8 +335,32 @@ function applyImageMaskGroups(
       }
     }
 
-    // A normal sibling : attach the active mask (if any) and keep it.
+    // A normal sibling : attach the active mask (if any) and keep it. For an
+    // IMAGE mask, place the CSS mask EXACTLY : its source box offset from THIS
+    // sibling (`source − sibling`, FRAME-relative) + the source size, so every
+    // sibling (3d-render 930, gradient 1146) clips to the same wave at the same
+    // spot — neither stretched (`cover`) nor centred (drifts).
     if (activeMask) {
+      if (maskImgSrcGeom) {
+        const ntl = (src as { relTranslation?: { x: number; y: number } }).relTranslation;
+        const nx = ntl ? ntl.x : 0;
+        const ny = ntl ? ntl.y : 0;
+        const r3 = (n: number) => Math.round(n * 1000) / 1000;
+        (result.node as { mask?: LSMLMask }).mask = {
+          ...activeMask,
+          source: {
+            ...activeMask.source,
+            srcRect: {
+              x: r3(maskImgSrcGeom.x - nx),
+              y: r3(maskImgSrcGeom.y - ny),
+              w: r3(maskImgSrcGeom.w),
+              h: r3(maskImgSrcGeom.h),
+            },
+          } as LSMLMask["source"],
+        };
+        out.push(result.node);
+        continue;
+      }
       (result.node as { mask?: LSMLMask }).mask = activeMask;
     }
     out.push(result.node);

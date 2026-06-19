@@ -17,6 +17,7 @@ import { asArray, asNumber } from "./figma-mixed";
 import { withFigmaMetadata, type FigmaMetadata } from "./figma-metadata";
 import { captureFigmaExtras } from "./figma-extras";
 import type { FigmaPaint } from "./color";
+import { mapBlendMode } from "./lsml-1_2";
 import type { MappingContext, MappingResult } from "./types";
 
 interface MockImageNode {
@@ -93,6 +94,7 @@ export function mapImage(
     ...extractUniversal(node, {
       parentRotation: opts?.parentRotation ?? 0,
       parentIsTransparent: opts?.parentIsTransparent === true,
+      groupChainTransform: opts?.groupChainTransform,
     }),
   };
 
@@ -129,6 +131,14 @@ export function mapImage(
   if (paintMeta && Object.keys(paintMeta).length > 0) {
     withFigmaMetadata(prim, { imagePaint: paintMeta });
   }
+
+  // The image PAINT's blend mode (e.g. HARD_LIGHT on the caramel 3d-render)
+  // must reach the node's universal `blendMode` → CSS `mix-blend-mode`, else the
+  // image's black background renders opaque instead of blending into the warm
+  // layers beneath it. The metadata stash above is round-trip only ; non-Figma
+  // consumers need it on the node.
+  const imgBlend = mapBlendMode((imagePaint as { blendMode?: unknown }).blendMode);
+  if (imgBlend) (prim as { blendMode?: string }).blendMode = imgBlend;
 
   captureFigmaExtras(node as Parameters<typeof captureFigmaExtras>[0], prim, {
     localPosition: prim.position ?? { x: 0, y: 0 },
