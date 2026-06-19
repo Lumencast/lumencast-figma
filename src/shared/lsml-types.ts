@@ -109,7 +109,15 @@ export type GradientTransform = [number, number, number, number, number, number]
 export interface LSMLMask {
   source:
     | { kind: "shape"; ref: string }
-    | { kind: "image"; src: string }
+    | {
+        kind: "image";
+        src: string;
+        /** The mask source's OWN box (FRAME-relative, un-rotated origin + size),
+         *  so the runtime places the CSS mask EXACTLY per masked sibling instead
+         *  of `cover`-centring it (the caramel gradient + 3d-render share one
+         *  wave). Optional — absent for a plainly-centred image mask. */
+        srcRect?: { x: number; y: number; w: number; h: number };
+      }
     | { kind: "group"; ref: string };
   type: "alpha" | "luminance";
   op: "intersect" | "subtract" | "union";

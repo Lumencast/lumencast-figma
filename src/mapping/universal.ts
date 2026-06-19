@@ -15,6 +15,8 @@ interface FigmaNodeWithUniversal {
   visible?: boolean;
   opacity?: number;
   rotation?: number;
+  flipY?: boolean;
+  blur?: number;
   layoutSizingHorizontal?: "FIXED" | "HUG" | "FILL";
   layoutSizingVertical?: "FIXED" | "HUG" | "FILL";
 }
@@ -38,6 +40,16 @@ export interface ExtractUniversalOptions {
    *  for them comes from the position alone (acceptable for transparent
    *  groups, where the rotation is geometrically tied to the matrix). */
   parentIsTransparent?: boolean;
+  /** Composed 2×3 matrix of the transparent GROUP/BOOLEAN ancestor chain. Its
+   *  rotation + mirror are decomposed and applied at render (the chain is
+   *  otherwise metadata-only, so tiles/caramel under groups lose it). */
+  groupChainTransform?: number[][] | undefined;
+  /** True when THIS node is itself a transparent GROUP/BOOLEAN. Such a node is
+   *  not a rendered box — it only passes the chain to its children. Decomposing
+   *  the chain onto IT (a flip/rotation on the group frame) would re-apply the
+   *  transform its descendants already carry → the texture tiles drifted. So a
+   *  transparent group emits NO chain transform ; only real leaves/frames do. */
+  nodeIsTransparent?: boolean;
 }
 
 export function extractUniversal(
@@ -54,7 +66,7 @@ export function extractUniversal(
     out.opacity = roundTo3(opacity);
   }
   // Skip rotation under a transparent-group parent — the raw matrix in
-  // metadata.figma.transform owns rotation/flip/skew exactly.
+  // metadata.figma.transform owns rotation/flip/skew exactly (round-trip).
   if (!opts?.parentIsTransparent) {
     const rotation = asNumber(node.rotation);
     const parentRot = opts?.parentRotation ?? 0;
@@ -62,6 +74,38 @@ export function extractUniversal(
       const local = normaliseDegrees(rotation - parentRot);
       if (local !== 0) out.rotation = roundTo3(local);
     }
+  }
+  // Mirror (negative transform determinant) — applied as `scaleY(-1)` at render.
+  if (asBoolean(node.flipY) === true) (out as { flipY?: boolean }).flipY = true;
+  // Compose the transparent-GROUP chain's rotation + mirror onto this leaf —
+  // but NOT onto a transparent group itself (it only forwards the chain ; see
+  // `nodeIsTransparent`). Applying it here would double the transform its
+  // descendants already carry.
+  const chain = opts?.nodeIsTransparent ? undefined : opts?.groupChainTransform;
+  const c0 = chain?.[0];
+  const c1 = chain?.[1];
+  if (chain && c0 && c1 && c0.length >= 2 && c1.length >= 2) {
+    // `?? 0` only satisfies noUncheckedIndexedAccess — the length guard proved the
+    // cells exist, and a real 0 survives `??`.
+    const a = c0[0] ?? 0,
+      c = c0[1] ?? 0,
+      b = c1[0] ?? 0,
+      d = c1[1] ?? 0;
+    const det = a * d - c * b;
+    const chainRot = normaliseDegrees((Math.atan2(b, a) * 180) / Math.PI);
+    if (chainRot !== 0) out.rotation = roundTo3(normaliseDegrees((out.rotation ?? 0) + chainRot));
+    if (det < 0) (out as { flipY?: boolean }).flipY = true;
+  }
+  // LAYER_BLUR radius → CSS `filter: blur()` at render.
+  const blur = asNumber(node.blur);
+  if (blur !== undefined && blur > 0) (out as { blur?: number }).blur = roundTo3(blur);
+
+  // DROP_SHADOW / INNER_SHADOW → CSS `box-shadow` at render. The adapter already
+  // shaped these into structured specs ({ inset, color, x, y, blur, spread }) ;
+  // pass the array through verbatim (the runtime re-validates the colour).
+  const shadow = (node as { shadow?: unknown }).shadow;
+  if (Array.isArray(shadow) && shadow.length > 0) {
+    (out as { shadow?: unknown[] }).shadow = shadow;
   }
 
   const lsH = asString(node.layoutSizingHorizontal) as "FIXED" | "HUG" | "FILL" | undefined;

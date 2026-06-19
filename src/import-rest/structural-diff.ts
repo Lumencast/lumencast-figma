@@ -87,6 +87,12 @@ export interface LsmlNode {
   backgrounds?: { kind?: string }[];
   strokes?: unknown[];
   geometry?: string;
+  /** Path geometry payload (LSML 1.1 §4.6). One of `pathData` (single subpath)
+   *  or `paths[]` (multi-subpath) carries the actual outline. An empty/absent
+   *  pair on a `geometry:"path"` node means the vector lowered with NO geometry
+   *  — it renders as its bounding box (RC4 fidelity defect). */
+  pathData?: string;
+  paths?: { data?: string }[];
   characters?: string;
   bind?: { src?: string; value?: string };
   metadata?: { figma?: { layerName?: string } };
@@ -313,21 +319,35 @@ export function structuralDiff(
       }
     }
 
-    // Vector geometry presence (path-based shapes).
-    if (
-      Array.isArray(rest.fillGeometry) &&
-      rest.fillGeometry.length > 0 &&
-      lsml.geometry !== "path" &&
-      lsml.kind === "shape"
-    ) {
-      out.push({
-        kind: "geometry",
-        figmaId: rest.id,
-        name,
-        path,
-        expected: "geometry: path",
-        actual: lsml.geometry ?? lsml.kind,
-      });
+    // Vector geometry presence AND CONTENT (path-based shapes).
+    //
+    // RC4 blind-spot fix : a REST node carrying `fillGeometry` must lower to a
+    // `geometry:"path"` shape whose path payload is actually PRESENT. The prior
+    // check only asserted the `geometry:"path"` discriminator — a node with the
+    // right discriminator but an EMPTY `pathData`/`paths[]` slipped through as
+    // "diff=0" while rendering as its bounding box. We now also require a
+    // non-empty outline, so "diff=0" genuinely means geometry fidelity.
+    if (Array.isArray(rest.fillGeometry) && rest.fillGeometry.length > 0 && lsml.kind === "shape") {
+      if (lsml.geometry !== "path") {
+        out.push({
+          kind: "geometry",
+          figmaId: rest.id,
+          name,
+          path,
+          expected: "geometry: path",
+          actual: lsml.geometry ?? lsml.kind,
+        });
+      } else if (!lsmlHasPathContent(lsml)) {
+        out.push({
+          kind: "geometry",
+          figmaId: rest.id,
+          name,
+          path,
+          expected: `non-empty path (REST fillGeometry has ${rest.fillGeometry.length} subpath(s))`,
+          actual: "empty pathData / paths[] (renders as bounding box)",
+          note: "VECTOR lowered with geometry:path but NO outline — fidelity defect",
+        });
+      }
     }
 
     // Recurse. Children of a transparent GROUP / BOOLEAN_OPERATION store their
@@ -414,6 +434,18 @@ export function structuralDiff(
   // The root frame's children are absolute (coord-system), so origin = 0.
   compare(restRoot, lsmlRoot, "root", 0, 0, false);
   return out;
+}
+
+/** True when a `geometry:"path"` LSML node actually carries a renderable
+ *  outline — a non-empty `pathData` string OR a `paths[]` with at least one
+ *  entry whose `data` is non-empty. An empty pair means the vector lowered with
+ *  no geometry and would paint as its bounding box (RC4). */
+function lsmlHasPathContent(node: LsmlNode): boolean {
+  if (typeof node.pathData === "string" && node.pathData.trim().length > 0) return true;
+  if (Array.isArray(node.paths)) {
+    return node.paths.some((p) => typeof p?.data === "string" && p.data.trim().length > 0);
+  }
+  return false;
 }
 
 /** An LSML node carrying a mask is the masked subject; its own blend may have

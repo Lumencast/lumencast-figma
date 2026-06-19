@@ -131,10 +131,12 @@ export function paintToFill(paint: FigmaPaint): Fill | null {
       kind: "linear-gradient",
       stops,
     };
-    // 1.2 : emit the full affine matrix when it's non-trivial (LSML 1.2
-    // §4.2) — it supersedes `angle_deg` and carries translation / scale /
-    // shear that the angle alone loses. A trivial / identity matrix yields
-    // null, so plain authored gradients keep `angle_deg` only (1.1 form).
+    // 1.2 : emit the full affine matrix when it's non-trivial (LSML 1.2 §4.2) —
+    // it SUPERSEDES `angle_deg` and carries translation / scale / shear the angle
+    // alone loses. The runtime now renders linear gradients FROM the transform's
+    // first column (fill.tsx), so a transform-only gradient (Frame 8's caramel
+    // base) is honoured ; `angle_deg` is the 1.1 fallback ONLY when there is no
+    // transform (a trivial / identity matrix). Never emit both — the transform wins.
     const transform = matrixToGradientTransform(paint.gradientTransform);
     if (transform) {
       fill.transform = transform;

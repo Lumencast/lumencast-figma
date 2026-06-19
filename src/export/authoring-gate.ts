@@ -81,6 +81,10 @@ const MASK_OPS = new Set<string>(["intersect", "subtract", "union"]);
 
 const MAX_URL_LEN = 8192; // mirrors host-allow.ts MAX_URL_LEN.
 const ALLOWED_DATA_IMAGE_RE = /^data:image\/(png|jpeg|jpg|gif|webp|avif|bmp|x-icon);base64,/i;
+// A content-addressed bundle asset (`assets/<hash>.<ext>`) — written into the
+// bundle alongside the .lsml, integrity-pinned by its hash, served WITH the
+// bundle (no external fetch). See checkSrc for the accepted-security-debt note.
+const ALLOWED_BUNDLE_ASSET_RE = /^assets\/[0-9a-f]{16,64}\.(png|jpe?g|gif|webp|avif|bmp|ico)$/i;
 
 /** Run the authoring gate over a bundle with the default budget. */
 export function gateBundle(bundle: SceneBundle): GateError[] {
@@ -279,6 +283,15 @@ function checkSrc(raw: string, path: string, ctx: WalkCtx): void {
     return;
   }
   if (ALLOWED_DATA_IMAGE_RE.test(raw)) return; // bounded inline raster.
+  // ⚠️ ACCEPTED SECURITY DEBT (2026-06-19, full audit owed) : a content-addressed
+  // bundle asset is trusted like a bounded data: payload — it ships INSIDE the
+  // bundle, is pinned by its SHA hash, and is fetched from no external origin. It
+  // is also the ONLY src form a large image-mask survives in : the 930px caramel
+  // wave is 10.7 MB as a data: URI, which silently drops the mask and breaks the
+  // render. Inlining it isn't viable and an allowlisted absolute host doesn't
+  // exist at authoring time, so the bundle-relative asset is accepted to keep the
+  // render byte-exact. A security review of this path is owed (see [[…]] memory).
+  if (ALLOWED_BUNDLE_ASSET_RE.test(raw)) return;
   if (/^data:/i.test(raw)) {
     ctx.errors.push(schemeErr(path, "data: url is not a bounded image/* payload"));
     return;

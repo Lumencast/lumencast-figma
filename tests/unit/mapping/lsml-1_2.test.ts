@@ -44,7 +44,11 @@ describe("mapBlendMode (Figma → CSS mix-blend-mode, T4)", () => {
   });
   it("folds Figma-only LINEAR_BURN / LINEAR_DODGE to nearest CSS keyword", () => {
     expect(mapBlendMode("LINEAR_BURN")).toBe("color-burn");
-    expect(mapBlendMode("LINEAR_DODGE")).toBe("color-dodge");
+    // LINEAR_DODGE (add) folds to `screen`, NOT `color-dodge` : over a dark
+    // backdrop color-dodge (a/(1−b)) collapses an additive glow to black, while
+    // screen (1−(1−a)(1−b) ≈ a+b for dark a) preserves the additive warmth — the
+    // bg-shine glows of cover 817:3 only read correctly as `screen`.
+    expect(mapBlendMode("LINEAR_DODGE")).toBe("screen");
   });
   it("omits PASS_THROUGH / NORMAL / unknown (no passthrough)", () => {
     expect(mapBlendMode("PASS_THROUGH")).toBeNull();
