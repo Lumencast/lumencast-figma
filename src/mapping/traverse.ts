@@ -277,9 +277,7 @@ function applyImageMaskGroups(
       const sh = asNumber((src as { height?: unknown }).height);
       const stl = (src as { relTranslation?: { x: number; y: number } }).relTranslation;
       maskImgSrcGeom =
-        sw !== undefined && sh !== undefined && stl
-          ? { x: stl.x, y: stl.y, w: sw, h: sh }
-          : null;
+        sw !== undefined && sh !== undefined && stl ? { x: stl.x, y: stl.y, w: sw, h: sh } : null;
       activeMask = {
         source: { kind: "image", src: imageSrc },
         type: mapMaskType((src as { maskType?: unknown }).maskType),

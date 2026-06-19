@@ -327,11 +327,7 @@ export function structuralDiff(
     // right discriminator but an EMPTY `pathData`/`paths[]` slipped through as
     // "diff=0" while rendering as its bounding box. We now also require a
     // non-empty outline, so "diff=0" genuinely means geometry fidelity.
-    if (
-      Array.isArray(rest.fillGeometry) &&
-      rest.fillGeometry.length > 0 &&
-      lsml.kind === "shape"
-    ) {
+    if (Array.isArray(rest.fillGeometry) && rest.fillGeometry.length > 0 && lsml.kind === "shape") {
       if (lsml.geometry !== "path") {
         out.push({
           kind: "geometry",

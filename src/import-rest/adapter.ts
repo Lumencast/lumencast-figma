@@ -135,13 +135,7 @@ function noPluginData(): string {
  *  the coordinate origin for its descendants (a GROUP/BOOLEAN_OPERATION does
  *  NOT — its children stay in the outer frame's coord system). MUST match
  *  `COORD_SYSTEM_TYPES` in `src/mapping/traverse.ts`. */
-const COORD_SYSTEM_TYPES = new Set([
-  "FRAME",
-  "COMPONENT",
-  "INSTANCE",
-  "SECTION",
-  "COMPONENT_SET",
-]);
+const COORD_SYSTEM_TYPES = new Set(["FRAME", "COMPONENT", "INSTANCE", "SECTION", "COMPONENT_SET"]);
 
 /** Adapt a REST node subtree to the main-thread shape `src/mapping` consumes.
  *  Sizes, hierarchy, and `visible` are preserved exactly.
@@ -153,7 +147,10 @@ const COORD_SYSTEM_TYPES = new Set([
  *  origin. Without this, nested frames carried absolute coords that the runtime
  *  re-accumulated through every containing block (logo landed ~1100px too low).
  *  `coordOrigin` is the absolute origin of that ancestor (root = 0,0). */
-export function adaptNode(node: RestNode, coordOrigin: { x: number; y: number } = { x: 0, y: 0 }): AdaptedNode {
+export function adaptNode(
+  node: RestNode,
+  coordOrigin: { x: number; y: number } = { x: 0, y: 0 },
+): AdaptedNode {
   const box = node.absoluteBoundingBox ?? null;
   const out: AdaptedNode = {
     type: node.type,

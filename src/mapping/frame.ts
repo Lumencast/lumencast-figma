@@ -100,8 +100,7 @@ export function mapFrame(
   // already pushes it onto each operand shape so the union renders. Emitting it
   // ALSO as the container's background paints an opaque rectangle over the whole
   // bounding box (the "design" wordmark rendered as a solid white box). Skip it.
-  const fillsArr =
-    node.type === "BOOLEAN_OPERATION" ? [] : (asArray<FigmaPaint>(node.fills) ?? []);
+  const fillsArr = node.type === "BOOLEAN_OPERATION" ? [] : (asArray<FigmaPaint>(node.fills) ?? []);
   const fills: Fill[] = [];
   const gradientTransformsAligned: (number[][] | null)[] = [];
   const imageAssetRefs: string[] = [];
